@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.MainController">
+    <top>
+        <VBox alignment="CENTER" spacing="10" style="-fx-background-color: #2c3e50; -fx-padding: 20;">
+            <Label text="Crab Inc. Dashboard" style="-fx-font-size: 24px; -fx-text-fill: white; -fx-font-weight: bold;"/>
+            <Label fx:id="marketHealthLabel" style="-fx-font-size: 16px; -fx-text-fill: #2ecc71;"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="10" style="-fx-padding: 20;">
+            <Label text="Competitor Overview" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+            <TableView fx:id="playersTable" prefHeight="300">
+                <columns>
+                    <TableColumn fx:id="playerNameColumn" text="Player Name" prefWidth="200"/>
+                    <TableColumn fx:id="businessTierColumn" text="Business Tier" prefWidth="120"/>
+                    <TableColumn fx:id="capitalColumn" text="Est. Capital (₱)" prefWidth="200"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+
+    <bottom>
+        <VBox spacing="10" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: #ecf0f1;">
+            <HBox alignment="CENTER" spacing="20">
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Your Capital: ₱120,000" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                    <Label text="Action Points: 1"/>
+                </VBox>
+                <Button text="Invest in Community (+Health, -APs, Slow Win)" fx:id="investBtn" onAction="#handleInvestAction" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-weight: bold;"/>
+                <Button text="Sabotage Rival (-APs, Fast Win, Riskier)" fx:id="sabotageBtn" onAction="#handleSabotageAction" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-weight: bold;"/>
+            </HBox>
+            <Label fx:id="statusLabel" style="-fx-font-style: italic; -fx-text-fill: #555555;" />
+        </VBox>
+    </bottom>
+</BorderPane>
