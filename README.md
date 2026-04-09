@@ -1,11 +1,11 @@
 # Project Title: Crab Inc.
 
 ## Group Members
-- CARILLO, SAMUEL
-- EPILAN, GIAN CEDRICK
-- ORTIZ, KRISTIAN ENRICO
-- ROMALES, RAY CHRISTIAN
-- SANTIZO, JOHN ERICK
+- CARILLO, SAMUEL (flurgerburger)
+- EPILAN, GIAN CEDRICK (gOps132)
+- ORTIZ, KRISTIAN ENRICO (Odnerk)
+- ROMALES, RAY CHRISTIAN (chanie12)
+- SANTIZO, JOHN ERICK (eitophetamine9)
 
 ## Project Description
 Crab Inc. is a multiplayer, turn-based tycoon desktop application that gamifies the socio-economic concept of "Crab Mentality." Players manage competing local businesses and must choose between investing in the community (co-op) or sabotaging rivals (PvP) to reach the top. It serves as both a strategic resource management game and a social commentary on local business practices.
