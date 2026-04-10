@@ -1,60 +1,58 @@
 package controller;
 
+import app.MarketSimulationService;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.event.ActionEvent;
+import model.GameEngine;
 import model.Player;
-import java.util.Arrays;
-import java.util.List;
 
 public class MainController {
-
     @FXML private Label marketHealthLabel;
     @FXML private TableView<Player> playersTable;
-    @FXML private TableColumn<Player, String> playerNameColumn;
-    @FXML private TableColumn<Player, String> businessTierColumn;
-    @FXML private TableColumn<Player, Double> capitalColumn;
-    @FXML private Button investBtn;
-    @FXML private Button sabotageBtn;
+    @FXML private TableColumn<Player, String> nameCol;
+    @FXML private TableColumn<Player, Double> capitalCol;
+    @FXML private TableColumn<Player, Integer> pointsCol;
     @FXML private Label statusLabel;
+
+    private final GameEngine engine = GameEngine.getInstance();
 
     @FXML
     public void initialize() {
-        playerNameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
-        businessTierColumn.setCellValueFactory(new PropertyValueFactory<>("businessTier"));
-        capitalColumn.setCellValueFactory(new PropertyValueFactory<>("estimatedCapital"));
+        // Mapping columns to Player properties
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
+        capitalCol.setCellValueFactory(new PropertyValueFactory<>("estimatedCapital"));
+        pointsCol.setCellValueFactory(new PropertyValueFactory<>("victoryPoints"));
 
-        List<Player> samplePlayers = Arrays.asList(
-                new Player(1, "IslandInnovator", "Tier1", 120000.0),
-                new Player(2, "MetropolisMogul", "Tier2", 450000.0),
-                new Player(3, "RuralRising", "Tier1", 85000.0),
-                new Player(4, "TechTitanPHP", "Tier3", 1000000.0)
-        );
+        // Setup Sample Data
+        engine.getPlayers().add(new Player(1, "You (CEO)", "Tier 1", 50000));
+        engine.getPlayers().add(new Player(2, "Rival_Crab", "Tier 1", 50000));
+        playersTable.setItems(engine.getPlayers());
 
-        playersTable.getItems().addAll(samplePlayers);
-        marketHealthLabel.setText("Global Market Health: 100%");
-        statusLabel.setText("Game Status: Awaiting player actions...");
+        // Start Multithreading Service
+        MarketSimulationService service = new MarketSimulationService();
+        service.setOnSucceeded(e -> marketHealthLabel.setText(
+                String.format("Global Market Health: %.1f%%", engine.getMarketHealth())));
+        service.start();
     }
 
     @FXML
-    public void handleInvestAction(ActionEvent event) {
-        statusLabel.setText("Invested in Community! (+5 Market Health, Slow Progress)");
-        String currentHealthText = marketHealthLabel.getText();
-        int health = Integer.parseInt(currentHealthText.replaceAll("[^0-9]", ""));
-        int newHealth = Math.min(100, health + 5);
-        marketHealthLabel.setText("Global Market Health: " + newHealth + "%");
+    public void handleInvest() {
+        Player user = engine.getCurrentUser();
+        if (user != null) {
+            user.addVictoryPoints(50); // Concept: +50 VP
+            engine.updateMarketHealth(5.0); // Concept: Increases health
+            statusLabel.setText("Status: Bayanihan! +50 VP. Market is recovering.");
+        }
     }
 
     @FXML
-    public void handleSabotageAction(ActionEvent event) {
-        statusLabel.setText("Sabotage Initiated! (-15 Market Health, Fast Progress, Choose Target Soon)");
-        String currentHealthText = marketHealthLabel.getText();
-        int health = Integer.parseInt(currentHealthText.replaceAll("[^0-9]", ""));
-        int newHealth = Math.max(0, health - 15);
-        marketHealthLabel.setText("Global Market Health: " + newHealth + "%");
+    public void handleSabotage() {
+        Player user = engine.getCurrentUser();
+        if (user != null) {
+            user.addVictoryPoints(150); // Concept: +150 VP
+            engine.updateMarketHealth(-15.0); // Concept: Damages health
+            statusLabel.setText("Status: Crab Mentality! +150 VP. Market is crashing!");
+        }
     }
 }
