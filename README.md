@@ -8,26 +8,67 @@
 - SANTIZO, JOHN ERICK (eitophetamine9)
 
 ## Project Description
-Crab Inc. is a multiplayer, turn-based tycoon desktop application that gamifies the socio-economic concept of "Crab Mentality." Players manage competing local businesses and must choose between investing in the community (co-op) or sabotaging rivals (PvP) to reach the top. It serves as both a strategic resource management game and a social commentary on local business practices.
+Crab Inc. is a multiplayer, turn-based tycoon game about "crab mentality." Players manage competing local businesses and choose whether to build the community, sabotage rivals, or do both.
 
-## Proposed Features
-- **User Authentication:** Players can register, log in, and track their all-time win/loss records.
-- **Multiplayer Lobby System:** 3 to 7 players can join a shared session.
-- **Interactive Dashboard:** A live UI showing personal business stats, rival stats, and global "Market Health."
-- **Action Phase Form:** Players execute daily actions (e.g., "Invest in Infrastructure" or "Bribe Health Inspector").
-- **Real-Time Market Calculation:** Server processes simultaneous player turns and updates the global economy.
-- **End-Game Reports:** Detailed database-driven summary of who sabotaged whom and the final market state.
+## Current Architecture
+Crab Inc. uses FXGL as the runtime foundation and JavaFX/FXML for UI.
+
+Core rule:
+
+> FXGL is the runtime. Crab Inc. owns the architecture.
+
+Current layers:
+
+- `Main` starts the app.
+- `crab.app` adapts FXGL lifecycle hooks into project bootstrap code.
+- `crab.appcore` holds small app-lifetime services such as module lifecycle and game context.
+- `crab.features` holds feature-oriented code.
+- Domain/game state should stay plain Java and should not depend on FXGL or JavaFX.
+
+The current scaffold proves:
+
+- FXGL startup
+- FXML UI loading
+- JavaFX 3D rendering inside the FXGL scene
+- basic module registration through `GameContext`
+
+## Planned Features
+- 3 to 7 player sessions
+- character selection
+- map/session settings
+- simultaneous turn command submission
+- local play with bots
+- LAN host/join multiplayer
+- optional host authentication
+- end-game reports
 
 ## Planned Technologies
-- **Language:** Java
-- **GUI:** JavaFX (FXML)
-- **Database:** MySQL / SQLite via JDBC
-- **Networking:** Java Sockets (for multiplayer communication)
+- Java 17
+- FXGL 17.3
+- JavaFX / FXML
+- Maven
+- Future local networking through Java sockets or a project-owned transport adapter
 
-## Evaluation Criteria Mapping (Initial)
-- **OOP:** Core entities encapsulated into classes (`Player`, `Business`, `ActionManager`).
-- **GUI:** Dashboard and forms built using JavaFX layout containers (BorderPane, VBox) and updated via Controllers.
-- **UML:** Use Case and Class Diagrams included in the `/diagrams` folder.
-- **Design Pattern:** - *Singleton:* Managing the single Database Connection.
-  - *Observer:* Notifying the JavaFX UI when the server updates game states.
-- **Multithreading:** JavaFX `Task` and `Platform.runLater` used to handle background server polling without freezing the UI, plus multithreaded socket handling for multiple players.
+## Run
+Use the shared IntelliJ run configuration:
+
+- `Crab Inc FXGL`
+
+Or run from terminal:
+
+```bash
+./mvnw javafx:run
+```
+
+## Evaluation Criteria Mapping
+- **OOP:** Use small classes with clear responsibilities and Doxygen class comments for intentional patterns/SOLID usage.
+- **GUI:** Use FXGL for runtime scene integration and JavaFX/FXML for UI panels.
+- **UML:** Keep diagrams in `/Diagrams`.
+- **Design Patterns:** Use Adapter, Facade, Strategy, Command, State, Observer/Event Bus, and Service Registry only where they clarify ownership.
+- **Multithreading:** Keep background work behind appcore services such as future task, save/load, LAN discovery, or networking adapters.
+
+## Architecture Credits
+- Vertical Slice Architecture: Jimmy Bogard
+- Clean Architecture / Dependency Rule: Robert C. Martin
+- Service Locator pattern: Robert Nystrom, *Game Programming Patterns*
+- Engine subsystem examples: Unreal Engine Subsystems, Godot Autoloads, libGDX AssetManager
