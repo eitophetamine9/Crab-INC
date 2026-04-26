@@ -1,20 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="crab.features.demo.presentation.DemoPanelController"
-      spacing="8"
-      prefWidth="320"
-      style="-fx-background-color: rgba(245, 248, 252, 0.94); -fx-background-radius: 8; -fx-padding: 16;">
-    <Label text="Crab Inc. Foundation Demo"
-           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #111827;"/>
-    <Label fx:id="statusLabel"
-           text="FXML panel waiting for controller"
-           wrapText="true"
-           style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
-    <Label text="This screen proves FXGL world rendering, FXML UI, and JavaFX 3D can share one runtime."
-           wrapText="true"
-           style="-fx-font-size: 12px; -fx-text-fill: #4b5563;"/>
+<VBox prefWidth="320" spacing="8" style="-fx-background-color: rgba(245, 248, 252, 0.94); -fx-background-radius: 8; -fx-padding: 16;" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.12" fx:controller="crab.features.demo.presentation.DemoPanelController">
+    <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #111827;" text="Crab Inc. Demo Window" />
+    <Label fx:id="statusLabel" style="-fx-text-fill: #374151;" text="FXML loaded" />
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #111827; -fx-padding: 8 0 0 0;" text="Bunny Orientation" />
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Yaw" />
+        <Slider fx:id="yawSlider" blockIncrement="5" majorTickUnit="90" max="180" min="-180" minorTickCount="1" prefWidth="184" showTickMarks="true" value="0" />
+        <Label fx:id="yawValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0°" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Pitch" />
+        <Slider fx:id="pitchSlider" blockIncrement="5" majorTickUnit="45" max="90" min="-90" minorTickCount="1" prefWidth="184" showTickMarks="true" value="-12" />
+        <Label fx:id="pitchValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="-12°" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Roll" />
+        <Slider fx:id="rollSlider" blockIncrement="5" majorTickUnit="45" max="90" min="-90" minorTickCount="1" prefWidth="184" showTickMarks="true" value="0" />
+        <Label fx:id="rollValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0°" />
+    </HBox>
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #111827; -fx-padding: 8 0 0 0;" text="Toon Material" />
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Slider fx:id="toonSlider" blockIncrement="0.05" majorTickUnit="0.25" max="1" min="0" prefWidth="230" showTickMarks="true" value="0.65" />
+        <Label fx:id="toonValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0.65" />
+    </HBox>
+    <Label style="-fx-text-fill: #4b5563; -fx-wrap-text: true;" text="Use the sliders to inspect the bunny from fixed angles and tune the stylized material response." />
 </VBox>

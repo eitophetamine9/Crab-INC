@@ -45,11 +45,13 @@ The current scaffold proves:
 ## Planned Technologies
 - Java 17
 - FXGL 17.3
-- JavaFX / FXML
+- JavaFX 21.0.2 / FXML
 - Maven
 - Future local networking through Java sockets or a project-owned transport adapter
 
 ## Run
+Use JDK 17 for Maven and IntelliJ.
+
 Use the shared IntelliJ run configuration:
 
 - `Crab Inc FXGL`
@@ -59,6 +61,8 @@ Or run from terminal:
 ```bash
 ./mvnw javafx:run
 ```
+
+If IntelliJ logs `J:24` or crashes with `NSTrackingRectTag`, the IDE is running the game with JDK 24. Set the project SDK and Maven runner JRE to the installed JDK 17.
 
 ## Evaluation Criteria Mapping
 - **OOP:** Use small classes with clear responsibilities and Doxygen class comments for intentional patterns/SOLID usage.
