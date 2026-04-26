@@ -20,3 +20,7 @@
 bin/
 out/
 target/
+system/
+
+# Local planning / scratch docs
+TMPREADME.md

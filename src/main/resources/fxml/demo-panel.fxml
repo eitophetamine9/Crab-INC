@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="crab.features.demo.presentation.DemoPanelController"
+      spacing="8"
+      prefWidth="320"
+      style="-fx-background-color: rgba(245, 248, 252, 0.94); -fx-background-radius: 8; -fx-padding: 16;">
+    <Label text="Crab Inc. Foundation Demo"
+           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #111827;"/>
+    <Label fx:id="statusLabel"
+           text="FXML panel waiting for controller"
+           wrapText="true"
+           style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
+    <Label text="This screen proves FXGL world rendering, FXML UI, and JavaFX 3D can share one runtime."
+           wrapText="true"
+           style="-fx-font-size: 12px; -fx-text-fill: #4b5563;"/>
+</VBox>
