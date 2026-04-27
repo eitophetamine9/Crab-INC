@@ -3,7 +3,11 @@ package crab.features.demo;
 import crab.appcore.context.GameContext;
 import crab.appcore.context.GameModule;
 import crab.appcore.screen.ScreenManager;
-import crab.features.demo.presentation.DemoScreen;
+import crab.features.demo.presentation.screens.BoxDemoScreen;
+import crab.features.demo.presentation.screens.BunnyDemoScreen;
+import javafx.scene.input.KeyCode;
+
+import static com.almasb.fxgl.dsl.FXGL.onKey;
 
 /**
  * Registers the foundation demo screen.
@@ -15,14 +19,20 @@ import crab.features.demo.presentation.DemoScreen;
  * - Single Responsibility: registers demo feature services/screens only.
  */
 public final class DemoModule implements GameModule {
+    private ScreenManager screens;
+    private boolean navigationBound;
+
     @Override
     public void initialize(GameContext context) {
         context.register(DemoModule.class, this);
-        context.require(ScreenManager.class).register(new DemoScreen());
+        screens = context.require(ScreenManager.class);
+        screens.register(new BoxDemoScreen(screens));
+        screens.register(new BunnyDemoScreen(screens));
     }
 
     @Override
     public void start() {
+        bindNavigationOnce();
     }
 
     @Override
@@ -31,5 +41,15 @@ public final class DemoModule implements GameModule {
 
     @Override
     public void stop() {
+    }
+
+    private void bindNavigationOnce() {
+        if (navigationBound) {
+            return;
+        }
+
+        navigationBound = true;
+        onKey(KeyCode.DIGIT1, () -> screens.show(BoxDemoScreen.ID));
+        onKey(KeyCode.DIGIT2, () -> screens.show(BunnyDemoScreen.ID));
     }
 }

@@ -1,4 +1,4 @@
-package crab.features.demo.presentation;
+package crab.features.demo.presentation.components;
 
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;

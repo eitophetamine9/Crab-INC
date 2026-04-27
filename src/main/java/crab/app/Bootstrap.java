@@ -46,7 +46,7 @@ public final class Bootstrap {
     public void initializeUi() {
         modules.initializeUi();
         if (screens.currentId().isEmpty()) {
-            screens.show("demo");
+            screens.show("demo_box");
         }
     }
 

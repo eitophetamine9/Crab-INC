@@ -1,4 +1,4 @@
-package crab.features.demo.presentation;
+package crab.features.demo.presentation.components;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -7,7 +7,7 @@ import javafx.scene.control.Slider;
 import java.util.function.DoubleConsumer;
 
 /**
- * Controller for the FXML sample panel in the foundation demo.
+ * Controller for the bunny-only control panel in the foundation demo.
  *
  * Design patterns:
  * - MVC Controller: mediates the FXML view state.
@@ -15,9 +15,11 @@ import java.util.function.DoubleConsumer;
  * SOLID:
  * - Single Responsibility: owns demo panel UI controls only.
  */
-public final class DemoPanelController {
+public final class BunnyControlPanelController {
     @FXML
     private Label statusLabel;
+    @FXML
+    private Label orientationTitleLabel;
     @FXML
     private Label yawValueLabel;
     @FXML
@@ -34,6 +36,8 @@ public final class DemoPanelController {
     private Label toonValueLabel;
     @FXML
     private Slider toonSlider;
+    @FXML
+    private Label descriptionLabel;
 
     private DoubleConsumer yawConsumer = value -> {
     };
@@ -62,6 +66,14 @@ public final class DemoPanelController {
 
     public void setStatusText(String text) {
         statusLabel.setText(text);
+    }
+
+    public void setOrientationTitle(String text) {
+        orientationTitleLabel.setText(text);
+    }
+
+    public void setDescriptionText(String text) {
+        descriptionLabel.setText(text);
     }
 
     public void setYawConsumer(DoubleConsumer consumer) {
