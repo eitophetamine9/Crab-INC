@@ -3,6 +3,7 @@ package crab.app;
 import com.almasb.fxgl.app.GameSettings;
 import crab.appcore.context.GameContext;
 import crab.appcore.context.ModuleRegistry;
+import crab.appcore.screen.ScreenManager;
 import crab.features.demo.DemoModule;
 
 /**
@@ -18,6 +19,7 @@ import crab.features.demo.DemoModule;
 public final class Bootstrap {
     private final GameContext context = new GameContext();
     private final ModuleRegistry modules = new ModuleRegistry();
+    private final ScreenManager screens = new ScreenManager();
     private boolean modulesInitialized;
 
     public void configure(GameSettings settings) {
@@ -26,10 +28,13 @@ public final class Bootstrap {
         settings.setTitle("Crab Inc.");
         settings.setVersion("0.1");
         settings.setDeveloperMenuEnabled(true);
+        settings.setIntroEnabled(false);
+        settings.setSceneFactory(new CrabSceneFactory());
     }
 
     public void initializeGame() {
         if (!modulesInitialized) {
+            context.register(ScreenManager.class, screens);
             modules.register(new DemoModule());
             modules.initialize(context);
             modulesInitialized = true;
@@ -40,13 +45,18 @@ public final class Bootstrap {
 
     public void initializeUi() {
         modules.initializeUi();
+        if (screens.currentId().isEmpty()) {
+            screens.show("demo");
+        }
     }
 
     public void update(double tpf) {
         modules.update(tpf);
+        screens.update(tpf);
     }
 
     public void shutdown() {
+        screens.clear();
         modules.stop();
     }
 }
