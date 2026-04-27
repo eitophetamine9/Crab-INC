@@ -24,3 +24,7 @@ system/
 
 # Local planning / scratch docs
 TMPREADME.md
+
+# Local coding-agent guidance
+.agent/
+agent.md
