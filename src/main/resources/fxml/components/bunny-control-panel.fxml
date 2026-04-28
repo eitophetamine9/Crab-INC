@@ -27,5 +27,31 @@
         <Slider fx:id="toonSlider" blockIncrement="0.05" majorTickUnit="0.25" max="1" min="0" prefWidth="230" showTickMarks="true" value="0.65" />
         <Label fx:id="toonValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0.65" />
     </HBox>
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #111827; -fx-padding: 8 0 0 0;" text="Shoreline Shader" />
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="58" style="-fx-text-fill: #374151;" text="Speed" />
+        <Slider fx:id="waveSpeedSlider" blockIncrement="0.1" majorTickUnit="0.5" max="2.5" min="0.1" prefWidth="168" showTickMarks="true" value="1" />
+        <Label fx:id="waveSpeedValueLabel" minWidth="50" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="1.00x" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="58" style="-fx-text-fill: #374151;" text="Height" />
+        <Slider fx:id="waveHeightSlider" blockIncrement="0.1" majorTickUnit="0.4" max="1.8" min="0.4" prefWidth="168" showTickMarks="true" value="1" />
+        <Label fx:id="waveHeightValueLabel" minWidth="50" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="1.00" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="58" style="-fx-text-fill: #374151;" text="Foam" />
+        <Slider fx:id="foamSlider" blockIncrement="0.1" majorTickUnit="0.5" max="2" min="0" prefWidth="168" showTickMarks="true" value="1" />
+        <Label fx:id="foamValueLabel" minWidth="50" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="1.00" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="58" style="-fx-text-fill: #374151;" text="Shore" />
+        <Slider fx:id="shoreSlider" blockIncrement="0.05" majorTickUnit="0.2" max="0.8" min="0.1" prefWidth="168" showTickMarks="true" value="0.6" />
+        <Label fx:id="shoreValueLabel" minWidth="50" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0.60" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="58" style="-fx-text-fill: #374151;" text="Split" />
+        <Slider fx:id="chromaticSlider" blockIncrement="0.1" majorTickUnit="0.5" max="2" min="0" prefWidth="168" showTickMarks="true" value="1" />
+        <Label fx:id="chromaticValueLabel" minWidth="50" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="1.00" />
+    </HBox>
     <Label fx:id="descriptionLabel" style="-fx-text-fill: #4b5563; -fx-wrap-text: true;" text="Use the sliders to inspect the bunny from fixed angles and tune the stylized material response." />
 </VBox>

@@ -4,6 +4,7 @@ import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
 import crab.features.demo.presentation.components.BunnyControlPanelController;
 import crab.features.demo.presentation.components.DemoNavigatorController;
+import crab.features.demo.presentation.components.ShadertoyBackgroundView;
 import crab.features.demo.presentation.components.StylizedPhongMaterialController;
 import crab.platform.javafx3d.GltfMeshLoader;
 import javafx.fxml.FXMLLoader;
@@ -22,7 +23,10 @@ import javafx.scene.shape.MeshView;
 import javafx.scene.transform.Rotate;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.net.URL;
+import java.util.Objects;
 
 import static com.almasb.fxgl.dsl.FXGL.getGameScene;
 
@@ -50,6 +54,7 @@ public final class BunnyDemoScreen implements GameScreen {
     private final Rotate bunnyPitch = new Rotate(-12, Rotate.X_AXIS);
     private final Rotate bunnyRoll = new Rotate(0, Rotate.Z_AXIS);
     private final StylizedPhongMaterialController materialController = new StylizedPhongMaterialController();
+    private ShadertoyBackgroundView shaderBackground;
     private Node modelPanel;
     private Parent controlPanel;
     private Parent navigator;
@@ -101,10 +106,27 @@ public final class BunnyDemoScreen implements GameScreen {
             getGameScene().removeUINode(navigator);
             navigator = null;
         }
+
+        if (shaderBackground != null) {
+            shaderBackground.dispose();
+            shaderBackground = null;
+        }
+    }
+
+    @Override
+    public void update(double tpf) {
+        if (visible && shaderBackground != null) {
+            shaderBackground.update(tpf);
+        }
     }
 
     private Node createModelPanel() {
         Node bunny = createBunnyModel();
+        shaderBackground = new ShadertoyBackgroundView(
+                (int) APP_WIDTH,
+                (int) APP_HEIGHT,
+                loadShader("/assets/shaders/stylized_shoreline.frag")
+        );
 
         AmbientLight ambientLight = new AmbientLight(Color.rgb(72, 92, 116, 0.72));
 
@@ -122,7 +144,7 @@ public final class BunnyDemoScreen implements GameScreen {
         world3d.setDepthTest(DepthTest.ENABLE);
 
         SubScene subScene = new SubScene(world3d, PANEL_WIDTH, PANEL_HEIGHT, true, null);
-        subScene.setFill(Color.rgb(26, 34, 46));
+        subScene.setFill(Color.TRANSPARENT);
 
         PerspectiveCamera camera = new PerspectiveCamera(true);
         camera.setTranslateX(MODEL_CENTER_X);
@@ -131,10 +153,11 @@ public final class BunnyDemoScreen implements GameScreen {
         camera.setNearClip(0.1);
         camera.setFarClip(1400);
         subScene.setCamera(camera);
-
         subScene.setTranslateX((APP_WIDTH - PANEL_WIDTH) / 2.0);
         subScene.setTranslateY((APP_HEIGHT - PANEL_HEIGHT) / 2.0);
-        return subScene;
+
+        Group panel = new Group(shaderBackground, subScene);
+        return panel;
     }
 
     private Node createBunnyModel() {
@@ -181,6 +204,11 @@ public final class BunnyDemoScreen implements GameScreen {
             controller.setPitchConsumer(bunnyPitch::setAngle);
             controller.setRollConsumer(bunnyRoll::setAngle);
             controller.setToonParameterConsumer(materialController::update);
+            controller.setWaveSpeedConsumer(shaderBackground::setWaveSpeed);
+            controller.setWaveHeightConsumer(shaderBackground::setWaveHeight);
+            controller.setFoamConsumer(shaderBackground::setFoamAmount);
+            controller.setShoreConsumer(shaderBackground::setShoreOffset);
+            controller.setChromaticConsumer(shaderBackground::setChromaticAmount);
             root.setTranslateX(32);
             root.setTranslateY(32);
             return root;
@@ -213,6 +241,15 @@ public final class BunnyDemoScreen implements GameScreen {
             Label fallback = new Label("Navigator load failed: " + exception.getMessage());
             fallback.setTextFill(Color.WHITE);
             return fallback;
+        }
+    }
+
+    private String loadShader(String path) {
+        try (var input = getClass().getResourceAsStream(path)) {
+            Objects.requireNonNull(input, "Missing " + path);
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Unable to load shader: " + path, exception);
         }
     }
 }
