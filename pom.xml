@@ -11,10 +11,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <junit.version>5.10.2</junit.version>
-        <fxgl.version>17.3</fxgl.version>
-        <javafx.version>21.0.2</javafx.version>
+        <fxgl.version>25.0.1</fxgl.version>
+        <javafx.version>25.0.1</javafx.version>
     </properties>
 
     <dependencies>
@@ -71,16 +71,16 @@
                 <version>3.5.0</version>
                 <executions>
                     <execution>
-                        <id>enforce-java-17-runtime</id>
+                        <id>enforce-java-25-runtime</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>[17,18)</version>
+                                    <version>[25,26)</version>
                                     <message>
-                                        Crab Inc. currently runs on Java 17. Configure IntelliJ and Maven to use JDK 17, not JDK 24.
+                                        Crab Inc. currently runs on Java 25 for FXGL 25 shader support. Configure IntelliJ and Maven to use JDK 25.
                                     </message>
                                 </requireJavaVersion>
                             </rules>

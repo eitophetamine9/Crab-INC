@@ -43,14 +43,14 @@ The current scaffold proves:
 - end-game reports
 
 ## Planned Technologies
-- Java 17
-- FXGL 17.3
-- JavaFX 21.0.2 / FXML
+- Java 25
+- FXGL 25.0.1
+- JavaFX 25.0.1 / FXML
 - Maven
 - Future local networking through Java sockets or a project-owned transport adapter
 
 ## Run
-Use JDK 17 for Maven and IntelliJ.
+Use JDK 25 for Maven and IntelliJ.
 
 Use the shared IntelliJ run configuration:
 
@@ -62,7 +62,7 @@ Or run from terminal:
 ./mvnw javafx:run
 ```
 
-If IntelliJ logs `J:24` or crashes with `NSTrackingRectTag`, the IDE is running the game with JDK 24. Set the project SDK and Maven runner JRE to the installed JDK 17.
+If Maven reports that the project requires Java 25, set the project SDK and Maven runner JRE to an installed JDK 25.
 
 ## Evaluation Criteria Mapping
 - **OOP:** Use small classes with clear responsibilities and Doxygen class comments for intentional patterns/SOLID usage.
