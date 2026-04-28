@@ -6,6 +6,7 @@ import crab.features.demo.presentation.components.BunnyControlPanelController;
 import crab.features.demo.presentation.components.DemoNavigatorController;
 import crab.features.demo.presentation.components.ShadertoyBackgroundView;
 import crab.features.demo.presentation.components.StylizedPhongMaterialController;
+import crab.features.menu.presentation.screens.MainMenuScreen;
 import crab.platform.javafx3d.GltfMeshLoader;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.AmbientLight;
@@ -231,10 +232,11 @@ public final class BunnyDemoScreen implements GameScreen {
             DemoNavigatorController controller = loader.getController();
             controller.setNavigationActions(
                     () -> screens.show(BoxDemoScreen.ID),
-                    () -> screens.show(BunnyDemoScreen.ID)
+                    () -> screens.show(BunnyDemoScreen.ID),
+                    () -> screens.show(MainMenuScreen.ID)
             );
             controller.setActiveScreen(ID);
-            root.setTranslateX((APP_WIDTH - 272) / 2.0);
+            root.setTranslateX((APP_WIDTH - 404) / 2.0);
             root.setTranslateY(APP_HEIGHT - 72);
             return root;
         } catch (IOException exception) {

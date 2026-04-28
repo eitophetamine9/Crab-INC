@@ -5,6 +5,11 @@ import crab.appcore.context.GameContext;
 import crab.appcore.context.ModuleRegistry;
 import crab.appcore.screen.ScreenManager;
 import crab.features.demo.DemoModule;
+import crab.features.menu.MenuModule;
+import crab.features.menu.presentation.screens.LoginScreen;
+import javafx.scene.Cursor;
+
+import static com.almasb.fxgl.dsl.FXGL.getGameScene;
 
 /**
  * Builds the project-owned application foundation on top of FXGL.
@@ -35,6 +40,7 @@ public final class Bootstrap {
     public void initializeGame() {
         if (!modulesInitialized) {
             context.register(ScreenManager.class, screens);
+            modules.register(new MenuModule());
             modules.register(new DemoModule());
             modules.initialize(context);
             modulesInitialized = true;
@@ -45,8 +51,9 @@ public final class Bootstrap {
 
     public void initializeUi() {
         modules.initializeUi();
+        getGameScene().setCursor(Cursor.DEFAULT);
         if (screens.currentId().isEmpty()) {
-            screens.show("demo_box");
+            screens.show(LoginScreen.ID);
         }
     }
 

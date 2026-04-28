@@ -4,6 +4,7 @@ import com.almasb.fxgl.entity.Entity;
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
 import crab.features.demo.presentation.components.DemoNavigatorController;
+import crab.features.menu.presentation.screens.MainMenuScreen;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.input.KeyCode;
 import javafx.scene.Parent;
@@ -95,10 +96,11 @@ public final class BoxDemoScreen implements GameScreen {
             DemoNavigatorController controller = loader.getController();
             controller.setNavigationActions(
                     () -> screens.show(BoxDemoScreen.ID),
-                    () -> screens.show(BunnyDemoScreen.ID)
+                    () -> screens.show(BunnyDemoScreen.ID),
+                    () -> screens.show(MainMenuScreen.ID)
             );
             controller.setActiveScreen(ID);
-            root.setTranslateX((APP_WIDTH - 272) / 2.0);
+            root.setTranslateX((APP_WIDTH - 404) / 2.0);
             root.setTranslateY(APP_HEIGHT - 72);
             return root;
         } catch (IOException exception) {

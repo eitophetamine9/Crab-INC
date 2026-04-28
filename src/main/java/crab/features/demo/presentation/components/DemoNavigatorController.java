@@ -19,20 +19,26 @@ public final class DemoNavigatorController {
     private Button boxButton;
     @FXML
     private Button bunnyButton;
+    @FXML
+    private Button menuButton;
 
     private Runnable showBoxAction = () -> {
     };
     private Runnable showBunnyAction = () -> {
     };
+    private Runnable showMenuAction = () -> {
+    };
 
-    public void setNavigationActions(Runnable onShowBox, Runnable onShowBunny) {
+    public void setNavigationActions(Runnable onShowBox, Runnable onShowBunny, Runnable onShowMenu) {
         showBoxAction = onShowBox;
         showBunnyAction = onShowBunny;
+        showMenuAction = onShowMenu;
     }
 
     public void setActiveScreen(String screenId) {
         boxButton.setDisable(BoxDemoScreen.ID.equals(screenId));
         bunnyButton.setDisable(BunnyDemoScreen.ID.equals(screenId));
+        menuButton.setDisable(false);
     }
 
     @FXML
@@ -43,5 +49,10 @@ public final class DemoNavigatorController {
     @FXML
     private void showBunny() {
         showBunnyAction.run();
+    }
+
+    @FXML
+    private void showMenu() {
+        showMenuAction.run();
     }
 }
