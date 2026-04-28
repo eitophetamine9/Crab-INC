@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20.0" prefHeight="400.0" prefWidth="600.0"
+      style="-fx-background-color: #1a3a4a;" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.crabinc.controllers.LoginController">
+
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <Label text="CRAB INC." textFill="#ecf0f1">
+        <font>
+            <Font name="System Bold" size="36.0" />
+        </font>
+    </Label>
+
+    <Label text="Log in to start your climb to the top!" textFill="#bdc3c7" />
+
+    <VBox maxWidth="300.0" spacing="10.0">
+        <TextField fx:id="usernameField" promptText="Username"
+                   style="-fx-padding: 10; -fx-background-radius: 5;" />
+        <PasswordField fx:id="passwordField" promptText="Password"
+                       style="-fx-padding: 10; -fx-background-radius: 5;" />
+    </VBox>
+
+    <Button fx:id="btnLogin" onAction="#handleLogin" prefWidth="150.0" text="LOGIN"
+            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10; -fx-cursor: hand;" />
+
+    <Label fx:id="errorLabel" textFill="#e74c3c" />
+
+</VBox>
