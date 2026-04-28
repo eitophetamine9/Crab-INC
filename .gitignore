@@ -25,6 +25,7 @@ system/
 # Local planning / scratch docs
 TMPREADME.md
 docs/superpowers/
+.superpowers
 
 # Local coding-agent guidance
 .agent/
