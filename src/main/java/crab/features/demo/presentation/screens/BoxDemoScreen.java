@@ -32,6 +32,7 @@ public final class BoxDemoScreen implements GameScreen {
     public static final String ID = "demo_box";
     private static final double APP_WIDTH = 1024;
     private static final double APP_HEIGHT = 720;
+    private static final double NAVIGATOR_WIDTH = 548;
     private static final double BOX_SIZE = 96;
 
     private final ScreenManager screens;
@@ -97,10 +98,11 @@ public final class BoxDemoScreen implements GameScreen {
             controller.setNavigationActions(
                     () -> screens.show(BoxDemoScreen.ID),
                     () -> screens.show(BunnyDemoScreen.ID),
+                    () -> screens.show(CrabDemoScreen.ID),
                     () -> screens.show(MainMenuScreen.ID)
             );
             controller.setActiveScreen(ID);
-            root.setTranslateX((APP_WIDTH - 404) / 2.0);
+            root.setTranslateX((APP_WIDTH - NAVIGATOR_WIDTH) / 2.0);
             root.setTranslateY(APP_HEIGHT - 72);
             return root;
         } catch (IOException exception) {

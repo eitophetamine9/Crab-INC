@@ -47,6 +47,10 @@ public final class ShadertoyBackgroundView extends Group {
     private GLImageView shaderView;
 
     public ShadertoyBackgroundView(int width, int height, String fragmentShader) {
+        this(width, height, fragmentShader, false);
+    }
+
+    public ShadertoyBackgroundView(int width, int height, String fragmentShader, boolean imageBackedOnly) {
         this.fallbackWidth = Math.max(1, width / FALLBACK_SCALE);
         this.fallbackHeight = Math.max(1, height / FALLBACK_SCALE);
         this.fallbackPixels = ByteBuffer
@@ -66,7 +70,23 @@ public final class ShadertoyBackgroundView extends Group {
         fallbackView.setFitHeight(height);
         fallbackView.setSmooth(true);
 
-        if (Platform.get() == Platform.WINDOWS) {
+        if (imageBackedOnly) {
+            if (Platform.get() == Platform.MAC) {
+                metalRenderer = MetalShorelineRenderer.create(fallbackWidth, fallbackHeight, fallbackPixels).orElse(null);
+                if (metalRenderer != null) {
+                    LOG.info("Shoreline renderer selected: native Metal GPU compute renderer for image-backed texture");
+                } else {
+                    LOG.warning("Shoreline renderer selected: Java PixelBuffer CPU fallback for image-backed texture because Metal renderer is unavailable");
+                }
+            } else {
+                LOG.infof(
+                        "Shoreline renderer selected: Java PixelBuffer CPU fallback for image-backed texture on %s",
+                        Platform.get()
+                );
+            }
+
+            installFallback();
+        } else if (Platform.get() == Platform.WINDOWS) {
             try {
                 shaderView = new GLImageView(width, height, fragmentShader);
                 applyShaderUniforms();
@@ -92,6 +112,10 @@ public final class ShadertoyBackgroundView extends Group {
             );
             installFallback();
         }
+    }
+
+    public WritableImage textureImage() {
+        return fallbackImage;
     }
 
     public void setWaveSpeed(double value) {

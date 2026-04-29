@@ -4,6 +4,7 @@ import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
 import crab.features.demo.presentation.screens.BoxDemoScreen;
 import crab.features.demo.presentation.screens.BunnyDemoScreen;
+import crab.features.demo.presentation.screens.CrabDemoScreen;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -78,13 +79,14 @@ public final class MainMenuScreen implements GameScreen {
 
         Button redSquare = menuButton("Red Square", () -> screens.show(BoxDemoScreen.ID), "#14b8a6");
         Button bunny = menuButton("Bunny Shader Demo", () -> screens.show(BunnyDemoScreen.ID), "#0ea5e9");
+        Button crab = menuButton("Crab Model Demo", () -> screens.show(CrabDemoScreen.ID), "#e11d48");
         Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "#64748b");
         Button exit = menuButton("Exit", () -> getGameController().exit(), "#475569");
 
         HBox secondaryActions = new HBox(12, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
-        VBox menu = new VBox(16, title, subtitle, redSquare, bunny, secondaryActions);
+        VBox menu = new VBox(16, title, subtitle, redSquare, bunny, crab, secondaryActions);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(44));
         menu.setPrefWidth(PANEL_WIDTH);
@@ -97,7 +99,7 @@ public final class MainMenuScreen implements GameScreen {
                 -fx-border-width: 1;
                 """);
         menu.setTranslateX((APP_WIDTH - PANEL_WIDTH) / 2.0);
-        menu.setTranslateY((APP_HEIGHT - 360) / 2.0);
+        menu.setTranslateY((APP_HEIGHT - 420) / 2.0);
         return menu;
     }
 

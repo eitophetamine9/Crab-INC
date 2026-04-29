@@ -7,4 +7,5 @@
     <Button fx:id="menuButton" mnemonicParsing="false" onAction="#showMenu" prefWidth="120" text="Main Menu" />
     <Button fx:id="boxButton" mnemonicParsing="false" onAction="#showBox" prefWidth="120" text="Red Square" />
     <Button fx:id="bunnyButton" mnemonicParsing="false" onAction="#showBunny" prefWidth="120" text="Bunny" />
+    <Button fx:id="crabButton" mnemonicParsing="false" onAction="#showCrab" prefWidth="120" text="Crab" />
 </HBox>

@@ -47,6 +47,7 @@ public final class BunnyDemoScreen implements GameScreen {
     private static final double PANEL_HEIGHT = 560;
     private static final double APP_WIDTH = 1024;
     private static final double APP_HEIGHT = 720;
+    private static final double NAVIGATOR_WIDTH = 548;
     private static final double MODEL_CENTER_X = PANEL_WIDTH / 2.0;
     private static final double MODEL_CENTER_Y = PANEL_HEIGHT / 2.0;
     private final ScreenManager screens;
@@ -233,10 +234,11 @@ public final class BunnyDemoScreen implements GameScreen {
             controller.setNavigationActions(
                     () -> screens.show(BoxDemoScreen.ID),
                     () -> screens.show(BunnyDemoScreen.ID),
+                    () -> screens.show(CrabDemoScreen.ID),
                     () -> screens.show(MainMenuScreen.ID)
             );
             controller.setActiveScreen(ID);
-            root.setTranslateX((APP_WIDTH - 404) / 2.0);
+            root.setTranslateX((APP_WIDTH - NAVIGATOR_WIDTH) / 2.0);
             root.setTranslateY(APP_HEIGHT - 72);
             return root;
         } catch (IOException exception) {

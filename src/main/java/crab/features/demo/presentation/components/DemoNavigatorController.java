@@ -2,6 +2,7 @@ package crab.features.demo.presentation.components;
 
 import crab.features.demo.presentation.screens.BoxDemoScreen;
 import crab.features.demo.presentation.screens.BunnyDemoScreen;
+import crab.features.demo.presentation.screens.CrabDemoScreen;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 
@@ -20,24 +21,30 @@ public final class DemoNavigatorController {
     @FXML
     private Button bunnyButton;
     @FXML
+    private Button crabButton;
+    @FXML
     private Button menuButton;
 
     private Runnable showBoxAction = () -> {
     };
     private Runnable showBunnyAction = () -> {
     };
+    private Runnable showCrabAction = () -> {
+    };
     private Runnable showMenuAction = () -> {
     };
 
-    public void setNavigationActions(Runnable onShowBox, Runnable onShowBunny, Runnable onShowMenu) {
+    public void setNavigationActions(Runnable onShowBox, Runnable onShowBunny, Runnable onShowCrab, Runnable onShowMenu) {
         showBoxAction = onShowBox;
         showBunnyAction = onShowBunny;
+        showCrabAction = onShowCrab;
         showMenuAction = onShowMenu;
     }
 
     public void setActiveScreen(String screenId) {
         boxButton.setDisable(BoxDemoScreen.ID.equals(screenId));
         bunnyButton.setDisable(BunnyDemoScreen.ID.equals(screenId));
+        crabButton.setDisable(CrabDemoScreen.ID.equals(screenId));
         menuButton.setDisable(false);
     }
 
@@ -49,6 +56,11 @@ public final class DemoNavigatorController {
     @FXML
     private void showBunny() {
         showBunnyAction.run();
+    }
+
+    @FXML
+    private void showCrab() {
+        showCrabAction.run();
     }
 
     @FXML

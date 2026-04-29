@@ -5,6 +5,7 @@ import crab.appcore.context.GameModule;
 import crab.appcore.screen.ScreenManager;
 import crab.features.demo.presentation.screens.BoxDemoScreen;
 import crab.features.demo.presentation.screens.BunnyDemoScreen;
+import crab.features.demo.presentation.screens.CrabDemoScreen;
 import javafx.scene.input.KeyCode;
 
 import static com.almasb.fxgl.dsl.FXGL.onKey;
@@ -28,6 +29,7 @@ public final class DemoModule implements GameModule {
         screens = context.require(ScreenManager.class);
         screens.register(new BoxDemoScreen(screens));
         screens.register(new BunnyDemoScreen(screens));
+        screens.register(new CrabDemoScreen(screens));
     }
 
     @Override
@@ -51,5 +53,6 @@ public final class DemoModule implements GameModule {
         navigationBound = true;
         onKey(KeyCode.DIGIT1, () -> screens.show(BoxDemoScreen.ID));
         onKey(KeyCode.DIGIT2, () -> screens.show(BunnyDemoScreen.ID));
+        onKey(KeyCode.DIGIT3, () -> screens.show(CrabDemoScreen.ID));
     }
 }

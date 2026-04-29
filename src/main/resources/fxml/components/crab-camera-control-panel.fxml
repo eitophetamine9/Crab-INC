@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox prefWidth="320" spacing="8" style="-fx-background-color: rgba(245, 248, 252, 0.94); -fx-background-radius: 8; -fx-padding: 16;" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.12" fx:controller="crab.features.demo.presentation.components.CrabCameraControlPanelController">
+    <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #111827;" text="Cangrejo Demo" />
+    <Label style="-fx-text-fill: #374151; -fx-wrap-text: true;" text="Imported OBJ on a flat battlefield plane." />
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #111827; -fx-padding: 8 0 0 0;" text="Camera Position" />
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="X" />
+        <Slider fx:id="xSlider" blockIncrement="12" majorTickUnit="300" max="420" min="-420" prefWidth="184" showTickMarks="true" value="0" />
+        <Label fx:id="xValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Y" />
+        <Slider fx:id="ySlider" blockIncrement="24" majorTickUnit="240" max="-300" min="-1100" prefWidth="184" showTickMarks="true" value="-760" />
+        <Label fx:id="yValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="-760" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Z" />
+        <Slider fx:id="zSlider" blockIncrement="12" majorTickUnit="300" max="420" min="-420" prefWidth="184" showTickMarks="true" value="-20" />
+        <Label fx:id="zValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="-20" />
+    </HBox>
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #111827; -fx-padding: 8 0 0 0;" text="Camera Rotation" />
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Pitch" />
+        <Slider fx:id="pitchSlider" blockIncrement="2" majorTickUnit="30" max="-45" min="-90" prefWidth="184" showTickMarks="true" value="-90" />
+        <Label fx:id="pitchValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="-90°" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Yaw" />
+        <Slider fx:id="yawSlider" blockIncrement="5" majorTickUnit="90" max="180" min="-180" prefWidth="184" showTickMarks="true" value="0" />
+        <Label fx:id="yawValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0°" />
+    </HBox>
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #111827; -fx-padding: 8 0 0 0;" text="Battlefield" />
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Scale" />
+        <Slider fx:id="battlefieldScaleSlider" blockIncrement="0.1" majorTickUnit="1" max="6" min="0.5" prefWidth="184" showTickMarks="true" value="1" />
+        <Label fx:id="battlefieldScaleValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="1.00x" />
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+        <Label minWidth="42" style="-fx-text-fill: #374151;" text="Ambient" />
+        <Slider fx:id="battlefieldAmbientSlider" blockIncrement="0.05" majorTickUnit="0.25" max="1" min="0" prefWidth="184" showTickMarks="true" value="0.82" />
+        <Label fx:id="battlefieldAmbientValueLabel" minWidth="42" style="-fx-font-family: monospace; -fx-text-fill: #111827;" text="0.82" />
+    </HBox>
+    <Label style="-fx-text-fill: #4b5563; -fx-wrap-text: true;" text="WASD or arrow keys pan across the plane. Sliders are synced when the camera moves." />
+</VBox>
