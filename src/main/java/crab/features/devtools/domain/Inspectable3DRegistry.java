@@ -11,7 +11,8 @@ public final class Inspectable3DRegistry {
     private final List<Inspectable3D> items = new ArrayList<>();
 
     public void register(Inspectable3D item) {
-        items.removeIf(existing -> existing.id().equals(item.id()) && existing.screenId().equals(item.screenId()));
+        items.removeIf(existing -> existing.screenId().equals(item.screenId())
+                && (existing.id().equals(item.id()) || existing.target() == item.target()));
         items.add(item);
     }
 
@@ -19,9 +20,7 @@ public final class Inspectable3DRegistry {
         Node current = node;
         while (current != null) {
             Node candidate = current;
-            Optional<Inspectable3D> match = items.stream()
-                    .filter(item -> item.target() == candidate)
-                    .findFirst();
+            Optional<Inspectable3D> match = findExactForNode(candidate);
             if (match.isPresent()) {
                 return match;
             }
@@ -30,6 +29,12 @@ public final class Inspectable3DRegistry {
         }
 
         return Optional.empty();
+    }
+
+    public Optional<Inspectable3D> findExactForNode(Node node) {
+        return items.stream()
+                .filter(item -> item.target() == node)
+                .findFirst();
     }
 
     public List<Inspectable3D> items() {

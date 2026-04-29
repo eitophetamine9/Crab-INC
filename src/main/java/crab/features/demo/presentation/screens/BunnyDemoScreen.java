@@ -2,6 +2,8 @@ package crab.features.demo.presentation.screens;
 
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
+import crab.features.devtools.DevToolsModule;
+import crab.features.devtools.domain.Inspectable3D;
 import crab.features.demo.presentation.components.BunnyControlPanelController;
 import crab.features.demo.presentation.components.DemoNavigatorController;
 import crab.features.demo.presentation.components.ShadertoyBackgroundView;
@@ -51,6 +53,7 @@ public final class BunnyDemoScreen implements GameScreen {
     private static final double MODEL_CENTER_X = PANEL_WIDTH / 2.0;
     private static final double MODEL_CENTER_Y = PANEL_HEIGHT / 2.0;
     private final ScreenManager screens;
+    private final DevToolsModule devTools;
     private final Rotate bunnyImportCorrection = new Rotate(90, Rotate.X_AXIS);
     private final Rotate bunnyYaw = new Rotate(0, Rotate.Y_AXIS);
     private final Rotate bunnyPitch = new Rotate(-12, Rotate.X_AXIS);
@@ -58,12 +61,14 @@ public final class BunnyDemoScreen implements GameScreen {
     private final StylizedPhongMaterialController materialController = new StylizedPhongMaterialController();
     private ShadertoyBackgroundView shaderBackground;
     private Node modelPanel;
+    private Node bunnyNode;
     private Parent controlPanel;
     private Parent navigator;
     private boolean visible;
 
-    public BunnyDemoScreen(ScreenManager screens) {
+    public BunnyDemoScreen(ScreenManager screens, DevToolsModule devTools) {
         this.screens = screens;
+        this.devTools = devTools;
     }
 
     @Override
@@ -113,6 +118,10 @@ public final class BunnyDemoScreen implements GameScreen {
             shaderBackground.dispose();
             shaderBackground = null;
         }
+
+        if (devTools != null) {
+            devTools.clearScope(ID);
+        }
     }
 
     @Override
@@ -157,6 +166,7 @@ public final class BunnyDemoScreen implements GameScreen {
         subScene.setCamera(camera);
         subScene.setTranslateX((APP_WIDTH - PANEL_WIDTH) / 2.0);
         subScene.setTranslateY((APP_HEIGHT - PANEL_HEIGHT) / 2.0);
+        registerDevTools(subScene, bunny, camera, ambientLight, keyLight, specularLight);
 
         Group panel = new Group(shaderBackground, subScene);
         return panel;
@@ -179,6 +189,7 @@ public final class BunnyDemoScreen implements GameScreen {
             Group bunnyPivot = new Group(bunnyModel);
             bunnyPivot.setTranslateX(MODEL_CENTER_X);
             bunnyPivot.setTranslateY(MODEL_CENTER_Y);
+            bunnyNode = bunnyPivot;
             return bunnyPivot;
         } catch (IOException | RuntimeException exception) {
             Label fallback = new Label("Bunny load failed: " + exception.getMessage());
@@ -206,11 +217,7 @@ public final class BunnyDemoScreen implements GameScreen {
             controller.setPitchConsumer(bunnyPitch::setAngle);
             controller.setRollConsumer(bunnyRoll::setAngle);
             controller.setToonParameterConsumer(materialController::update);
-            controller.setWaveSpeedConsumer(shaderBackground::setWaveSpeed);
-            controller.setWaveHeightConsumer(shaderBackground::setWaveHeight);
-            controller.setFoamConsumer(shaderBackground::setFoamAmount);
-            controller.setShoreConsumer(shaderBackground::setShoreOffset);
-            controller.setChromaticConsumer(shaderBackground::setChromaticAmount);
+            controller.bindShaderParameters(shaderBackground);
             root.setTranslateX(32);
             root.setTranslateY(32);
             return root;
@@ -255,5 +262,32 @@ public final class BunnyDemoScreen implements GameScreen {
         } catch (IOException exception) {
             throw new UncheckedIOException("Unable to load shader: " + path, exception);
         }
+    }
+
+    private void registerDevTools(
+            SubScene subScene,
+            Node bunny,
+            PerspectiveCamera camera,
+            AmbientLight ambientLight,
+            PointLight keyLight,
+            PointLight specularLight
+    ) {
+        if (devTools == null) {
+            return;
+        }
+
+        devTools.attachSubScene(ID, subScene, 0);
+        devTools.registerInspectable(Inspectable3D.forNodeWithGroups(
+                "bunny.world",
+                "Bunny World",
+                ID,
+                subScene.getRoot(),
+                shaderBackground.parameterGroups()
+        ));
+        devTools.registerInspectable(Inspectable3D.forNode("bunny.model", "Stanford Bunny", ID, bunny));
+        devTools.registerInspectable(Inspectable3D.forNode("bunny.camera", "Bunny Camera", ID, camera));
+        devTools.registerInspectable(Inspectable3D.forNode("bunny.ambient", "Ambient Light", ID, ambientLight));
+        devTools.registerInspectable(Inspectable3D.forNode("bunny.light.key", "Key Light", ID, keyLight));
+        devTools.registerInspectable(Inspectable3D.forNode("bunny.light.specular", "Specular Light", ID, specularLight));
     }
 }

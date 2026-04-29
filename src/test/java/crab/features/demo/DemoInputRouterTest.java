@@ -4,6 +4,8 @@ import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 final class DemoInputRouterTest {
@@ -28,6 +30,22 @@ final class DemoInputRouterTest {
         assertEquals(0, box.upCount);
         assertEquals(0, crab.rightCount);
         assertEquals(1, crab.upCount);
+    }
+
+    @Test
+    void ignoresMovementWhileDevModeOwnsInput() {
+        ScreenManager screens = new ScreenManager();
+        FakeScreen box = new FakeScreen("box");
+        screens.register(box);
+        AtomicBoolean devModeActive = new AtomicBoolean(true);
+
+        DemoInputRouter router = new DemoInputRouter(screens, () -> !devModeActive.get());
+        router.register(box.id(), box);
+
+        screens.show(box.id());
+        router.moveRight();
+
+        assertEquals(0, box.rightCount);
     }
 
     private static final class FakeScreen implements GameScreen, DemoDirectionalControls {

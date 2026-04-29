@@ -10,18 +10,19 @@ public record Inspectable3D(
         String name,
         String screenId,
         Node target,
-        List<DebugParameter> debugParameters
+        List<DebugParameterGroup> debugParameterGroups,
+        boolean persistent
 ) {
     public Inspectable3D {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(screenId, "screenId");
         Objects.requireNonNull(target, "target");
-        debugParameters = List.copyOf(Objects.requireNonNull(debugParameters, "debugParameters"));
+        debugParameterGroups = List.copyOf(Objects.requireNonNull(debugParameterGroups, "debugParameterGroups"));
     }
 
     public static Inspectable3D forNode(String id, String name, String screenId, Node target) {
-        return new Inspectable3D(id, name, screenId, target, List.of());
+        return new Inspectable3D(id, name, screenId, target, List.of(), true);
     }
 
     public static Inspectable3D forNode(
@@ -31,7 +32,34 @@ public record Inspectable3D(
             Node target,
             List<DebugParameter> debugParameters
     ) {
-        return new Inspectable3D(id, name, screenId, target, debugParameters);
+        return new Inspectable3D(id, name, screenId, target, List.of(new DebugParameterGroup("Debug Parameters", debugParameters)), true);
+    }
+
+    public static Inspectable3D forNodeWithGroups(
+            String id,
+            String name,
+            String screenId,
+            Node target,
+            List<DebugParameterGroup> debugParameterGroups
+    ) {
+        return new Inspectable3D(id, name, screenId, target, debugParameterGroups, true);
+    }
+
+    public static Inspectable3D temporaryForNode(String screenId, Node target) {
+        return new Inspectable3D(
+                "node." + Integer.toHexString(System.identityHashCode(target)),
+                target.getClass().getSimpleName(),
+                screenId,
+                target,
+                List.of(),
+                false
+        );
+    }
+
+    public List<DebugParameter> debugParameters() {
+        return debugParameterGroups.stream()
+                .flatMap(group -> group.parameters().stream())
+                .toList();
     }
 
     @Override
