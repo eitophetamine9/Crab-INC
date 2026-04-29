@@ -9,7 +9,6 @@ import crab.features.devtools.domain.DebugParameterGroup;
 import crab.features.devtools.domain.Inspectable3D;
 import crab.features.demo.DemoDirectionalControls;
 import crab.features.demo.presentation.components.BattlefieldLighting;
-import crab.features.demo.presentation.components.CrabCameraControlPanelController;
 import crab.features.demo.presentation.components.DemoNavigatorController;
 import crab.features.demo.presentation.components.ShadertoyBackgroundView;
 import crab.features.demo.presentation.components.ShaderTexturedPlane;
@@ -62,9 +61,7 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
     private PointLight fillLight;
     private Node crabModel;
     private PerspectiveCamera camera;
-    private CrabCameraControlPanelController cameraControls;
     private Node sceneRoot;
-    private Parent controlPanel;
     private Parent navigator;
     private boolean visible;
 
@@ -87,10 +84,8 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         visible = true;
         getGameScene().setBackgroundColor(Color.rgb(11, 19, 27));
         sceneRoot = createSceneRoot();
-        controlPanel = loadControlPanel();
         navigator = loadNavigator();
         getGameScene().addUINode(sceneRoot);
-        getGameScene().addUINode(controlPanel);
         getGameScene().addUINode(navigator);
     }
 
@@ -104,12 +99,6 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         if (sceneRoot != null) {
             getGameScene().removeUINode(sceneRoot);
             sceneRoot = null;
-        }
-
-        if (controlPanel != null) {
-            getGameScene().removeUINode(controlPanel);
-            controlPanel = null;
-            cameraControls = null;
         }
 
         if (navigator != null) {
@@ -220,33 +209,6 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         return perspectiveCamera;
     }
 
-    private Parent loadControlPanel() {
-        URL resource = getClass().getResource("/fxml/components/crab-camera-control-panel.fxml");
-        if (resource == null) {
-            return new Label("Missing /fxml/components/crab-camera-control-panel.fxml");
-        }
-
-        try {
-            FXMLLoader loader = new FXMLLoader(resource);
-            Parent root = loader.load();
-            cameraControls = loader.getController();
-            cameraControls.setXConsumer(this::setCameraX);
-            cameraControls.setYConsumer(this::setCameraY);
-            cameraControls.setZConsumer(this::setCameraZ);
-            cameraControls.setPitchConsumer(this::setCameraPitch);
-            cameraControls.setYawConsumer(this::setCameraYaw);
-            cameraControls.setBattlefieldScaleConsumer(this::setBattlefieldScale);
-            cameraControls.setBattlefieldAmbientConsumer(this::setBattlefieldAmbient);
-            root.setTranslateX(32);
-            root.setTranslateY(32);
-            return root;
-        } catch (IOException exception) {
-            Label fallback = new Label("Camera panel load failed: " + exception.getMessage());
-            fallback.setTextFill(Color.WHITE);
-            return fallback;
-        }
-    }
-
     private Parent loadNavigator() {
         URL resource = getClass().getResource("/fxml/components/demo-navigator.fxml");
         if (resource == null) {
@@ -311,9 +273,6 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         camera.setTranslateX(value);
-        if (cameraControls != null) {
-            cameraControls.setCameraX(value);
-        }
     }
 
     private void setCameraY(double value) {
@@ -322,9 +281,6 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         camera.setTranslateY(value);
-        if (cameraControls != null) {
-            cameraControls.setCameraY(value);
-        }
     }
 
     private void setCameraZ(double value) {
@@ -333,23 +289,14 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         camera.setTranslateZ(value);
-        if (cameraControls != null) {
-            cameraControls.setCameraZ(value);
-        }
     }
 
     private void setCameraPitch(double value) {
         cameraPitch.setAngle(value);
-        if (cameraControls != null) {
-            cameraControls.setPitch(value);
-        }
     }
 
     private void setCameraYaw(double value) {
         cameraYaw.setAngle(value);
-        if (cameraControls != null) {
-            cameraControls.setYaw(value);
-        }
     }
 
     private void setBattlefieldScale(double scale) {
@@ -359,9 +306,6 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
 
         battlefieldPlane.setScaleX(scale);
         battlefieldPlane.setScaleZ(scale);
-        if (cameraControls != null) {
-            cameraControls.setBattlefieldScale(scale);
-        }
     }
 
     private void setBattlefieldAmbient(double intensity) {
@@ -370,9 +314,6 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         BattlefieldLighting.setAmbientIntensity(battlefieldAmbientLight, intensity);
-        if (cameraControls != null) {
-            cameraControls.setBattlefieldAmbient(intensity);
-        }
     }
 
     private void registerDevTools(SubScene subScene) {
