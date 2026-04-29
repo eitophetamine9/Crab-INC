@@ -2,6 +2,7 @@ package crab.features.devtools;
 
 import crab.appcore.context.GameContext;
 import crab.appcore.context.GameModule;
+import crab.features.devtools.camera.CameraDebugParameters;
 import crab.features.devtools.camera.DebugCameraController;
 import crab.features.devtools.domain.DebugParameterGroup;
 import crab.features.devtools.domain.DebugParameterSource;
@@ -25,7 +26,6 @@ import javafx.scene.Camera;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
 import javafx.scene.control.Label;
@@ -576,7 +576,7 @@ public final class DevToolsModule implements GameModule {
                     "Scene Camera",
                     activeScreenId,
                     sceneCamera,
-                    cameraDebugGroups(activeScreenId + ".camera.scene", sceneCamera)
+                    CameraDebugParameters.groupsFor(activeScreenId + ".camera.scene", sceneCamera)
             ));
         }
 
@@ -602,27 +602,9 @@ public final class DevToolsModule implements GameModule {
         return nodes;
     }
 
-    private static List<DebugParameterGroup> cameraDebugGroups(String idPrefix, Camera camera) {
-        List<crab.features.devtools.domain.DebugParameter> parameters = new ArrayList<>();
-        parameters.add(crab.features.devtools.domain.DebugParameter.number(
-                idPrefix + ".x", "Camera X", "Camera", -5000, 5000, 1, camera::getTranslateX, camera::setTranslateX));
-        parameters.add(crab.features.devtools.domain.DebugParameter.number(
-                idPrefix + ".y", "Camera Y", "Camera", -5000, 5000, 1, camera::getTranslateY, camera::setTranslateY));
-        parameters.add(crab.features.devtools.domain.DebugParameter.number(
-                idPrefix + ".z", "Camera Z", "Camera", -5000, 5000, 1, camera::getTranslateZ, camera::setTranslateZ));
-        if (camera instanceof PerspectiveCamera perspectiveCamera) {
-            parameters.add(crab.features.devtools.domain.DebugParameter.number(
-                    idPrefix + ".fov", "Field of View", "Camera", 1, 120, 0.25,
-                    perspectiveCamera::getFieldOfView,
-                    perspectiveCamera::setFieldOfView
-            ));
-        }
-        return List.of(new DebugParameterGroup("Camera", parameters));
-    }
-
     private static List<DebugParameterGroup> devCameraDebugGroups(String idPrefix, DebugCameraController controller) {
         List<crab.features.devtools.domain.DebugParameter> parameters = new ArrayList<>(
-                cameraDebugGroups(idPrefix, controller.devCamera()).getFirst().parameters()
+                CameraDebugParameters.groupsFor(idPrefix, controller.devCamera()).getFirst().parameters()
         );
         parameters.add(crab.features.devtools.domain.DebugParameter.number(
                 idPrefix + ".yaw", "Yaw", "Camera", -360, 360, 0.25,

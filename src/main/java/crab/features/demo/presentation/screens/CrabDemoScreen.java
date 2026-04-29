@@ -4,6 +4,7 @@ import com.almasb.fxgl.scene3d.Model3D;
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
 import crab.features.devtools.DevToolsModule;
+import crab.features.devtools.camera.CameraDebugParameters;
 import crab.features.devtools.domain.DebugParameter;
 import crab.features.devtools.domain.DebugParameterGroup;
 import crab.features.devtools.domain.Inspectable3D;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -355,13 +357,15 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
     }
 
     private List<DebugParameter> cameraDebugParameters() {
-        return List.of(
+        List<DebugParameter> parameters = new ArrayList<>(List.of(
                 DebugParameter.number("camera.x", "Camera X", "Camera", -420, 420, 1, camera::getTranslateX, this::setCameraX),
                 DebugParameter.number("camera.y", "Camera Y", "Camera", -1200, -120, 1, camera::getTranslateY, this::setCameraY),
                 DebugParameter.number("camera.z", "Camera Z", "Camera", -420, 420, 1, camera::getTranslateZ, this::setCameraZ),
                 DebugParameter.number("camera.pitch", "Pitch", "Camera", -90, -20, 0.25, cameraPitch::getAngle, this::setCameraPitch),
                 DebugParameter.number("camera.yaw", "Yaw", "Camera", -180, 180, 0.25, cameraYaw::getAngle, this::setCameraYaw)
-        );
+        ));
+        parameters.addAll(CameraDebugParameters.perspectiveParameters("camera", camera));
+        return parameters;
     }
 
     private List<DebugParameterGroup> battlefieldDebugParameterGroups() {
