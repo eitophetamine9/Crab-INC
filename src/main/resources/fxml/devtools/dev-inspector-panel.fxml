@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox prefWidth="300" spacing="8" style="-fx-background-color: rgba(15, 23, 42, 0.92); -fx-background-radius: 8; -fx-border-color: rgba(148, 163, 184, 0.45); -fx-border-radius: 8; -fx-padding: 14;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.devtools.presentation.DevInspectorPanelController">
+    <Label text="3D Inspector" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #f8fafc;" />
+    <ComboBox fx:id="objectPicker" prefWidth="272" promptText="Registered objects" />
+    <Label fx:id="nameLabel" style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0;" text="No 3D object selected" />
+    <Label fx:id="typeLabel" style="-fx-text-fill: #94a3b8;" text="Click a registered 3D object" />
+    <Label fx:id="statusLabel" style="-fx-text-fill: #38bdf8;" text="Runtime only" />
+
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0; -fx-padding: 8 0 0 0;" text="Position" />
+    <GridPane hgap="6" vgap="6">
+        <Label style="-fx-text-fill: #cbd5e1;" text="X" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="positionXField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label style="-fx-text-fill: #cbd5e1;" text="Y" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+        <TextField fx:id="positionYField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+        <Label style="-fx-text-fill: #cbd5e1;" text="Z" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+        <TextField fx:id="positionZField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+    </GridPane>
+
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0; -fx-padding: 8 0 0 0;" text="Rotation" />
+    <GridPane hgap="6" vgap="6">
+        <Label style="-fx-text-fill: #cbd5e1;" text="X" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="rotateXField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label style="-fx-text-fill: #cbd5e1;" text="Y" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+        <TextField fx:id="rotateYField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+        <Label style="-fx-text-fill: #cbd5e1;" text="Z" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+        <TextField fx:id="rotateZField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+    </GridPane>
+
+    <Label style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0; -fx-padding: 8 0 0 0;" text="Scale" />
+    <GridPane hgap="6" vgap="6">
+        <Label style="-fx-text-fill: #cbd5e1;" text="X" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="scaleXField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label style="-fx-text-fill: #cbd5e1;" text="Y" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+        <TextField fx:id="scaleYField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+        <Label style="-fx-text-fill: #cbd5e1;" text="Z" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+        <TextField fx:id="scaleZField" onAction="#applyTransform" prefWidth="70" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+    </GridPane>
+
+    <VBox fx:id="debugParametersSection" spacing="6">
+        <Label style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0; -fx-padding: 8 0 0 0;" text="Debug Parameters" />
+        <VBox fx:id="debugParameterRows" spacing="6" />
+    </VBox>
+
+    <VBox fx:id="materialSection" spacing="6">
+        <Label style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0; -fx-padding: 8 0 0 0;" text="Material" />
+        <HBox alignment="CENTER_LEFT" spacing="8">
+            <Label minWidth="70" style="-fx-text-fill: #cbd5e1;" text="Diffuse" />
+            <ColorPicker fx:id="diffuseColorPicker" onAction="#applyMaterialColors" />
+        </HBox>
+        <HBox alignment="CENTER_LEFT" spacing="8">
+            <Label minWidth="70" style="-fx-text-fill: #cbd5e1;" text="Specular" />
+            <ColorPicker fx:id="specularColorPicker" onAction="#applyMaterialColors" />
+        </HBox>
+    </VBox>
+
+    <VBox fx:id="lightSection" spacing="6">
+        <Label style="-fx-font-weight: bold; -fx-text-fill: #e2e8f0; -fx-padding: 8 0 0 0;" text="Light" />
+        <HBox alignment="CENTER_LEFT" spacing="8">
+            <Label minWidth="70" style="-fx-text-fill: #cbd5e1;" text="Color" />
+            <ColorPicker fx:id="lightColorPicker" onAction="#applyLightColor" />
+        </HBox>
+    </VBox>
+</VBox>

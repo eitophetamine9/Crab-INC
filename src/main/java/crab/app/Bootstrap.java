@@ -4,6 +4,7 @@ import com.almasb.fxgl.app.GameSettings;
 import crab.appcore.context.GameContext;
 import crab.appcore.context.ModuleRegistry;
 import crab.appcore.screen.ScreenManager;
+import crab.features.devtools.DevToolsModule;
 import crab.features.demo.DemoModule;
 import crab.features.menu.MenuModule;
 import crab.features.menu.presentation.screens.LoginScreen;
@@ -41,6 +42,7 @@ public final class Bootstrap {
         if (!modulesInitialized) {
             context.register(ScreenManager.class, screens);
             modules.register(new MenuModule());
+            modules.register(new DevToolsModule());
             modules.register(new DemoModule());
             modules.initialize(context);
             modulesInitialized = true;

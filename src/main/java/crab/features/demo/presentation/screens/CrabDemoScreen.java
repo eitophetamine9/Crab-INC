@@ -3,6 +3,10 @@ package crab.features.demo.presentation.screens;
 import com.almasb.fxgl.scene3d.Model3D;
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
+import crab.features.devtools.DevToolsModule;
+import crab.features.devtools.domain.DebugParameter;
+import crab.features.devtools.domain.Inspectable3D;
+import crab.features.demo.DemoDirectionalControls;
 import crab.features.demo.presentation.components.BattlefieldLighting;
 import crab.features.demo.presentation.components.CrabCameraControlPanelController;
 import crab.features.demo.presentation.components.DemoNavigatorController;
@@ -19,7 +23,6 @@ import javafx.scene.PerspectiveCamera;
 import javafx.scene.PointLight;
 import javafx.scene.SubScene;
 import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.MeshView;
@@ -29,16 +32,16 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.net.URL;
+import java.util.List;
 import java.util.Objects;
 
 import static com.almasb.fxgl.dsl.FXGL.getAssetLoader;
 import static com.almasb.fxgl.dsl.FXGL.getGameScene;
-import static com.almasb.fxgl.dsl.FXGL.onKey;
 
 /**
  * Demo screen for viewing the imported Cangrejo OBJ on a flat battlefield plane.
  */
-public final class CrabDemoScreen implements GameScreen {
+public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls {
     public static final String ID = "demo_crab";
 
     private static final double APP_WIDTH = 1024;
@@ -47,21 +50,26 @@ public final class CrabDemoScreen implements GameScreen {
     private static final double CAMERA_STEP = 24;
 
     private final ScreenManager screens;
+    private final DevToolsModule devTools;
     private final Rotate cameraPitch = new Rotate(-90, Rotate.X_AXIS);
     private final Rotate cameraYaw = new Rotate(0, Rotate.Y_AXIS);
     private ShadertoyBackgroundView battlefieldShader;
     private MeshView battlefieldPlane;
     private AmbientLight battlefieldAmbientLight;
+    private AmbientLight ambientLight;
+    private PointLight keyLight;
+    private PointLight fillLight;
+    private Node crabModel;
     private PerspectiveCamera camera;
     private CrabCameraControlPanelController cameraControls;
     private Node sceneRoot;
     private Parent controlPanel;
     private Parent navigator;
-    private boolean controlsBound;
     private boolean visible;
 
-    public CrabDemoScreen(ScreenManager screens) {
+    public CrabDemoScreen(ScreenManager screens, DevToolsModule devTools) {
         this.screens = screens;
+        this.devTools = devTools;
     }
 
     @Override
@@ -83,7 +91,6 @@ public final class CrabDemoScreen implements GameScreen {
         getGameScene().addUINode(sceneRoot);
         getGameScene().addUINode(controlPanel);
         getGameScene().addUINode(navigator);
-        bindControlsOnce();
     }
 
     @Override
@@ -113,6 +120,10 @@ public final class CrabDemoScreen implements GameScreen {
             battlefieldShader.dispose();
             battlefieldShader = null;
         }
+
+        if (devTools != null) {
+            devTools.clearScope(ID);
+        }
     }
 
     @Override
@@ -132,6 +143,7 @@ public final class CrabDemoScreen implements GameScreen {
         subScene.setFill(Color.rgb(24, 42, 52));
         camera = createCamera();
         subScene.setCamera(camera);
+        registerDevTools(subScene);
         return subScene;
     }
 
@@ -166,6 +178,7 @@ public final class CrabDemoScreen implements GameScreen {
             crab.setTranslateX(34);
             crab.setTranslateY(12);
             crab.setTranslateZ(0);
+            crabModel = crab;
             return crab;
         } catch (RuntimeException exception) {
             Label fallback = new Label("Crab OBJ load failed: " + exception.getMessage());
@@ -178,15 +191,15 @@ public final class CrabDemoScreen implements GameScreen {
     }
 
     private Node createLighting() {
-        AmbientLight ambientLight = new AmbientLight(Color.rgb(112, 138, 150, 0.72));
+        ambientLight = new AmbientLight(Color.rgb(112, 138, 150, 0.72));
         battlefieldAmbientLight = BattlefieldLighting.createAmbientFor(battlefieldPlane, 0.82);
 
-        PointLight keyLight = new PointLight(Color.rgb(255, 232, 196));
+        keyLight = new PointLight(Color.rgb(255, 232, 196));
         keyLight.setTranslateX(-240);
         keyLight.setTranslateY(-420);
         keyLight.setTranslateZ(-260);
 
-        PointLight fillLight = new PointLight(Color.rgb(128, 224, 232, 0.45));
+        fillLight = new PointLight(Color.rgb(128, 224, 232, 0.45));
         fillLight.setTranslateX(260);
         fillLight.setTranslateY(-220);
         fillLight.setTranslateZ(260);
@@ -216,11 +229,11 @@ public final class CrabDemoScreen implements GameScreen {
             FXMLLoader loader = new FXMLLoader(resource);
             Parent root = loader.load();
             cameraControls = loader.getController();
-            cameraControls.setXConsumer(camera::setTranslateX);
-            cameraControls.setYConsumer(camera::setTranslateY);
-            cameraControls.setZConsumer(camera::setTranslateZ);
-            cameraControls.setPitchConsumer(cameraPitch::setAngle);
-            cameraControls.setYawConsumer(cameraYaw::setAngle);
+            cameraControls.setXConsumer(this::setCameraX);
+            cameraControls.setYConsumer(this::setCameraY);
+            cameraControls.setZConsumer(this::setCameraZ);
+            cameraControls.setPitchConsumer(this::setCameraPitch);
+            cameraControls.setYawConsumer(this::setCameraYaw);
             cameraControls.setBattlefieldScaleConsumer(this::setBattlefieldScale);
             cameraControls.setBattlefieldAmbientConsumer(this::setBattlefieldAmbient);
             root.setTranslateX(32);
@@ -260,20 +273,24 @@ public final class CrabDemoScreen implements GameScreen {
         }
     }
 
-    private void bindControlsOnce() {
-        if (controlsBound) {
-            return;
-        }
+    @Override
+    public void moveUp() {
+        moveCamera(0, -CAMERA_STEP);
+    }
 
-        controlsBound = true;
-        onKey(KeyCode.W, () -> moveCamera(0, -CAMERA_STEP));
-        onKey(KeyCode.S, () -> moveCamera(0, CAMERA_STEP));
-        onKey(KeyCode.A, () -> moveCamera(-CAMERA_STEP, 0));
-        onKey(KeyCode.D, () -> moveCamera(CAMERA_STEP, 0));
-        onKey(KeyCode.UP, () -> moveCamera(0, -CAMERA_STEP));
-        onKey(KeyCode.DOWN, () -> moveCamera(0, CAMERA_STEP));
-        onKey(KeyCode.LEFT, () -> moveCamera(-CAMERA_STEP, 0));
-        onKey(KeyCode.RIGHT, () -> moveCamera(CAMERA_STEP, 0));
+    @Override
+    public void moveDown() {
+        moveCamera(0, CAMERA_STEP);
+    }
+
+    @Override
+    public void moveLeft() {
+        moveCamera(-CAMERA_STEP, 0);
+    }
+
+    @Override
+    public void moveRight() {
+        moveCamera(CAMERA_STEP, 0);
     }
 
     private void moveCamera(double x, double z) {
@@ -283,12 +300,54 @@ public final class CrabDemoScreen implements GameScreen {
 
         double nextX = camera.getTranslateX() + x;
         double nextZ = camera.getTranslateZ() + z;
-        camera.setTranslateX(nextX);
-        camera.setTranslateZ(nextZ);
+        setCameraX(nextX);
+        setCameraZ(nextZ);
+    }
 
+    private void setCameraX(double value) {
+        if (camera == null) {
+            return;
+        }
+
+        camera.setTranslateX(value);
         if (cameraControls != null) {
-            cameraControls.setCameraX(nextX);
-            cameraControls.setCameraZ(nextZ);
+            cameraControls.setCameraX(value);
+        }
+    }
+
+    private void setCameraY(double value) {
+        if (camera == null) {
+            return;
+        }
+
+        camera.setTranslateY(value);
+        if (cameraControls != null) {
+            cameraControls.setCameraY(value);
+        }
+    }
+
+    private void setCameraZ(double value) {
+        if (camera == null) {
+            return;
+        }
+
+        camera.setTranslateZ(value);
+        if (cameraControls != null) {
+            cameraControls.setCameraZ(value);
+        }
+    }
+
+    private void setCameraPitch(double value) {
+        cameraPitch.setAngle(value);
+        if (cameraControls != null) {
+            cameraControls.setPitch(value);
+        }
+    }
+
+    private void setCameraYaw(double value) {
+        cameraYaw.setAngle(value);
+        if (cameraControls != null) {
+            cameraControls.setYaw(value);
         }
     }
 
@@ -299,6 +358,9 @@ public final class CrabDemoScreen implements GameScreen {
 
         battlefieldPlane.setScaleX(scale);
         battlefieldPlane.setScaleZ(scale);
+        if (cameraControls != null) {
+            cameraControls.setBattlefieldScale(scale);
+        }
     }
 
     private void setBattlefieldAmbient(double intensity) {
@@ -307,6 +369,82 @@ public final class CrabDemoScreen implements GameScreen {
         }
 
         BattlefieldLighting.setAmbientIntensity(battlefieldAmbientLight, intensity);
+        if (cameraControls != null) {
+            cameraControls.setBattlefieldAmbient(intensity);
+        }
+    }
+
+    private void registerDevTools(SubScene subScene) {
+        if (devTools == null) {
+            return;
+        }
+
+        devTools.attachSubScene(ID, subScene, battlefieldPlane == null ? 100 : battlefieldPlane.getTranslateY());
+        devTools.registerInspectable(Inspectable3D.forNode(
+                "crab.battlefield",
+                "Battlefield Plane",
+                ID,
+                battlefieldPlane,
+                battlefieldDebugParameters()
+        ));
+        if (crabModel != null) {
+            devTools.registerInspectable(Inspectable3D.forNode("crab.model", "Cangrejo Model", ID, crabModel));
+        }
+        devTools.registerInspectable(Inspectable3D.forNode("crab.camera", "Top Camera", ID, camera, cameraDebugParameters()));
+        devTools.registerInspectable(Inspectable3D.forNode("crab.ambient.scene", "Scene Ambient Light", ID, ambientLight));
+        devTools.registerInspectable(Inspectable3D.forNode(
+                "crab.ambient.battlefield",
+                "Battlefield Ambient Light",
+                ID,
+                battlefieldAmbientLight,
+                List.of(DebugParameter.number(
+                        "battlefield.ambient",
+                        "Intensity",
+                        "Battlefield",
+                        0,
+                        1,
+                        0.01,
+                        () -> BattlefieldLighting.ambientIntensity(battlefieldAmbientLight),
+                        this::setBattlefieldAmbient
+                ))
+        ));
+        devTools.registerInspectable(Inspectable3D.forNode("crab.light.key", "Key Light", ID, keyLight));
+        devTools.registerInspectable(Inspectable3D.forNode("crab.light.fill", "Fill Light", ID, fillLight));
+    }
+
+    private List<DebugParameter> cameraDebugParameters() {
+        return List.of(
+                DebugParameter.number("camera.x", "Camera X", "Camera", -420, 420, 1, camera::getTranslateX, this::setCameraX),
+                DebugParameter.number("camera.y", "Camera Y", "Camera", -1200, -120, 1, camera::getTranslateY, this::setCameraY),
+                DebugParameter.number("camera.z", "Camera Z", "Camera", -420, 420, 1, camera::getTranslateZ, this::setCameraZ),
+                DebugParameter.number("camera.pitch", "Pitch", "Camera", -90, -20, 0.25, cameraPitch::getAngle, this::setCameraPitch),
+                DebugParameter.number("camera.yaw", "Yaw", "Camera", -180, 180, 0.25, cameraYaw::getAngle, this::setCameraYaw)
+        );
+    }
+
+    private List<DebugParameter> battlefieldDebugParameters() {
+        return List.of(
+                DebugParameter.number(
+                        "battlefield.scale",
+                        "Scale",
+                        "Battlefield",
+                        0.5,
+                        6,
+                        0.01,
+                        battlefieldPlane::getScaleX,
+                        this::setBattlefieldScale
+                ),
+                DebugParameter.number(
+                        "battlefield.ambient",
+                        "Ambient",
+                        "Battlefield",
+                        0,
+                        1,
+                        0.01,
+                        () -> BattlefieldLighting.ambientIntensity(battlefieldAmbientLight),
+                        this::setBattlefieldAmbient
+                )
+        );
     }
 
     private String loadShader(String path) {

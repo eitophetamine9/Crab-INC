@@ -119,8 +119,28 @@ public final class CrabCameraControlPanelController {
         xSlider.setValue(value);
     }
 
+    public void setCameraY(double value) {
+        ySlider.setValue(value);
+    }
+
     public void setCameraZ(double value) {
         zSlider.setValue(value);
+    }
+
+    public void setPitch(double value) {
+        pitchSlider.setValue(value);
+    }
+
+    public void setYaw(double value) {
+        yawSlider.setValue(value);
+    }
+
+    public void setBattlefieldScale(double value) {
+        battlefieldScaleSlider.setValue(value);
+    }
+
+    public void setBattlefieldAmbient(double value) {
+        battlefieldAmbientSlider.setValue(value);
     }
 
     private void applyX(double value) {

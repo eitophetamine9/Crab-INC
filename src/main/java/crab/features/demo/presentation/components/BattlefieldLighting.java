@@ -22,4 +22,8 @@ public final class BattlefieldLighting {
         double clampedIntensity = Math.clamp(intensity, 0.0, 1.0);
         ambientLight.setColor(Color.gray(clampedIntensity));
     }
+
+    public static double ambientIntensity(AmbientLight ambientLight) {
+        return ambientLight.getColor().getBrightness();
+    }
 }
