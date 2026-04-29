@@ -3,6 +3,9 @@ package crab.features.demo.presentation.components;
 import com.almasb.fxgl.core.util.Platform;
 import com.almasb.fxgl.logging.Logger;
 import com.almasb.fxgl.texture.GLImageView;
+import crab.features.devtools.domain.DebugParameter;
+import crab.features.devtools.domain.DebugParameterGroup;
+import crab.features.devtools.domain.DebugParameterSource;
 import crab.platform.metal.MetalShorelineRenderer;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
@@ -14,6 +17,7 @@ import javafx.scene.image.WritableImage;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.util.List;
 
 /**
  * Renders an animated shoreline backdrop behind 3D demo content.
@@ -24,7 +28,7 @@ import java.nio.IntBuffer;
  * SOLID:
  * - Single Responsibility: owns the shader-style background presentation only.
  */
-public final class ShadertoyBackgroundView extends Group {
+public final class ShadertoyBackgroundView extends Group implements DebugParameterSource {
     private static final Logger LOG = Logger.get(ShadertoyBackgroundView.class);
     private static final double PI = 3.14159265369;
     private static final int FALLBACK_SCALE = 2;
@@ -123,9 +127,17 @@ public final class ShadertoyBackgroundView extends Group {
         applyParameterChange();
     }
 
+    public double getWaveSpeed() {
+        return waveSpeed;
+    }
+
     public void setWaveHeight(double value) {
         waveHeight = value;
         applyParameterChange();
+    }
+
+    public double getWaveHeight() {
+        return waveHeight;
     }
 
     public void setFoamAmount(double value) {
@@ -133,14 +145,37 @@ public final class ShadertoyBackgroundView extends Group {
         applyParameterChange();
     }
 
+    public double getFoamAmount() {
+        return foamAmount;
+    }
+
     public void setShoreOffset(double value) {
         shoreOffset = value;
         applyParameterChange();
     }
 
+    public double getShoreOffset() {
+        return shoreOffset;
+    }
+
     public void setChromaticAmount(double value) {
         chromaticAmount = value;
         applyParameterChange();
+    }
+
+    public double getChromaticAmount() {
+        return chromaticAmount;
+    }
+
+    @Override
+    public List<DebugParameterGroup> parameterGroups() {
+        return List.of(new DebugParameterGroup("Shoreline Shader", List.of(
+                DebugParameter.number("shore.waveSpeed", "Speed", "Shoreline Shader", 0.1, 2.5, 0.1, this::getWaveSpeed, this::setWaveSpeed),
+                DebugParameter.number("shore.waveHeight", "Height", "Shoreline Shader", 0.4, 1.8, 0.1, this::getWaveHeight, this::setWaveHeight),
+                DebugParameter.number("shore.foam", "Foam", "Shoreline Shader", 0, 2, 0.1, this::getFoamAmount, this::setFoamAmount),
+                DebugParameter.number("shore.offset", "Shore", "Shoreline Shader", 0.1, 0.8, 0.05, this::getShoreOffset, this::setShoreOffset),
+                DebugParameter.number("shore.chromatic", "Split", "Shoreline Shader", 0, 2, 0.1, this::getChromaticAmount, this::setChromaticAmount)
+        )));
     }
 
     public void update(double tpf) {

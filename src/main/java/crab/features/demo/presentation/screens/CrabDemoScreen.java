@@ -5,6 +5,7 @@ import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
 import crab.features.devtools.DevToolsModule;
 import crab.features.devtools.domain.DebugParameter;
+import crab.features.devtools.domain.DebugParameterGroup;
 import crab.features.devtools.domain.Inspectable3D;
 import crab.features.demo.DemoDirectionalControls;
 import crab.features.demo.presentation.components.BattlefieldLighting;
@@ -380,12 +381,12 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         devTools.attachSubScene(ID, subScene, battlefieldPlane == null ? 100 : battlefieldPlane.getTranslateY());
-        devTools.registerInspectable(Inspectable3D.forNode(
+        devTools.registerInspectable(Inspectable3D.forNodeWithGroups(
                 "crab.battlefield",
                 "Battlefield Plane",
                 ID,
                 battlefieldPlane,
-                battlefieldDebugParameters()
+                battlefieldDebugParameterGroups()
         ));
         if (crabModel != null) {
             devTools.registerInspectable(Inspectable3D.forNode("crab.model", "Cangrejo Model", ID, crabModel));
@@ -422,28 +423,31 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         );
     }
 
-    private List<DebugParameter> battlefieldDebugParameters() {
+    private List<DebugParameterGroup> battlefieldDebugParameterGroups() {
         return List.of(
-                DebugParameter.number(
-                        "battlefield.scale",
-                        "Scale",
-                        "Battlefield",
-                        0.5,
-                        6,
-                        0.01,
-                        battlefieldPlane::getScaleX,
-                        this::setBattlefieldScale
-                ),
-                DebugParameter.number(
-                        "battlefield.ambient",
-                        "Ambient",
-                        "Battlefield",
-                        0,
-                        1,
-                        0.01,
-                        () -> BattlefieldLighting.ambientIntensity(battlefieldAmbientLight),
-                        this::setBattlefieldAmbient
-                )
+                new DebugParameterGroup("Battlefield", List.of(
+                        DebugParameter.number(
+                                "battlefield.scale",
+                                "Scale",
+                                "Battlefield",
+                                0.5,
+                                6,
+                                0.01,
+                                battlefieldPlane::getScaleX,
+                                this::setBattlefieldScale
+                        ),
+                        DebugParameter.number(
+                                "battlefield.ambient",
+                                "Ambient",
+                                "Battlefield",
+                                0,
+                                1,
+                                0.01,
+                                () -> BattlefieldLighting.ambientIntensity(battlefieldAmbientLight),
+                                this::setBattlefieldAmbient
+                        )
+                )),
+                battlefieldShader.parameterGroups().getFirst()
         );
     }
 

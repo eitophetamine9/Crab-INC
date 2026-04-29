@@ -22,8 +22,12 @@ final class DevInspectorPanelFxmlTest {
         }
 
         CountDownLatch latch = new CountDownLatch(1);
-        Platform.startup(latch::countDown);
-        latch.await();
+        try {
+            Platform.startup(latch::countDown);
+            latch.await();
+        } catch (IllegalStateException ignored) {
+            latch.countDown();
+        }
     }
 
     @Test

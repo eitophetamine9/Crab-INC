@@ -26,6 +26,7 @@ system/
 TMPREADME.md
 docs/superpowers/
 .superpowers
+.crabinc/devtools/
 
 # Local coding-agent guidance
 .agent/

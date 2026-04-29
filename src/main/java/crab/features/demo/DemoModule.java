@@ -31,10 +31,10 @@ public final class DemoModule implements GameModule {
         context.register(DemoModule.class, this);
         screens = context.require(ScreenManager.class);
         devTools = context.find(DevToolsModule.class).orElse(null);
-        inputRouter = new DemoInputRouter(screens);
+        inputRouter = new DemoInputRouter(screens, this::isGameInputAllowed);
 
         BoxDemoScreen boxScreen = new BoxDemoScreen(screens);
-        BunnyDemoScreen bunnyScreen = new BunnyDemoScreen(screens);
+        BunnyDemoScreen bunnyScreen = new BunnyDemoScreen(screens, devTools);
         CrabDemoScreen crabScreen = new CrabDemoScreen(screens, devTools);
 
         screens.register(boxScreen);
@@ -63,9 +63,9 @@ public final class DemoModule implements GameModule {
         }
 
         navigationBound = true;
-        onKey(KeyCode.DIGIT1, () -> screens.show(BoxDemoScreen.ID));
-        onKey(KeyCode.DIGIT2, () -> screens.show(BunnyDemoScreen.ID));
-        onKey(KeyCode.DIGIT3, () -> screens.show(CrabDemoScreen.ID));
+        onKey(KeyCode.DIGIT1, () -> showScreenInGameMode(BoxDemoScreen.ID));
+        onKey(KeyCode.DIGIT2, () -> showScreenInGameMode(BunnyDemoScreen.ID));
+        onKey(KeyCode.DIGIT3, () -> showScreenInGameMode(CrabDemoScreen.ID));
         onKey(KeyCode.W, () -> inputRouter.moveUp());
         onKey(KeyCode.UP, () -> inputRouter.moveUp());
         onKey(KeyCode.S, () -> inputRouter.moveDown());
@@ -74,5 +74,15 @@ public final class DemoModule implements GameModule {
         onKey(KeyCode.LEFT, () -> inputRouter.moveLeft());
         onKey(KeyCode.D, () -> inputRouter.moveRight());
         onKey(KeyCode.RIGHT, () -> inputRouter.moveRight());
+    }
+
+    private void showScreenInGameMode(String screenId) {
+        if (isGameInputAllowed()) {
+            screens.show(screenId);
+        }
+    }
+
+    private boolean isGameInputAllowed() {
+        return devTools == null || !devTools.isEnabled();
     }
 }

@@ -2,17 +2,22 @@ package crab.features.devtools.presentation;
 
 import crab.features.devtools.domain.DebugParameter;
 import crab.features.devtools.domain.Inspectable3D;
+import crab.features.devtools.domain.SceneTreeNode;
 import crab.features.devtools.properties.LightAdapter;
 import crab.features.devtools.properties.MaterialAdapter;
 import crab.features.devtools.properties.NodeTransformAdapter;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
+import javafx.scene.control.CheckBoxTreeItem;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
+import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -29,7 +34,11 @@ public final class DevInspectorPanelController {
     @FXML
     private Label statusLabel;
     @FXML
-    private ComboBox<Inspectable3D> objectPicker;
+    private TextField treeSearchField;
+    @FXML
+    private TreeView<SceneTreeNode> sceneTreeView;
+    @FXML
+    private ComboBox<String> cameraPicker;
     @FXML
     private TextField positionXField;
     @FXML
@@ -64,48 +73,71 @@ public final class DevInspectorPanelController {
     private ColorPicker lightColorPicker;
 
     private Inspectable3D selected;
-    private Consumer<Inspectable3D> selectionConsumer = item -> {
+    private SceneTreeNode unfilteredSceneTree;
+    private Consumer<SceneTreeNode> treeSelectionConsumer = item -> {
     };
-    private boolean updatingPicker;
+    private Consumer<SceneTreeNode> visibilityConsumer = item -> {
+    };
+    private Consumer<String> cameraSelectionConsumer = item -> {
+    };
+    private Consumer<Inspectable3D> changeConsumer = item -> {
+    };
+    private boolean updatingTree;
+    private boolean updatingCameraPicker;
     private NodeTransformAdapter transformAdapter;
     private Optional<MaterialAdapter> materialAdapter = Optional.empty();
     private Optional<LightAdapter> lightAdapter = Optional.empty();
 
     @FXML
     private void initialize() {
-        objectPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (!updatingPicker && newValue != null) {
-                selectionConsumer.accept(newValue);
+        sceneTreeView.setCellFactory(CheckBoxTreeCell.forTreeView());
+        sceneTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (!updatingTree && newValue != null) {
+                treeSelectionConsumer.accept(newValue.getValue());
+            }
+        });
+        treeSearchField.textProperty().addListener((observable, oldValue, newValue) -> refreshTreeFilter());
+        cameraPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!updatingCameraPicker && newValue != null) {
+                cameraSelectionConsumer.accept(newValue);
             }
         });
         installTransformScrubbers();
         clear();
     }
 
-    public void setInspectableItems(List<Inspectable3D> items, Consumer<Inspectable3D> onSelect) {
-        updatingPicker = true;
-        selectionConsumer = onSelect;
-        objectPicker.setItems(FXCollections.observableArrayList(items));
-        if (selected != null && items.contains(selected)) {
-            objectPicker.setValue(selected);
-        } else {
-            objectPicker.setValue(null);
-        }
-        updatingPicker = false;
+    public void setSceneTree(
+            SceneTreeNode root,
+            Consumer<SceneTreeNode> onSelect,
+            Consumer<SceneTreeNode> onVisibilityChange
+    ) {
+        unfilteredSceneTree = root;
+        treeSelectionConsumer = onSelect;
+        visibilityConsumer = onVisibilityChange;
+        refreshTreeFilter();
+    }
+
+    public void setCameraModes(List<String> modes, String selectedMode, Consumer<String> onSelect) {
+        updatingCameraPicker = true;
+        cameraSelectionConsumer = onSelect;
+        cameraPicker.setItems(FXCollections.observableArrayList(modes));
+        cameraPicker.setValue(selectedMode);
+        updatingCameraPicker = false;
+    }
+
+    public void setChangeConsumer(Consumer<Inspectable3D> consumer) {
+        changeConsumer = consumer;
     }
 
     public void inspect(Inspectable3D item) {
         selected = item;
-        updatingPicker = true;
-        objectPicker.setValue(item);
-        updatingPicker = false;
         transformAdapter = new NodeTransformAdapter(item.target());
         materialAdapter = MaterialAdapter.forNode(item.target());
         lightAdapter = LightAdapter.forNode(item.target());
 
         nameLabel.setText(item.name());
         typeLabel.setText(item.target().getClass().getSimpleName());
-        statusLabel.setText("Runtime only");
+        statusLabel.setText(item.persistent() ? "Auto-saved dev override" : "Runtime only");
         materialSection.setVisible(materialAdapter.isPresent());
         materialSection.setManaged(materialAdapter.isPresent());
         lightSection.setVisible(lightAdapter.isPresent());
@@ -132,9 +164,6 @@ public final class DevInspectorPanelController {
 
     public void clear() {
         selected = null;
-        updatingPicker = true;
-        objectPicker.setValue(null);
-        updatingPicker = false;
         transformAdapter = null;
         materialAdapter = Optional.empty();
         lightAdapter = Optional.empty();
@@ -172,6 +201,7 @@ public final class DevInspectorPanelController {
                 parse(scaleYField, selected.target().getScaleY()),
                 parse(scaleZField, selected.target().getScaleZ())
         );
+        changeConsumer.accept(selected);
     }
 
     @FXML
@@ -179,12 +209,20 @@ public final class DevInspectorPanelController {
         materialAdapter.ifPresent(adapter -> {
             adapter.setDiffuseColor(diffuseColorPicker.getValue());
             adapter.setSpecularColor(specularColorPicker.getValue());
+            if (selected != null) {
+                changeConsumer.accept(selected);
+            }
         });
     }
 
     @FXML
     private void applyLightColor() {
-        lightAdapter.ifPresent(adapter -> adapter.setColor(lightColorPicker.getValue()));
+        lightAdapter.ifPresent(adapter -> {
+            adapter.setColor(lightColorPicker.getValue());
+            if (selected != null) {
+                changeConsumer.accept(selected);
+            }
+        });
     }
 
     private void installTransformScrubbers() {
@@ -233,6 +271,40 @@ public final class DevInspectorPanelController {
     private void applyDebugParameter(DebugParameter parameter, TextField field) {
         parameter.setValue(parse(field, parameter.value()));
         setText(field, parameter.value());
+        if (selected != null) {
+            changeConsumer.accept(selected);
+        }
+    }
+
+    private void refreshTreeFilter() {
+        updatingTree = true;
+        if (unfilteredSceneTree == null) {
+            sceneTreeView.setRoot(null);
+        } else {
+            sceneTreeView.setRoot(unfilteredSceneTree.filter(treeSearchField.getText())
+                    .map(this::toTreeItem)
+                    .orElse(null));
+            if (sceneTreeView.getRoot() != null) {
+                sceneTreeView.getRoot().setExpanded(true);
+            }
+        }
+        updatingTree = false;
+    }
+
+    private TreeItem<SceneTreeNode> toTreeItem(SceneTreeNode node) {
+        CheckBoxTreeItem<SceneTreeNode> item = new CheckBoxTreeItem<>(node);
+        item.setSelected(node.node().isVisible());
+        item.selectedProperty().addListener((observable, oldValue, selectedValue) -> {
+            if (node.node().isVisible() != selectedValue) {
+                node.node().setVisible(selectedValue);
+                visibilityConsumer.accept(node);
+            }
+        });
+        node.node().visibleProperty().addListener((observable, oldValue, visible) -> item.setSelected(visible));
+        for (SceneTreeNode child : node.children()) {
+            item.getChildren().add(toTreeItem(child));
+        }
+        return item;
     }
 
     private void installScrubber(TextField field, double step, Runnable onChange) {

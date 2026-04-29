@@ -1,10 +1,14 @@
 package crab.features.demo.presentation.components;
 
+import crab.features.devtools.domain.DebugParameter;
+import crab.features.devtools.domain.DebugParameterSource;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 
+import java.util.Map;
 import java.util.function.DoubleConsumer;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the bunny-only control panel in the foundation demo.
@@ -166,6 +170,21 @@ public final class BunnyControlPanelController {
         applyChromatic(chromaticSlider.getValue());
     }
 
+    public void bindShaderParameters(DebugParameterSource source) {
+        Map<String, DebugParameter> parameters = source.parameters().stream()
+                .collect(Collectors.toMap(DebugParameter::id, parameter -> parameter));
+        bindSlider(waveSpeedSlider, parameters.get("shore.waveSpeed"));
+        bindSlider(waveHeightSlider, parameters.get("shore.waveHeight"));
+        bindSlider(foamSlider, parameters.get("shore.foam"));
+        bindSlider(shoreSlider, parameters.get("shore.offset"));
+        bindSlider(chromaticSlider, parameters.get("shore.chromatic"));
+        setWaveSpeedConsumer(parameters.get("shore.waveSpeed")::setValue);
+        setWaveHeightConsumer(parameters.get("shore.waveHeight")::setValue);
+        setFoamConsumer(parameters.get("shore.foam")::setValue);
+        setShoreConsumer(parameters.get("shore.offset")::setValue);
+        setChromaticConsumer(parameters.get("shore.chromatic")::setValue);
+    }
+
     private void applyYaw(double value) {
         yawValueLabel.setText(formatAngle(value));
         yawConsumer.accept(value);
@@ -213,5 +232,12 @@ public final class BunnyControlPanelController {
 
     private String formatAngle(double value) {
         return String.format("%.0f°", value);
+    }
+
+    private static void bindSlider(Slider slider, DebugParameter parameter) {
+        slider.setMin(parameter.min());
+        slider.setMax(parameter.max());
+        slider.setBlockIncrement(parameter.step());
+        slider.setValue(parameter.value());
     }
 }
