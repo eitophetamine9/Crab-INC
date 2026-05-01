@@ -1,5 +1,6 @@
 package crab.features.devtools.interaction;
 
+import crab.features.devtools.domain.DevToolMode;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point3D;
 import javafx.scene.DepthTest;
@@ -104,6 +105,10 @@ public final class TransformGizmo3D {
     public void hide() {
         root.setVisible(false);
         outline.getChildren().clear();
+    }
+
+    public void setToolMode(DevToolMode mode) {
+        axes.setVisible(mode == DevToolMode.MOVE || mode == DevToolMode.ROTATE || mode == DevToolMode.SCALE);
     }
 
     public Point3D currentOrigin() {

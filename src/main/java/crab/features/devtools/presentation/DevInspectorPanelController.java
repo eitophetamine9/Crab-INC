@@ -1,6 +1,7 @@
 package crab.features.devtools.presentation;
 
 import crab.features.devtools.domain.DebugParameter;
+import crab.features.devtools.domain.DevToolMode;
 import crab.features.devtools.domain.Inspectable3D;
 import crab.features.devtools.domain.SceneTreeNode;
 import crab.features.devtools.properties.LightAdapter;
@@ -15,6 +16,8 @@ import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.control.cell.CheckBoxTreeCell;
@@ -33,6 +36,18 @@ public final class DevInspectorPanelController {
     private Label typeLabel;
     @FXML
     private Label statusLabel;
+    @FXML
+    private ToggleButton selectToolButton;
+    @FXML
+    private ToggleButton moveToolButton;
+    @FXML
+    private ToggleButton rotateToolButton;
+    @FXML
+    private ToggleButton scaleToolButton;
+    @FXML
+    private ToggleButton inspectToolButton;
+    @FXML
+    private ToggleButton flyCameraToolButton;
     @FXML
     private TextField treeSearchField;
     @FXML
@@ -80,10 +95,13 @@ public final class DevInspectorPanelController {
     };
     private Consumer<String> cameraSelectionConsumer = item -> {
     };
+    private Consumer<DevToolMode> toolModeConsumer = mode -> {
+    };
     private Consumer<Inspectable3D> changeConsumer = item -> {
     };
     private boolean updatingTree;
     private boolean updatingCameraPicker;
+    private boolean updatingToolMode;
     private NodeTransformAdapter transformAdapter;
     private Optional<MaterialAdapter> materialAdapter = Optional.empty();
     private Optional<LightAdapter> lightAdapter = Optional.empty();
@@ -102,6 +120,7 @@ public final class DevInspectorPanelController {
                 cameraSelectionConsumer.accept(newValue);
             }
         });
+        installToolModeButtons();
         installTransformScrubbers();
         clear();
     }
@@ -125,6 +144,29 @@ public final class DevInspectorPanelController {
         updatingCameraPicker = false;
     }
 
+    public void setToolMode(DevToolMode mode) {
+        updatingToolMode = true;
+        ToggleButton button = buttonFor(mode);
+        if (button != null) {
+            button.setSelected(true);
+        }
+        updatingToolMode = false;
+    }
+
+    public void setToolModeConsumer(Consumer<DevToolMode> consumer) {
+        toolModeConsumer = consumer;
+    }
+
+    public void setSelectionCount(int count) {
+        if (selected == null) {
+            statusLabel.setText("Runtime only");
+            return;
+        }
+
+        String persistence = selected.persistent() ? "Auto-saved dev override" : "Runtime only";
+        statusLabel.setText(count > 1 ? persistence + " | " + count + " objects selected" : persistence);
+    }
+
     public void setChangeConsumer(Consumer<Inspectable3D> consumer) {
         changeConsumer = consumer;
     }
@@ -137,7 +179,7 @@ public final class DevInspectorPanelController {
 
         nameLabel.setText(item.name());
         typeLabel.setText(item.target().getClass().getSimpleName());
-        statusLabel.setText(item.persistent() ? "Auto-saved dev override" : "Runtime only");
+        setSelectionCount(1);
         materialSection.setVisible(materialAdapter.isPresent());
         materialSection.setManaged(materialAdapter.isPresent());
         lightSection.setVisible(lightAdapter.isPresent());
@@ -235,6 +277,45 @@ public final class DevInspectorPanelController {
         installScrubber(scaleXField, 0.01, this::applyTransform);
         installScrubber(scaleYField, 0.01, this::applyTransform);
         installScrubber(scaleZField, 0.01, this::applyTransform);
+    }
+
+    private void installToolModeButtons() {
+        ToggleGroup group = new ToggleGroup();
+        configureToolButton(selectToolButton, group, DevToolMode.SELECT);
+        configureToolButton(moveToolButton, group, DevToolMode.MOVE);
+        configureToolButton(rotateToolButton, group, DevToolMode.ROTATE);
+        configureToolButton(scaleToolButton, group, DevToolMode.SCALE);
+        configureToolButton(inspectToolButton, group, DevToolMode.INSPECT);
+        configureToolButton(flyCameraToolButton, group, DevToolMode.FLY_CAMERA);
+        group.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingToolMode) {
+                return;
+            }
+            if (newValue == null) {
+                oldValue.setSelected(true);
+                return;
+            }
+            toolModeConsumer.accept((DevToolMode) newValue.getUserData());
+        });
+        moveToolButton.setSelected(true);
+    }
+
+    private void configureToolButton(ToggleButton button, ToggleGroup group, DevToolMode mode) {
+        button.setToggleGroup(group);
+        button.setUserData(mode);
+        button.setTooltip(new Tooltip(mode.displayName()));
+        button.setMaxWidth(Double.MAX_VALUE);
+    }
+
+    private ToggleButton buttonFor(DevToolMode mode) {
+        return switch (mode) {
+            case SELECT -> selectToolButton;
+            case MOVE -> moveToolButton;
+            case ROTATE -> rotateToolButton;
+            case SCALE -> scaleToolButton;
+            case INSPECT -> inspectToolButton;
+            case FLY_CAMERA -> flyCameraToolButton;
+        };
     }
 
     private void populateDebugParameters(List<DebugParameter> parameters) {

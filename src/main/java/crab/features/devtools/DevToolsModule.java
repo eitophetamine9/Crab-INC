@@ -7,6 +7,7 @@ import crab.features.devtools.camera.CameraDebugParameters;
 import crab.features.devtools.camera.DebugCameraController;
 import crab.features.devtools.domain.DebugParameterGroup;
 import crab.features.devtools.domain.DebugParameterSource;
+import crab.features.devtools.domain.DevToolMode;
 import crab.features.devtools.domain.Inspectable3D;
 import crab.features.devtools.domain.Inspectable3DRegistry;
 import crab.features.devtools.domain.Inspectable3DSelection;
@@ -15,15 +16,15 @@ import crab.features.devtools.domain.SceneTreeNode;
 import crab.features.devtools.input.DevModeInputGate;
 import crab.features.devtools.input.DevMouseInteractionPolicy;
 import crab.features.devtools.input.DevMousePressAction;
-import crab.features.devtools.interaction.DragPlaneProjector;
 import crab.features.devtools.interaction.GizmoAxis;
 import crab.features.devtools.interaction.TransformGizmo3D;
+import crab.features.devtools.interaction.ViewRelativeTransform;
 import crab.features.devtools.persistence.DebugSceneOverrideStore;
 import crab.features.devtools.presentation.DevInspectorPanelController;
+import crab.features.devtools.properties.NodeTransformAdapter;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Point3D;
 import javafx.scene.Camera;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -81,9 +82,13 @@ public final class DevToolsModule implements GameModule {
     private boolean enabled;
     private boolean toggleBound;
     private boolean inputGateBound;
+    private DevToolMode toolMode = DevToolMode.MOVE;
     private boolean dragging;
     private boolean axisDragging;
     private boolean looking;
+    private boolean lookMoved;
+    private boolean suppressNavigationClick;
+    private boolean suppressNextClick;
     private GizmoAxis activeAxis;
     private double lastDragX;
     private double lastDragY;
@@ -157,9 +162,9 @@ public final class DevToolsModule implements GameModule {
 
     public void clearScope(String screenId) {
         registry.clearScope(screenId);
-        selection.selected()
-                .filter(item -> item.screenId().equals(screenId))
-                .ifPresent(item -> clearSelection());
+        if (selection.selectedItems().stream().anyMatch(item -> item.screenId().equals(screenId))) {
+            clearSelection();
+        }
         if (screenId.equals(activeScreenId)) {
             activeScreenId = null;
             activeSubScene = null;
@@ -176,6 +181,9 @@ public final class DevToolsModule implements GameModule {
         subScene.setFocusTraversable(true);
         refreshSceneTree();
         refreshCameraPicker();
+        if (enabled) {
+            activateDevCameraNavigation();
+        }
         if (!attachedSubScenes.add(subScene)) {
             return;
         }
@@ -184,9 +192,14 @@ public final class DevToolsModule implements GameModule {
         subScene.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> handlePress(event));
         subScene.addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> handleDrag(event));
         subScene.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> {
+            if (looking && (lookMoved || suppressNavigationClick)) {
+                suppressNextClick = true;
+            }
             dragging = false;
             axisDragging = false;
             looking = false;
+            lookMoved = false;
+            suppressNavigationClick = false;
             activeAxis = null;
         });
         subScene.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
@@ -204,6 +217,8 @@ public final class DevToolsModule implements GameModule {
             Parent root = loader.load();
             inspectorController = loader.getController();
             inspectorController.setChangeConsumer(this::saveInspectable);
+            inspectorController.setToolModeConsumer(this::setToolMode);
+            inspectorController.setToolMode(toolMode);
             return root;
         } catch (IOException exception) {
             Label fallback = new Label("Dev inspector load failed: " + exception.getMessage());
@@ -307,6 +322,7 @@ public final class DevToolsModule implements GameModule {
             refreshCameraPicker();
             showInspectorWindow();
             attachGizmoToActiveSubScene();
+            activateDevCameraNavigation();
             if (activeSubScene != null) {
                 activeSubScene.requestFocus();
             }
@@ -317,6 +333,9 @@ public final class DevToolsModule implements GameModule {
             dragging = false;
             axisDragging = false;
             looking = false;
+            lookMoved = false;
+            suppressNavigationClick = false;
+            suppressNextClick = false;
             activeDevCameraKeys.clear();
             clearSelection();
         }
@@ -327,6 +346,12 @@ public final class DevToolsModule implements GameModule {
             return;
         }
 
+        if (suppressNextClick) {
+            suppressNextClick = false;
+            event.consume();
+            return;
+        }
+
         activeSubScene = (SubScene) event.getSource();
         Node pickedNode = event.getPickResult().getIntersectedNode();
         if (transformGizmo.owns(pickedNode)) {
@@ -334,12 +359,21 @@ public final class DevToolsModule implements GameModule {
             return;
         }
         if (pickedNode == null) {
-            clearSelection();
+            if (!event.isShiftDown()) {
+                clearSelection();
+            }
             return;
         }
 
         Optional<Inspectable3D> item = registry.findForNode(pickedNode);
-        item.ifPresentOrElse(this::select, this::clearSelection);
+        item.ifPresentOrElse(
+                selectedItem -> select(selectedItem, event.isShiftDown()),
+                () -> {
+                    if (!event.isShiftDown()) {
+                        clearSelection();
+                    }
+                }
+        );
         event.consume();
     }
 
@@ -352,6 +386,10 @@ public final class DevToolsModule implements GameModule {
         Node pickedNode = event.getPickResult().getIntersectedNode();
         Optional<GizmoAxis> pickedAxis = transformGizmo.axisFor(pickedNode);
         if (pickedAxis.isPresent() && selection.selected().isPresent() && event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+            if (!isTransformToolMode()) {
+                event.consume();
+                return;
+            }
             activeAxis = pickedAxis.get();
             axisDragging = true;
             dragging = false;
@@ -363,10 +401,14 @@ public final class DevToolsModule implements GameModule {
         }
 
         Optional<Inspectable3D> pickedItem = pickedNode == null ? Optional.empty() : registry.findForNode(pickedNode);
-        DevMousePressAction action = mousePolicy.pressAction(isDevCameraActive(), pickedItem.isPresent(), event.getButton());
+        DevMousePressAction action = mousePolicy.pressAction(toolMode, pickedItem.isPresent(), event.getButton());
 
         if (action == DevMousePressAction.CAMERA_LOOK) {
+            activateDevCameraNavigation();
             looking = true;
+            lookMoved = false;
+            suppressNavigationClick = pickedItem.isPresent()
+                    || event.getButton() != javafx.scene.input.MouseButton.PRIMARY;
             dragging = false;
             axisDragging = false;
             lastLookX = event.getSceneX();
@@ -381,7 +423,12 @@ public final class DevToolsModule implements GameModule {
         }
 
         pickedItem.ifPresent(item -> {
-            select(item);
+            if (event.isShiftDown()) {
+                return;
+            }
+            if (!selection.contains(item)) {
+                select(item);
+            }
             dragging = true;
             axisDragging = false;
             looking = false;
@@ -397,7 +444,12 @@ public final class DevToolsModule implements GameModule {
         }
 
         if (looking && isDevCameraActive()) {
-            activeDebugCamera.look(event.getSceneX() - lastLookX, event.getSceneY() - lastLookY);
+            double deltaX = event.getSceneX() - lastLookX;
+            double deltaY = event.getSceneY() - lastLookY;
+            if (deltaX != 0 || deltaY != 0) {
+                lookMoved = true;
+            }
+            activeDebugCamera.look(deltaX, deltaY);
             lastLookX = event.getSceneX();
             lastLookY = event.getSceneY();
             saveDevCameraState();
@@ -406,15 +458,12 @@ public final class DevToolsModule implements GameModule {
         }
 
         if (axisDragging && activeAxis != null) {
-            selection.selected().ifPresent(item -> {
-                double deltaX = event.getSceneX() - lastDragX;
-                double deltaY = event.getSceneY() - lastDragY;
-                activeAxis.applyDelta(item.target(), activeAxis.dragAmount(deltaX, deltaY));
-                lastDragX = event.getSceneX();
-                lastDragY = event.getSceneY();
-                updateSelectedAfterTransform(item);
-                event.consume();
-            });
+            double deltaX = event.getSceneX() - lastDragX;
+            double deltaY = event.getSceneY() - lastDragY;
+            applyTransformToSelection(item -> applyAxisTransform(item, activeAxis, activeAxis.dragAmount(deltaX, deltaY)));
+            lastDragX = event.getSceneX();
+            lastDragY = event.getSceneY();
+            event.consume();
             return;
         }
 
@@ -422,15 +471,12 @@ public final class DevToolsModule implements GameModule {
             return;
         }
 
-        selection.selected().ifPresent(item -> {
-            double deltaX = (event.getSceneX() - lastDragX) * DRAG_SCALE;
-            double deltaZ = (event.getSceneY() - lastDragY) * DRAG_SCALE;
-            DragPlaneProjector.applyPlaneDelta(item.target(), new Point3D(deltaX, 0, deltaZ));
-            lastDragX = event.getSceneX();
-            lastDragY = event.getSceneY();
-            updateSelectedAfterTransform(item);
-            event.consume();
-        });
+        double deltaX = event.getSceneX() - lastDragX;
+        double deltaY = event.getSceneY() - lastDragY;
+        applyTransformToSelection(item -> applyBodyTransform(item, deltaX, deltaY));
+        lastDragX = event.getSceneX();
+        lastDragY = event.getSceneY();
+        event.consume();
     }
 
     private boolean isDevCameraActive() {
@@ -438,7 +484,18 @@ public final class DevToolsModule implements GameModule {
     }
 
     private void handleKeyPressed(KeyEvent event) {
-        if (!enabled || !isDevCameraActive()) {
+        if (enabled && event.getCode() == KeyCode.ESCAPE) {
+            returnToDevCameraNavigation();
+            event.consume();
+            return;
+        }
+
+        if (enabled && setToolModeForShortcut(event.getCode())) {
+            event.consume();
+            return;
+        }
+
+        if (!enabled || !isDevCameraActive() || toolMode != DevToolMode.FLY_CAMERA) {
             return;
         }
 
@@ -449,7 +506,7 @@ public final class DevToolsModule implements GameModule {
     }
 
     private void handleKeyReleased(KeyEvent event) {
-        if (!enabled || !isDevCameraActive()) {
+        if (!enabled || !isDevCameraActive() || toolMode != DevToolMode.FLY_CAMERA) {
             return;
         }
 
@@ -460,7 +517,7 @@ public final class DevToolsModule implements GameModule {
     }
 
     private void updateDevCamera(double tpf) {
-        if (!isDevCameraActive()) {
+        if (!isDevCameraActive() || toolMode != DevToolMode.FLY_CAMERA) {
             return;
         }
 
@@ -496,10 +553,40 @@ public final class DevToolsModule implements GameModule {
                 || keyCode == KeyCode.SHIFT;
     }
 
+    private boolean setToolModeForShortcut(KeyCode keyCode) {
+        DevToolMode mode = switch (keyCode) {
+            case S -> DevToolMode.SELECT;
+            case M -> DevToolMode.MOVE;
+            case R -> DevToolMode.ROTATE;
+            case T -> DevToolMode.SCALE;
+            case I -> DevToolMode.INSPECT;
+            case F -> DevToolMode.FLY_CAMERA;
+            default -> null;
+        };
+        if (mode == null) {
+            return false;
+        }
+        setToolMode(mode);
+        return true;
+    }
+
     private void select(Inspectable3D item) {
-        selection.select(item);
+        select(item, false);
+    }
+
+    private void select(Inspectable3D item, boolean additive) {
+        if (additive) {
+            selection.toggle(item);
+        } else {
+            selection.select(item);
+        }
+        selection.selected().ifPresentOrElse(this::inspectPrimarySelection, this::clearSelection);
+    }
+
+    private void inspectPrimarySelection(Inspectable3D item) {
         if (inspectorController != null) {
             inspectorController.inspect(item);
+            inspectorController.setSelectionCount(selection.selectedItems().size());
         }
         updateGizmoFor(item);
     }
@@ -541,18 +628,57 @@ public final class DevToolsModule implements GameModule {
         inspectorController.setCameraModes(List.of(SCENE_CAMERA, DEV_CAMERA), selected, this::selectCameraMode);
     }
 
+    private void setToolMode(DevToolMode mode) {
+        toolMode = mode;
+        transformGizmo.setToolMode(mode);
+        if (inspectorController != null) {
+            inspectorController.setToolMode(mode);
+        }
+        dragging = false;
+        axisDragging = false;
+        looking = false;
+        lookMoved = false;
+        suppressNavigationClick = false;
+        activeAxis = null;
+        activeDevCameraKeys.clear();
+        if (mode == DevToolMode.FLY_CAMERA) {
+            activateDevCameraNavigation();
+        }
+    }
+
     private void selectCameraMode(String mode) {
         if (activeDebugCamera == null) {
             return;
         }
 
         if (DEV_CAMERA.equals(mode)) {
-            activeDebugCamera.activateDevCamera();
-            if (activeSubScene != null) {
-                activeSubScene.requestFocus();
-            }
+            activateDevCameraNavigation();
         } else {
             restoreSceneCamera();
+        }
+        refreshCameraPicker();
+    }
+
+    private void returnToDevCameraNavigation() {
+        dragging = false;
+        axisDragging = false;
+        looking = false;
+        lookMoved = false;
+        suppressNavigationClick = false;
+        activeAxis = null;
+        activeDevCameraKeys.clear();
+        clearSelection();
+        activateDevCameraNavigation();
+    }
+
+    private void activateDevCameraNavigation() {
+        if (activeDebugCamera == null) {
+            return;
+        }
+
+        activeDebugCamera.activateDevCamera();
+        if (activeSubScene != null) {
+            activeSubScene.requestFocus();
         }
         refreshCameraPicker();
     }
@@ -667,9 +793,76 @@ public final class DevToolsModule implements GameModule {
     private void updateSelectedAfterTransform(Inspectable3D item) {
         if (inspectorController != null) {
             inspectorController.inspect(item);
+            inspectorController.setSelectionCount(selection.selectedItems().size());
         }
         updateGizmoFor(item);
         saveInspectable(item);
+    }
+
+    private void applyTransformToSelection(java.util.function.Consumer<Inspectable3D> transform) {
+        List<Inspectable3D> items = selection.selectedItems();
+        for (Inspectable3D item : items) {
+            transform.accept(item);
+            saveInspectable(item);
+        }
+        selection.selected().ifPresent(item -> {
+            if (inspectorController != null) {
+                inspectorController.inspect(item);
+                inspectorController.setSelectionCount(selection.selectedItems().size());
+            }
+            updateGizmoFor(item);
+        });
+    }
+
+    private boolean isTransformToolMode() {
+        return toolMode == DevToolMode.MOVE || toolMode == DevToolMode.ROTATE || toolMode == DevToolMode.SCALE;
+    }
+
+    private void applyAxisTransform(Inspectable3D item, GizmoAxis axis, double amount) {
+        if (toolMode == DevToolMode.MOVE) {
+            axis.applyDelta(item.target(), amount);
+            return;
+        }
+
+        NodeTransformAdapter adapter = new NodeTransformAdapter(item.target());
+        NodeTransformAdapter.TransformSnapshot snapshot = adapter.snapshot();
+        if (toolMode == DevToolMode.ROTATE) {
+            double degrees = amount * 0.5;
+            adapter.setRotation(
+                    snapshot.rotateX() + (axis == GizmoAxis.X ? degrees : 0),
+                    snapshot.rotateY() + (axis == GizmoAxis.Y ? degrees : 0),
+                    snapshot.rotateZ() + (axis == GizmoAxis.Z ? degrees : 0)
+            );
+            return;
+        }
+
+        if (toolMode == DevToolMode.SCALE) {
+            double scaleDelta = amount * 0.01;
+            adapter.setScale(
+                    axis == GizmoAxis.X ? Math.max(0.01, snapshot.scaleX() + scaleDelta) : snapshot.scaleX(),
+                    axis == GizmoAxis.Y ? Math.max(0.01, snapshot.scaleY() + scaleDelta) : snapshot.scaleY(),
+                    axis == GizmoAxis.Z ? Math.max(0.01, snapshot.scaleZ() + scaleDelta) : snapshot.scaleZ()
+            );
+        }
+    }
+
+    private void applyBodyTransform(Inspectable3D item, double deltaX, double deltaY) {
+        Camera camera = activeSubScene == null ? null : activeSubScene.getCamera();
+        if (toolMode == DevToolMode.MOVE) {
+            ViewRelativeTransform.move(item.target(), camera, deltaX, deltaY, DRAG_SCALE);
+            return;
+        }
+
+        if (toolMode == DevToolMode.SCALE) {
+            ViewRelativeTransform.scaleUniform(item.target(), deltaX, deltaY, 0.01);
+            return;
+        }
+
+        if (toolMode == DevToolMode.ROTATE) {
+            NodeTransformAdapter adapter = new NodeTransformAdapter(item.target());
+            NodeTransformAdapter.TransformSnapshot snapshot = adapter.snapshot();
+            adapter.setRotation(snapshot.rotateX() + (deltaY * 0.5), snapshot.rotateY() + (deltaX * 0.5), snapshot.rotateZ());
+        }
     }
 
     private void updateGizmoFor(Inspectable3D item) {

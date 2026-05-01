@@ -1,14 +1,15 @@
 package crab.features.devtools.input;
 
+import crab.features.devtools.domain.DevToolMode;
 import javafx.scene.input.MouseButton;
 
 public final class DevMouseInteractionPolicy {
-    public DevMousePressAction pressAction(boolean devCameraActive, boolean objectPicked, MouseButton button) {
-        if (devCameraActive && isLookButton(button)) {
+    public DevMousePressAction pressAction(DevToolMode mode, boolean objectPicked, MouseButton button) {
+        if (isLookButton(button) || (!objectPicked && button == MouseButton.PRIMARY)) {
             return DevMousePressAction.CAMERA_LOOK;
         }
 
-        if (objectPicked && button == MouseButton.PRIMARY) {
+        if (isTransformMode(mode) && objectPicked && button == MouseButton.PRIMARY) {
             return DevMousePressAction.OBJECT_DRAG;
         }
 
@@ -16,8 +17,11 @@ public final class DevMouseInteractionPolicy {
     }
 
     private static boolean isLookButton(MouseButton button) {
-        return button == MouseButton.PRIMARY
-                || button == MouseButton.SECONDARY
+        return button == MouseButton.SECONDARY
                 || button == MouseButton.MIDDLE;
+    }
+
+    private static boolean isTransformMode(DevToolMode mode) {
+        return mode == DevToolMode.MOVE || mode == DevToolMode.ROTATE || mode == DevToolMode.SCALE;
     }
 }
