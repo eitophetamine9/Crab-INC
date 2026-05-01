@@ -1,5 +1,6 @@
 package crab.features.devtools.domain;
 
+import crab.features.devtools.interaction.TransformGizmo3D;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.shape.Box;
@@ -67,5 +68,19 @@ final class SceneTreeBuilderTest {
         assertSame(cameraNode, cameraTreeNode.node());
         assertEquals(camera, cameraTreeNode.inspectable().orElseThrow());
         assertTrue(cameraTreeNode.displayName().contains("Dev Camera"));
+    }
+
+    @Test
+    void excludesInternalDevtoolsGizmoNodes() {
+        Group root = new Group();
+        Box gameBox = new Box();
+        TransformGizmo3D gizmo = new TransformGizmo3D();
+        root.getChildren().add(gameBox);
+        gizmo.attachTo(root);
+
+        SceneTreeNode tree = new SceneTreeBuilder(new Inspectable3DRegistry()).build("demo", root);
+
+        assertEquals(1, tree.children().size());
+        assertSame(gameBox, tree.children().getFirst().node());
     }
 }

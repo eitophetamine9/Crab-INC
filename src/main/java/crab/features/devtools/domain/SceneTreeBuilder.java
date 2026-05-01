@@ -1,5 +1,6 @@
 package crab.features.devtools.domain;
 
+import crab.features.devtools.interaction.TransformGizmo3D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 
@@ -34,7 +35,10 @@ public final class SceneTreeBuilder {
 
     private static List<Node> childNodes(Node node) {
         if (node instanceof Parent parent) {
-            return parent.getChildrenUnmodifiable();
+            return parent.getChildrenUnmodifiable()
+                    .stream()
+                    .filter(child -> !TransformGizmo3D.isGizmoNode(child))
+                    .toList();
         }
 
         return List.of();
