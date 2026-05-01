@@ -1,5 +1,6 @@
 package crab.features.devtools;
 
+import crab.app.AppTypography;
 import crab.appcore.context.GameContext;
 import crab.appcore.context.GameModule;
 import crab.features.devtools.camera.CameraDebugParameters;
@@ -213,7 +214,9 @@ public final class DevToolsModule implements GameModule {
     private Stage createInspectorWindow(Parent root) {
         Stage stage = new Stage();
         stage.setTitle("Crab Inc. 3D Debugger");
-        stage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        AppTypography.applyTo(scene);
+        stage.setScene(scene);
         stage.setMinWidth(680);
         stage.setMinHeight(640);
         stage.setOnCloseRequest(event -> {

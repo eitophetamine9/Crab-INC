@@ -52,6 +52,7 @@ public final class Bootstrap {
     }
 
     public void initializeUi() {
+        AppTypography.applyTo(getGameScene().getRoot());
         modules.initializeUi();
         getGameScene().setCursor(Cursor.DEFAULT);
         if (screens.currentId().isEmpty()) {
