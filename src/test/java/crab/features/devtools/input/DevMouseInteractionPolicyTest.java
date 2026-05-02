@@ -4,19 +4,21 @@ import crab.features.devtools.domain.DevToolMode;
 import javafx.scene.input.MouseButton;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static crab.features.devtools.input.DevMousePressAction.CAMERA_LOOK;
 import static crab.features.devtools.input.DevMousePressAction.NONE;
 import static crab.features.devtools.input.DevMousePressAction.OBJECT_DRAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 final class DevMouseInteractionPolicyTest {
     private final DevMouseInteractionPolicy policy = new DevMouseInteractionPolicy();
 
     @Test
-    void flyCameraSecondaryAndMiddlePressLookWithoutBlockingPrimarySelection() {
-        assertEquals(NONE, policy.pressAction(DevToolMode.FLY_CAMERA, true, MouseButton.PRIMARY));
-        assertEquals(CAMERA_LOOK, policy.pressAction(DevToolMode.FLY_CAMERA, true, MouseButton.SECONDARY));
-        assertEquals(CAMERA_LOOK, policy.pressAction(DevToolMode.FLY_CAMERA, true, MouseButton.MIDDLE));
+    void devViewNavigationIsNotASeparateToolMode() {
+        assertFalse(Arrays.stream(DevToolMode.values())
+                .anyMatch(mode -> mode.displayName().toLowerCase().contains("fly")));
     }
 
     @Test

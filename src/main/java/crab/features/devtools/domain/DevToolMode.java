@@ -5,8 +5,7 @@ public enum DevToolMode {
     MOVE("Move"),
     ROTATE("Rotate"),
     SCALE("Scale"),
-    INSPECT("Inspect"),
-    FLY_CAMERA("Fly Camera");
+    INSPECT("Inspect");
 
     private final String displayName;
 

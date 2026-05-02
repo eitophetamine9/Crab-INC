@@ -495,7 +495,7 @@ public final class DevToolsModule implements GameModule {
             return;
         }
 
-        if (!enabled || !isDevCameraActive() || toolMode != DevToolMode.FLY_CAMERA) {
+        if (!enabled || !isDevCameraActive() || isOperatingOnSelection()) {
             return;
         }
 
@@ -506,7 +506,7 @@ public final class DevToolsModule implements GameModule {
     }
 
     private void handleKeyReleased(KeyEvent event) {
-        if (!enabled || !isDevCameraActive() || toolMode != DevToolMode.FLY_CAMERA) {
+        if (!enabled || !isDevCameraActive()) {
             return;
         }
 
@@ -517,7 +517,7 @@ public final class DevToolsModule implements GameModule {
     }
 
     private void updateDevCamera(double tpf) {
-        if (!isDevCameraActive() || toolMode != DevToolMode.FLY_CAMERA) {
+        if (!isDevCameraActive() || isOperatingOnSelection()) {
             return;
         }
 
@@ -560,7 +560,6 @@ public final class DevToolsModule implements GameModule {
             case R -> DevToolMode.ROTATE;
             case T -> DevToolMode.SCALE;
             case I -> DevToolMode.INSPECT;
-            case F -> DevToolMode.FLY_CAMERA;
             default -> null;
         };
         if (mode == null) {
@@ -641,9 +640,11 @@ public final class DevToolsModule implements GameModule {
         suppressNavigationClick = false;
         activeAxis = null;
         activeDevCameraKeys.clear();
-        if (mode == DevToolMode.FLY_CAMERA) {
-            activateDevCameraNavigation();
-        }
+        activateDevCameraNavigation();
+    }
+
+    private boolean isOperatingOnSelection() {
+        return dragging || axisDragging;
     }
 
     private void selectCameraMode(String mode) {

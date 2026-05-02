@@ -11,7 +11,6 @@
         <ToggleButton fx:id="rotateToolButton" text="(R) Rotate" />
         <ToggleButton fx:id="scaleToolButton" text="(T) Scale" />
         <ToggleButton fx:id="inspectToolButton" text="(I) Inspect" />
-        <ToggleButton fx:id="flyCameraToolButton" text="(F) Fly" />
     </VBox>
 
     <VBox prefWidth="250" spacing="8">

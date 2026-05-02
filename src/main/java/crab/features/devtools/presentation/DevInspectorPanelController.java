@@ -47,8 +47,6 @@ public final class DevInspectorPanelController {
     @FXML
     private ToggleButton inspectToolButton;
     @FXML
-    private ToggleButton flyCameraToolButton;
-    @FXML
     private TextField treeSearchField;
     @FXML
     private TreeView<SceneTreeNode> sceneTreeView;
@@ -286,7 +284,6 @@ public final class DevInspectorPanelController {
         configureToolButton(rotateToolButton, group, DevToolMode.ROTATE);
         configureToolButton(scaleToolButton, group, DevToolMode.SCALE);
         configureToolButton(inspectToolButton, group, DevToolMode.INSPECT);
-        configureToolButton(flyCameraToolButton, group, DevToolMode.FLY_CAMERA);
         group.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if (updatingToolMode) {
                 return;
@@ -314,7 +311,6 @@ public final class DevInspectorPanelController {
             case ROTATE -> rotateToolButton;
             case SCALE -> scaleToolButton;
             case INSPECT -> inspectToolButton;
-            case FLY_CAMERA -> flyCameraToolButton;
         };
     }
 
