@@ -7,15 +7,30 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane prefHeight="720" prefWidth="1024" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.menu.presentation.components.LoginScreenController">
-    <VBox alignment="CENTER" maxWidth="420" prefWidth="420" spacing="14" style="-fx-background-color: rgba(15, 23, 42, 0.86); -fx-background-radius: 8; -fx-border-color: rgba(148, 163, 184, 0.35); -fx-border-radius: 8; -fx-border-width: 1; -fx-padding: 40;">
-        <Label style="-fx-font-size: 42px; -fx-font-weight: bold; -fx-text-fill: #f8fafc;" text="CRAB INC." />
-        <Label style="-fx-font-size: 16px; -fx-text-fill: #cbd5e1;" text="Log in to start your climb to the top." />
+<StackPane prefHeight="720" prefWidth="1024" stylesheets="@../../assets/ui/cartoon-style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.menu.presentation.components.LoginScreenController">
+    <!-- Removed hardcoded styling attributes and applied classes. Kept padding as requested for spacing. -->
+    <VBox alignment="CENTER" maxWidth="420" prefWidth="420" maxHeight="-Infinity" spacing="25" styleClass="menu-panel">
 
-        <TextField fx:id="usernameField" maxWidth="300" promptText="Username" style="-fx-background-color: #f8fafc; -fx-background-radius: 6; -fx-padding: 10 12 10 12; -fx-font-size: 14px;" />
-        <PasswordField fx:id="passwordField" maxWidth="300" promptText="Password" style="-fx-background-color: #f8fafc; -fx-background-radius: 6; -fx-padding: 10 12 10 12; -fx-font-size: 14px;" />
+        <!-- The Top Anchor Icon -->
+        <Label text="⚓" style="-fx-font-size: 70px; -fx-text-fill: #d35400; -fx-padding: -40 0 0 0;" />
 
-        <Button defaultButton="true" onAction="#handleLogin" prefWidth="160" style="-fx-background-color: #14b8a6; -fx-background-radius: 6; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 10 18 10 18; -fx-cursor: hand;" text="Login" />
+        <VBox alignment="CENTER" spacing="5">
+            <Label styleClass="title-text" text="CRAB INC." />
+            <Label text="THE OFFICIAL CORPORATE SHELLFISH PORTAL"
+                   style="-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-weight: bold; -fx-text-fill: #0d2b3e; -fx-opacity: 0.6; -fx-font-size: 10px;"/>
+        </VBox>
+
+        <Label text="Log in to start your climb to the top."
+               style="-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-size: 15px; -fx-text-fill: #0d2b3e;"/>
+
+        <VBox spacing="12" maxWidth="320">
+            <TextField fx:id="usernameField" promptText="Username" styleClass="text-field" />
+            <PasswordField fx:id="passwordField" promptText="Password" styleClass="text-field" />
+        </VBox>
+
         <Label fx:id="errorLabel" minHeight="24" style="-fx-font-size: 13px; -fx-text-fill: #f87171;" />
+
+        <Button onAction="#handleLogin" prefWidth="180" styleClass="menu-button" text="LOGIN" />
     </VBox>
+
 </StackPane>

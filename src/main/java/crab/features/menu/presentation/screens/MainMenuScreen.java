@@ -37,6 +37,7 @@ public final class MainMenuScreen implements GameScreen {
     private boolean visible;
 
     public MainMenuScreen(ScreenManager screens) {
+        // MOVED CSS INJECTION TO createView() to avoid Java compile errors
         this.screens = screens;
     }
 
@@ -70,51 +71,72 @@ public final class MainMenuScreen implements GameScreen {
         }
     }
 
+    // --- Replace your createView method with this ---
     private Parent createView() {
         Label title = new Label("Crab Inc.");
-        title.setStyle("-fx-font-size: 44px; -fx-font-weight: bold; -fx-text-fill: #f8fafc;");
+        title.getStyleClass().add("title-text");
+        title.setMouseTransparent(true);
 
         Label subtitle = new Label("Choose where to begin.");
-        subtitle.setStyle("-fx-font-size: 16px; -fx-text-fill: #cbd5e1;");
+        subtitle.getStyleClass().add("subtitle-text");
+        subtitle.setMouseTransparent(true);
 
-        Button redSquare = menuButton("Red Square", () -> screens.show(BoxDemoScreen.ID), "#14b8a6");
-        Button bunny = menuButton("Bunny Shader Demo", () -> screens.show(BunnyDemoScreen.ID), "#0ea5e9");
-        Button crab = menuButton("Crab Model Demo", () -> screens.show(CrabDemoScreen.ID), "#e11d48");
-        Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "#64748b");
-        Button exit = menuButton("Exit", () -> getGameController().exit(), "#475569");
+        // FIX: All calls MUST pass the 4th "rotation" parameter now
+        Button redSquare = menuButton("Red Square", () -> screens.show(BoxDemoScreen.ID), "#14b8a6", -2.0);
+        Button bunny = menuButton("Bunny Shader Demo", () -> screens.show(BunnyDemoScreen.ID), "#0ea5e9", 1.5);
+        Button crab = menuButton("Crab Model Demo", () -> screens.show(CrabDemoScreen.ID), "#e11d48", 3.0);
 
-        HBox secondaryActions = new HBox(12, logout, exit);
+        Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "#64748b", 0.0);
+        logout.setPrefWidth(140);
+
+        Button exit = menuButton("Exit", () -> getGameController().exit(), "#334155", 0.0);
+        exit.setPrefWidth(140);
+
+        HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
-        VBox menu = new VBox(16, title, subtitle, redSquare, bunny, crab, secondaryActions);
+        VBox menu = new VBox(20, title, subtitle, redSquare, bunny, crab, secondaryActions);
         menu.setAlignment(Pos.CENTER);
-        menu.setPadding(new Insets(44));
+        menu.setPadding(new Insets(40));
+
+        // CRITICAL: Set the size so the CSS panel background shows up!
         menu.setPrefWidth(PANEL_WIDTH);
         menu.setMaxWidth(PANEL_WIDTH);
-        menu.setStyle("""
-                -fx-background-color: rgba(15, 23, 42, 0.88);
-                -fx-background-radius: 8;
-                -fx-border-color: rgba(148, 163, 184, 0.35);
-                -fx-border-radius: 8;
-                -fx-border-width: 1;
-                """);
+        menu.getStyleClass().add("menu-panel");
+
+        // Ensure CSS is loaded from the root resources
+        String cssPath = "/assets/ui/cartoon-style.css";
+        var resource = getClass().getResource(cssPath);
+        if (resource != null) {
+            menu.getStylesheets().add(resource.toExternalForm());
+        }
+
         menu.setTranslateX((APP_WIDTH - PANEL_WIDTH) / 2.0);
-        menu.setTranslateY((APP_HEIGHT - 420) / 2.0);
+        menu.setTranslateY((APP_HEIGHT - 500) / 2.0);
         return menu;
     }
 
-    private static Button menuButton(String text, Runnable action, String color) {
+    // --- Ensure your menuButton method looks like this ---
+    private static Button menuButton(String text, Runnable action, String color, double rotation) {
         Button button = new Button(text);
-        button.setPrefWidth(250);
-        button.setStyle("""
-                -fx-background-color: %s;
-                -fx-background-radius: 6;
-                -fx-text-fill: white;
-                -fx-font-size: 15px;
-                -fx-font-weight: bold;
-                -fx-padding: 10 18 10 18;
-                -fx-cursor: hand;
-                """.formatted(color));
+        button.setPrefWidth(280);
+        button.getStyleClass().add("menu-button");
+        button.setRotate(rotation); // Base rotation
+
+        // 🦀 THE WOBBLE TRICK: Add listeners for hover
+        button.setOnMouseEntered(e -> {
+            button.setScaleX(1.1);
+            button.setScaleY(1.1);
+            button.setRotate(rotation * -1.5); // Tilt the other way on hover!
+        });
+
+        button.setOnMouseExited(e -> {
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+            button.setRotate(rotation); // Return to base tilt
+        });
+
+        button.setStyle("-fx-background-color: linear-gradient(to bottom, %s, derive(%s, -30%%));".formatted(color, color));
         button.setOnAction(event -> action.run());
         return button;
     }
