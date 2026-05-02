@@ -14,6 +14,7 @@ import crab.features.demo.presentation.components.DemoNavigatorController;
 import crab.features.demo.presentation.components.ShadertoyBackgroundView;
 import crab.features.demo.presentation.components.ShaderTexturedPlane;
 import crab.features.menu.presentation.screens.MainMenuScreen;
+import crab.platform.javafx3d.GlbSkyboxLoader;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.AmbientLight;
 import javafx.scene.DepthTest;
@@ -50,11 +51,14 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
     private static final double APP_HEIGHT = 720;
     private static final double NAVIGATOR_WIDTH = 548;
     private static final double CAMERA_STEP = 24;
+    private static final float SKYBOX_SIZE = 2200;
 
     private final ScreenManager screens;
     private final DevToolsModule devTools;
     private final Rotate cameraPitch = new Rotate(-90, Rotate.X_AXIS);
     private final Rotate cameraYaw = new Rotate(0, Rotate.Y_AXIS);
+    private final Rotate skyboxCameraPitch = new Rotate(-90, Rotate.X_AXIS);
+    private final Rotate skyboxCameraYaw = new Rotate(0, Rotate.Y_AXIS);
     private ShadertoyBackgroundView battlefieldShader;
     private MeshView battlefieldPlane;
     private AmbientLight battlefieldAmbientLight;
@@ -63,6 +67,7 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
     private PointLight fillLight;
     private Node crabModel;
     private PerspectiveCamera camera;
+    private PerspectiveCamera skyboxCamera;
     private Node sceneRoot;
     private Parent navigator;
     private boolean visible;
@@ -123,20 +128,52 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         if (visible && battlefieldShader != null) {
             battlefieldShader.update(tpf);
         }
+        if (visible) {
+            syncSkyboxToCamera();
+        }
     }
 
     private Node createSceneRoot() {
+        SubScene skyboxScene = createSkyboxScene();
         Node plane = createBattlefieldPlane();
         Node crab = createCrabModel();
         Group world = new Group(plane, crab, createLighting());
         world.setDepthTest(DepthTest.ENABLE);
 
         SubScene subScene = new SubScene(world, APP_WIDTH, APP_HEIGHT, true, null);
-        subScene.setFill(Color.rgb(24, 42, 52));
+        subScene.setFill(Color.TRANSPARENT);
         camera = createCamera();
         subScene.setCamera(camera);
+        syncSkyboxToCamera();
         registerDevTools(subScene);
+        return new Group(skyboxScene, subScene);
+    }
+
+    private SubScene createSkyboxScene() {
+        Group skyboxWorld = new Group(createSkybox());
+        skyboxWorld.setDepthTest(DepthTest.ENABLE);
+
+        SubScene subScene = new SubScene(skyboxWorld, APP_WIDTH, APP_HEIGHT, true, null);
+        subScene.setFill(Color.rgb(24, 42, 52));
+        skyboxCamera = createSkyboxCamera();
+        subScene.setCamera(skyboxCamera);
         return subScene;
+    }
+
+    private Node createSkybox() {
+        URL resource = getClass().getResource("/assets/models/environment/skybox_skydays_3.glb");
+        if (resource == null) {
+            return new Group();
+        }
+
+        try {
+            Node skyboxModel = GlbSkyboxLoader.load(resource, SKYBOX_SIZE);
+            skyboxModel.setDepthTest(DepthTest.ENABLE);
+            skyboxModel.setMouseTransparent(true);
+            return skyboxModel;
+        } catch (IOException | RuntimeException exception) {
+            return new Group();
+        }
     }
 
     private Node createBattlefieldPlane() {
@@ -211,6 +248,15 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         return perspectiveCamera;
     }
 
+    private PerspectiveCamera createSkyboxCamera() {
+        PerspectiveCamera perspectiveCamera = new PerspectiveCamera(true);
+        perspectiveCamera.setNearClip(0.1);
+        perspectiveCamera.setFarClip(2400);
+        perspectiveCamera.setFieldOfView(42);
+        perspectiveCamera.getTransforms().setAll(skyboxCameraYaw, skyboxCameraPitch);
+        return perspectiveCamera;
+    }
+
     private Parent loadNavigator() {
         URL resource = getClass().getResource("/fxml/components/demo-navigator.fxml");
         if (resource == null) {
@@ -275,6 +321,7 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         camera.setTranslateX(value);
+        syncSkyboxToCamera();
     }
 
     private void setCameraY(double value) {
@@ -283,6 +330,7 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         camera.setTranslateY(value);
+        syncSkyboxToCamera();
     }
 
     private void setCameraZ(double value) {
@@ -291,14 +339,17 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         camera.setTranslateZ(value);
+        syncSkyboxToCamera();
     }
 
     private void setCameraPitch(double value) {
         cameraPitch.setAngle(value);
+        syncSkyboxToCamera();
     }
 
     private void setCameraYaw(double value) {
         cameraYaw.setAngle(value);
+        syncSkyboxToCamera();
     }
 
     private void setBattlefieldScale(double scale) {
@@ -316,6 +367,15 @@ public final class CrabDemoScreen implements GameScreen, DemoDirectionalControls
         }
 
         BattlefieldLighting.setAmbientIntensity(battlefieldAmbientLight, intensity);
+    }
+
+    private void syncSkyboxToCamera() {
+        if (skyboxCamera == null) {
+            return;
+        }
+
+        skyboxCameraYaw.setAngle(cameraYaw.getAngle());
+        skyboxCameraPitch.setAngle(cameraPitch.getAngle());
     }
 
     private void registerDevTools(SubScene subScene) {
