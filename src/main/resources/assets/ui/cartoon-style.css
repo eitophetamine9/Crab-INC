@@ -1,0 +1,75 @@
+/* 1. Font Import */
+/* IMPORTANT: Ensure LuckiestGuy-Regular.ttf is in: src/main/resources/assets/fonts/ */
+@font-face {
+    font-family: 'Luckiest Guy';
+    src: url('../fonts/LuckiestGuy-Regular.ttf');
+}
+
+/* 2. The Main Panel (Giant Shell/Sand) */
+.menu-panel {
+    -fx-background-color: #f1c40f;
+    -fx-background-radius: 40 10 40 10;
+    -fx-border-color: #d35400;
+    -fx-border-width: 8;
+    -fx-border-radius: 40 10 40 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 0, 0, 10, 10);
+    -fx-padding: 40;
+}
+
+/* 3. The Titles */
+.title-text {
+    -fx-font-family: "Luckiest Guy", "Arial Rounded MT Bold", sans-serif;
+    -fx-font-size: 64px;
+    -fx-text-fill: white;
+    /* Chunky Hard Shadow */
+    -fx-effect: dropshadow(one-pass-box, #e67e22, 0, 0, 6, 6);
+}
+
+.subtitle-text {
+    -fx-font-family: "Arial Rounded MT Bold", sans-serif;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0d2b3e;
+    -fx-opacity: 0.8;
+}
+
+/* 4. The Wood Plank Buttons (Hover Rotation Fix) */
+.menu-button {
+    -fx-background-color: linear-gradient(to bottom, #a04000, #5d4037);
+    -fx-background-radius: 12;
+    -fx-border-color: #3e2723;
+    -fx-border-width: 4;
+    -fx-border-radius: 12;
+    -fx-text-fill: #f1c40f; /* Keep text yellow */
+    -fx-font-family: "Luckiest Guy", "Arial Rounded MT Bold", sans-serif;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    /* 3D Bevel effect */
+    -fx-effect: inner-shadow(three-pass-box, rgba(255,255,255,0.3), 0, 3, 0, 0);
+}
+
+/* THE FIX: Ensure text-fill doesn't turn white on hover/focus */
+.menu-button:hover, .menu-button:focused {
+    -fx-background-color: linear-gradient(to bottom, #d35400, #a04000);
+    -fx-text-fill: #f1c40f;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    -fx-rotate: -2; /* BRINGS BACK THE WOBBLE */
+}
+
+/* 5. Chunky Inputs (PvZ Style) */
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #1a5276; /* Ocean Blue */
+    -fx-border-width: 4;
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-padding: 12 15;
+    -fx-font-size: 16px;
+    -fx-font-family: "Arial Rounded MT Bold", sans-serif;
+    -fx-text-fill: #0d2b3e;
+}
+
+.text-field:focused {
+    -fx-border-color: #d35400; /* Turns orange when you click it */
+}

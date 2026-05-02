@@ -1,4 +1,5 @@
 # Project Title: Crab Inc.
+> **“Crab your way to the top”**
 
 ## Group Members
 - CARILLO, SAMUEL (flurgerburger)
@@ -8,56 +9,50 @@
 - SANTIZO, JOHN ERICK (eitophetamine9)
 
 ## Project Description
-Crab Inc. is a multiplayer, turn-based tycoon game about "crab mentality." Players manage competing local businesses and choose whether to build the community, sabotage rivals, or do both.
+Crab Inc. is an underwater, phase-based strategy card game that explores the socio-economic phenomenon of **"Crab Mentality."** Set in a vibrant seabed district, players manage resources and navigate four distinct phases (Development, Action, Resolution, and Event). The game challenges players to balance their individual growth against community health, choosing between cooperation (Bayanihan) and destructive competition (Crab Actions).
 
 ## Current Architecture
 Crab Inc. uses FXGL as the runtime foundation and JavaFX/FXML for UI.
 
 Core rule:
-
 > FXGL is the runtime. Crab Inc. owns the architecture.
 
 Current layers:
-
 - `Main` starts the app.
 - `crab.app` adapts FXGL lifecycle hooks into project bootstrap code.
-- `crab.appcore` holds small app-lifetime services such as module lifecycle and game context.
-- `crab.features` holds feature-oriented code.
-- Domain/game state should stay plain Java and should not depend on FXGL or JavaFX.
+- `crab.appcore` holds small app-lifetime services such as module lifecycle, game context, and the **Phase Engine**.
+- `crab.features` holds feature-oriented code (Card System, Build System, Event Logic).
+- Domain/game state (e.g., `Card`, `Player`, `GamePhase`) should stay plain Java and should not depend on FXGL or JavaFX.
 
 The current scaffold proves:
-
-- FXGL startup
-- FXML UI loading
-- JavaFX 3D rendering inside the FXGL scene
-- basic module registration through `GameContext`
+- FXGL startup and scene integration.
+- FXML UI loading for card hands and player dashboards.
+- JavaFX 3D rendering for underwater environmental assets.
+- Simultaneous action submission logic through the `GameContext`.
 
 ## Planned Features
-- 3 to 7 player sessions
-- character selection
-- map/session settings
-- simultaneous turn command submission
-- local play with bots
-- LAN host/join multiplayer
-- optional host authentication
-- end-game reports
+- **Phase-Based Gameplay:** Development (resource gathering), Action (secret submission), Resolution (simultaneous reveal), and Event (global modifiers).
+- **Build System:** Three distinct playstyles (Saboteur, Altruist, Opportunist) with unique passive bonuses.
+- **Card Mechanics:** Tiered rarity system (Common, Uncommon, Rare) for Help, Steal, and Sabotage actions.
+- **Status Indicators:** Dynamic visual feedback using Clams (Wealth/Pearls) and Emojis (Sentiment/Hostility).
+- **Multiplayer:** 3 to 7 player sessions with LAN host/join capabilities and local bot support.
+- **End-Game Reports:** Summary of the "Action Ledger" detailing who sabotaged whom.
 
 ## Planned Technologies
 - Java 25
 - FXGL 25.0.1
 - JavaFX 25.0.1 / FXML
 - Maven
-- Future local networking through Java sockets or a project-owned transport adapter
+- SQLite (via JDBC) for Card Library and Action History.
+- Future local networking through Java sockets or a project-owned transport adapter.
 
 ## Run
 Use JDK 25 for Maven and IntelliJ.
 
 Use the shared IntelliJ run configuration:
-
 - `Crab Inc FXGL`
 
 Or run from terminal:
-
 ```bash
 ./mvnw javafx:run
 ```
@@ -65,11 +60,11 @@ Or run from terminal:
 If Maven reports that the project requires Java 25, set the project SDK and Maven runner JRE to an installed JDK 25.
 
 ## Evaluation Criteria Mapping
-- **OOP:** Use small classes with clear responsibilities and Doxygen class comments for intentional patterns/SOLID usage.
+- **OOP:** Use of inheritance for card types and strategy-based event effects. Small classes with clear responsibilities and Doxygen class comments for intentional patterns/SOLID usage.
 - **GUI:** Use FXGL for runtime scene integration and JavaFX/FXML for UI panels.
 - **UML:** Keep diagrams in `/Diagrams`.
-- **Design Patterns:** Use Adapter, Facade, Strategy, Command, State, Observer/Event Bus, and Service Registry only where they clarify ownership.
-- **Multithreading:** Keep background work behind appcore services such as future task, save/load, LAN discovery, or networking adapters.
+- **Design Patterns:** Use Strategy for resolution of card effects/events, Command for buffering secret player actions, and Singleton/Service Registry for centralized managers via GameContext.
+- **Multithreading:** Keep background work behind appcore services such as phase timers, simultaneous resolution calculations, and LAN discovery/networking adapters.
 
 ## Architecture Credits
 - Vertical Slice Architecture: Jimmy Bogard
