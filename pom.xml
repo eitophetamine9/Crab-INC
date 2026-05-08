@@ -11,10 +11,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>25</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <junit.version>5.10.2</junit.version>
-        <fxgl.version>25.0.1</fxgl.version>
-        <javafx.version>25.0.1</javafx.version>
+        <fxgl.version>21.1</fxgl.version>
+        <javafx.version>21.0.1</javafx.version>
     </properties>
 
     <dependencies>
@@ -67,29 +67,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>enforce-java-25-runtime</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireJavaVersion>
-                                    <version>[25,26)</version>
-                                    <message>
-                                        Crab Inc. currently runs on Java 25 for FXGL 25 shader support. Configure IntelliJ and Maven to use JDK 25.
-                                    </message>
-                                </requireJavaVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
@@ -111,9 +88,6 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>Main</mainClass>
-                            <options>
-                                <option>--enable-native-access=ALL-UNNAMED</option>
-                            </options>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
@@ -128,40 +102,5 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>mac-metal</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                </os>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.5.0</version>
-                        <executions>
-                            <execution>
-                                <id>compile-metal-shoreline-renderer</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>/bin/sh</executable>
-                                    <arguments>
-                                        <argument>-c</argument>
-                                        <argument>
-                                            mkdir -p "${project.build.directory}/native" &amp;&amp; xcrun clang -dynamiclib -fobjc-arc -framework Foundation -framework Metal -framework CoreFoundation "${project.basedir}/src/main/native/metal/CrabMetalShorelineRenderer.m" -o "${project.build.directory}/native/libcrab_metal_shoreline.dylib"
-                                        </argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>

@@ -5,7 +5,7 @@ import crab.appcore.context.GameContext;
 import crab.appcore.context.ModuleRegistry;
 import crab.appcore.screen.ScreenManager;
 import crab.features.devtools.DevToolsModule;
-import crab.features.demo.DemoModule;
+import crab.features.gameplay.GameplayModule;
 import crab.features.menu.MenuModule;
 import crab.features.menu.presentation.screens.LoginScreen;
 import javafx.scene.Cursor;
@@ -43,7 +43,7 @@ public final class Bootstrap {
             context.register(ScreenManager.class, screens);
             modules.register(new MenuModule());
             modules.register(new DevToolsModule());
-            modules.register(new DemoModule());
+            modules.register(new GameplayModule());
             modules.initialize(context);
             modulesInitialized = true;
         }

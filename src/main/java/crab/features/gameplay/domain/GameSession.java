@@ -84,10 +84,9 @@ public final class GameSession {
     public void resolveDevelopment(Map<String, Integer> selectedCardIndexes, Set<String> upgradeRequests) {
         requirePhase(GamePhase.DEVELOPMENT);
         Objects.requireNonNull(selectedCardIndexes, "selectedCardIndexes");
-        Objects.requireNonNull(upgradeRequests, "upgradeRequests");
 
         for (PlayerState player : players.values()) {
-            player.addGold(player.buildLevel().income());
+            player.addGold(10); // Base income
         }
 
         for (PlayerState player : players.values()) {
@@ -98,10 +97,6 @@ public final class GameSession {
             }
 
             player.addCard(choices.get(selectedIndex));
-        }
-
-        for (String playerId : upgradeRequests) {
-            requirePlayer(playerId).upgradeBuild();
         }
 
         phase = GamePhase.ACTION;
@@ -213,7 +208,7 @@ public final class GameSession {
     }
 
     private int positiveEffect(ActionCard card, PlayerState actor) {
-        double effect = card.baseEffect() * card.rarity().multiplier() * (1.0 + actor.buildLevel().positiveGainBonus());
+        double effect = card.baseEffect() * card.rarity().multiplier();
         if (crabPeakActive) {
             effect *= 2.0;
         }

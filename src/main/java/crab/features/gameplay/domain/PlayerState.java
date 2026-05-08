@@ -15,7 +15,6 @@ public final class PlayerState {
     private int wealth;
     private int reputation;
     private int infamy;
-    private BuildLevel buildLevel = BuildLevel.ONE;
 
     private PlayerState(String id, String displayName, PlayerClass playerClass) {
         this.id = Objects.requireNonNull(id, "id");
@@ -61,10 +60,6 @@ public final class PlayerState {
         return infamy;
     }
 
-    public BuildLevel buildLevel() {
-        return buildLevel;
-    }
-
     public List<ActionCard> hand() {
         return List.copyOf(hand);
     }
@@ -94,16 +89,5 @@ public final class PlayerState {
 
     public void removeCard(ActionCard card) {
         hand.remove(card);
-    }
-
-    public boolean upgradeBuild() {
-        return buildLevel.next()
-                .filter(next -> gold >= next.upgradeCost())
-                .map(next -> {
-                    gold -= next.upgradeCost();
-                    buildLevel = next;
-                    return true;
-                })
-                .orElse(false);
     }
 }
