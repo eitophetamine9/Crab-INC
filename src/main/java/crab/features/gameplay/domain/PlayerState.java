@@ -15,6 +15,11 @@ public final class PlayerState {
     private int wealth;
     private int reputation;
     private int infamy;
+<<<<<<< Updated upstream
+    private BuildLevel buildLevel = BuildLevel.ONE;
+=======
+    private int buildLevel = 1;
+>>>>>>> Stashed changes
 
     private PlayerState(String id, String displayName, PlayerClass playerClass) {
         this.id = Objects.requireNonNull(id, "id");
@@ -60,12 +65,72 @@ public final class PlayerState {
         return infamy;
     }
 
+<<<<<<< Updated upstream
+    public BuildLevel buildLevel() {
+        return buildLevel;
+    }
+
+=======
+    public int buildLevel() {
+        return buildLevel;
+    }
+
+    public int income() {
+        return switch (buildLevel) {
+            case 1 -> 10;
+            case 2 -> 25;
+            case 3 -> 50;
+            case 4 -> 90;
+            case 5 -> 150;
+            default -> 150;
+        };
+    }
+
+    public double statBonus() {
+        return switch (buildLevel) {
+            case 1 -> 0.0;
+            case 2 -> 0.05;
+            case 3 -> 0.10;
+            case 4 -> 0.15;
+            case 5 -> 0.25;
+            default -> 0.25;
+        };
+    }
+
+    public int upgradeCost() {
+        return switch (buildLevel) {
+            case 1 -> 40;
+            case 2 -> 80;
+            case 3 -> 150;
+            case 4 -> 250;
+            case 5 -> -1; // Max level reached
+            default -> -1;
+        };
+    }
+
+    public boolean canUpgradeBuild() {
+        int cost = upgradeCost();
+        return cost != -1 && gold >= cost;
+    }
+
+    public void upgradeBuild() {
+        if (canUpgradeBuild()) {
+            deductGold(upgradeCost());
+            buildLevel++;
+        }
+    }
+
+>>>>>>> Stashed changes
     public List<ActionCard> hand() {
         return List.copyOf(hand);
     }
 
     public void addGold(int amount) {
         gold = Math.max(0, gold + amount);
+    }
+
+    public void deductGold(int amount) {
+        gold = Math.max(0, gold - amount);
     }
 
     public void addWealth(int amount) {
@@ -89,5 +154,21 @@ public final class PlayerState {
 
     public void removeCard(ActionCard card) {
         hand.remove(card);
+    }
+
+<<<<<<< Updated upstream
+    public boolean upgradeBuild() {
+        return buildLevel.next()
+                .filter(next -> gold >= next.upgradeCost())
+                .map(next -> {
+                    gold -= next.upgradeCost();
+                    buildLevel = next;
+                    return true;
+                })
+                .orElse(false);
+=======
+    public void clearHand() {
+        hand.clear();
+>>>>>>> Stashed changes
     }
 }

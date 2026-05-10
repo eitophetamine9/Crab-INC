@@ -2,6 +2,9 @@ package crab.features.menu.presentation.screens;
 
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
+import crab.features.demo.presentation.screens.BoxDemoScreen;
+import crab.features.demo.presentation.screens.BunnyDemoScreen;
+import crab.features.demo.presentation.screens.CrabDemoScreen;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -79,6 +82,9 @@ public final class MainMenuScreen implements GameScreen {
         subtitle.setMouseTransparent(true);
 
         // FIX: All calls MUST pass the 4th "rotation" parameter now
+        Button redSquare = menuButton("Red Square", () -> screens.show(BoxDemoScreen.ID), "#14b8a6", -2.0);
+        Button bunny = menuButton("Bunny Shader Demo", () -> screens.show(BunnyDemoScreen.ID), "#0ea5e9", 1.5);
+        Button crab = menuButton("Crab Model Demo", () -> screens.show(CrabDemoScreen.ID), "#e11d48", 3.0);
 
         Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "#64748b", 0.0);
         logout.setPrefWidth(140);
@@ -86,13 +92,16 @@ public final class MainMenuScreen implements GameScreen {
         Button exit = menuButton("Exit", () -> getGameController().exit(), "#334155", 0.0);
         exit.setPrefWidth(140);
 
-        Button play = menuButton("Play", () -> screens.show(crab.features.gameplay.presentation.GameplayScreen.ID), "#10b981", 0.0);
+<<<<<<< Updated upstream
+=======
+        Button play = menuButton("Play", () -> screens.show(SetupScreen.ID), "#10b981", 0.0);
         play.setPrefWidth(280);
 
+>>>>>>> Stashed changes
         HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
-        VBox menu = new VBox(20, title, subtitle, play, secondaryActions);
+        VBox menu = new VBox(20, title, subtitle, redSquare, bunny, crab, secondaryActions);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(40));
 

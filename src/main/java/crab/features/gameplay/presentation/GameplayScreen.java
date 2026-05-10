@@ -25,9 +25,10 @@ public final class GameplayScreen implements GameScreen {
     private Parent root;
     private boolean visible;
 
+    public static int requestedEnemyCount = 3;
     private GameSession gameSession;
     private PlayerState humanPlayer;
-    private PlayerState aiPlayer;
+    private List<PlayerState> aiPlayers;
 
     public GameplayScreen(ScreenManager screens) {
         this.screens = screens;
@@ -53,7 +54,7 @@ public final class GameplayScreen implements GameScreen {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle-screen/battle-screen.fxml"));
             root = loader.load();
             GameplayScreenController controller = loader.getController();
-            controller.initData(gameSession, screens, humanPlayer, aiPlayer);
+            controller.initData(gameSession, screens, humanPlayer, aiPlayers);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load battle-screen.fxml", e);
         }
@@ -79,28 +80,38 @@ public final class GameplayScreen implements GameScreen {
         PlayerClass[] classes = PlayerClass.values();
         
         PlayerClass humanClass = classes[random.nextInt(classes.length)];
-        PlayerClass aiClass = classes[random.nextInt(classes.length)];
-        
         humanPlayer = PlayerState.create("human", "Player", humanClass);
-        aiPlayer = PlayerState.create("ai", "Crab Bot", aiClass);
+
+        aiPlayers = new ArrayList<>();
+        List<PlayerState> allPlayers = new ArrayList<>();
+        allPlayers.add(humanPlayer);
+
+        for (int i = 0; i < requestedEnemyCount; i++) {
+            PlayerClass aiClass = classes[random.nextInt(classes.length)];
+            PlayerState ai = PlayerState.create("ai_" + i, "Crab Bot " + (i + 1), aiClass);
+            aiPlayers.add(ai);
+            allPlayers.add(ai);
+        }
 
         List<ActionCard> deck = createStandardDeck();
         
         // Start players with the 3 standard cards in hand
         for (ActionCard card : deck) {
             humanPlayer.addCard(card);
-            aiPlayer.addCard(card);
+            for (PlayerState ai : aiPlayers) {
+                ai.addCard(card);
+            }
         }
 
-        gameSession = GameSession.newLocal(List.of(humanPlayer, aiPlayer), 10, deck);
+        gameSession = GameSession.newLocal(allPlayers, 10, deck);
     }
 
     private List<ActionCard> createStandardDeck() {
         List<ActionCard> deck = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
-            deck.add(new ActionCard("take", "Take", CardType.STEAL, CardRarity.COMMON, 10));
-            deck.add(new ActionCard("give", "Give", CardType.HELP, CardRarity.COMMON, 10));
-            deck.add(new ActionCard("share", "Share", CardType.HELP, CardRarity.COMMON, 15));
+            deck.add(new ActionCard("take", "Take", CardType.STEAL, CardRarity.COMMON));
+            deck.add(new ActionCard("give", "Give", CardType.HELP, CardRarity.COMMON));
+            deck.add(new ActionCard("share", "Share", CardType.HELP, CardRarity.COMMON));
         }
         return deck;
     }

@@ -73,3 +73,13 @@
 .text-field:focused {
     -fx-border-color: #d35400; /* Turns orange when you click it */
 }
+
+/* 6. ScrollPane Transparent Background */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}

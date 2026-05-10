@@ -3,5 +3,8 @@ package crab.features.gameplay.domain;
 public enum CardType {
     HELP,
     STEAL,
-    SABOTAGE
+    SABOTAGE,
+    SIGNATURE_SABOTEUR,
+    SIGNATURE_ALTRUIST,
+    SIGNATURE_OPPORTUNIST
 }

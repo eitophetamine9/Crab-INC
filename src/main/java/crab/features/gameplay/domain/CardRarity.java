@@ -3,7 +3,8 @@ package crab.features.gameplay.domain;
 public enum CardRarity {
     COMMON(1.0),
     UNCOMMON(1.5),
-    RARE(2.5);
+    RARE(2.5),
+    EPIC(3.5);
 
     private final double multiplier;
 
