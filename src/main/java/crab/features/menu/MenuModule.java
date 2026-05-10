@@ -22,6 +22,7 @@ public final class MenuModule implements GameModule {
         screens.register(new LoginScreen(screens));
         screens.register(new MainMenuScreen(screens));
         screens.register(new crab.features.menu.presentation.screens.SetupScreen(screens));
+        screens.register(new crab.features.gameplay.presentation.GameplayScreen(screens));
     }
 
     @Override

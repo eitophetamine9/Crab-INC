@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public final class PlayerState {
+public final class PlayerState implements java.io.Serializable {
     public static final int MAX_HAND_SIZE = 3;
 
     private final String id;
@@ -15,11 +15,7 @@ public final class PlayerState {
     private int wealth;
     private int reputation;
     private int infamy;
-<<<<<<< Updated upstream
-    private BuildLevel buildLevel = BuildLevel.ONE;
-=======
     private int buildLevel = 1;
->>>>>>> Stashed changes
 
     private PlayerState(String id, String displayName, PlayerClass playerClass) {
         this.id = Objects.requireNonNull(id, "id");
@@ -65,12 +61,6 @@ public final class PlayerState {
         return infamy;
     }
 
-<<<<<<< Updated upstream
-    public BuildLevel buildLevel() {
-        return buildLevel;
-    }
-
-=======
     public int buildLevel() {
         return buildLevel;
     }
@@ -119,8 +109,6 @@ public final class PlayerState {
             buildLevel++;
         }
     }
-
->>>>>>> Stashed changes
     public List<ActionCard> hand() {
         return List.copyOf(hand);
     }
@@ -156,19 +144,7 @@ public final class PlayerState {
         hand.remove(card);
     }
 
-<<<<<<< Updated upstream
-    public boolean upgradeBuild() {
-        return buildLevel.next()
-                .filter(next -> gold >= next.upgradeCost())
-                .map(next -> {
-                    gold -= next.upgradeCost();
-                    buildLevel = next;
-                    return true;
-                })
-                .orElse(false);
-=======
     public void clearHand() {
         hand.clear();
->>>>>>> Stashed changes
     }
 }

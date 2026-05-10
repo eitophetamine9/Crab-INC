@@ -17,6 +17,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import javafx.scene.shape.Rectangle;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.Color;
+import javafx.scene.effect.BlendMode;
+import javafx.scene.Group;
+import javafx.scene.control.ScrollPane;
+
 public class GameplayScreenController {
 
     @FXML private AnchorPane mainLayout;
@@ -35,6 +44,8 @@ public class GameplayScreenController {
     @FXML private HBox handArea;
     @FXML private Button endTurnBtn;
     @FXML private Label roundGemLabel;
+    @FXML private StackPane enemyScrollContainer;
+    @FXML private ScrollPane enemyScrollPane;
 
     private ScreenManager screens;
     private GameSession gameSession;
@@ -46,6 +57,7 @@ public class GameplayScreenController {
     private ActionCard lastAiCardPlayed;
     
     private boolean isFemale = false;
+    private VBox pauseMenu;
 
     private final Random random = new Random();
 
@@ -102,6 +114,28 @@ public class GameplayScreenController {
             updateHeroAvatarImage();
         });
 
+        if (enemyScrollContainer != null && enemyScrollPane != null) {
+            Rectangle fadeMask = new Rectangle();
+            fadeMask.widthProperty().bind(enemyScrollContainer.widthProperty());
+            fadeMask.heightProperty().bind(enemyScrollContainer.heightProperty());
+            fadeMask.setFill(new LinearGradient(
+                    0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                    new Stop(0, Color.TRANSPARENT),
+                    new Stop(0.15, Color.WHITE),
+                    new Stop(0.85, Color.WHITE),
+                    new Stop(1, Color.TRANSPARENT)
+            ));
+            fadeMask.setBlendMode(BlendMode.MULTIPLY);
+            
+            Group blendGroup = new Group(enemyScrollPane, fadeMask);
+            blendGroup.setBlendMode(BlendMode.SRC_OVER);
+            
+            enemyScrollContainer.getChildren().clear();
+            enemyScrollContainer.getChildren().add(blendGroup);
+            enemyScrollPane.prefWidthProperty().bind(enemyScrollContainer.widthProperty());
+            enemyScrollPane.prefHeightProperty().bind(enemyScrollContainer.heightProperty());
+        }
+
         updateHeroAvatarImage();
         updateUI();
     }
@@ -117,7 +151,73 @@ public class GameplayScreenController {
 
     @FXML
     void handleSettings(ActionEvent event) {
-        screens.show("menu_main");
+        if (pauseMenu != null) {
+            return; // Already paused
+        }
+
+        Label pauseLabel = new Label("PAUSED");
+        pauseLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+
+        Button continueBtn = new Button("Continue");
+        continueBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20;");
+        continueBtn.setOnAction(e -> {
+            mainLayout.getChildren().remove(pauseMenu);
+            pauseMenu = null;
+        });
+
+        Button saveBtn = new Button("Save and Return to Menu");
+        saveBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-text-fill: #10b981;");
+        saveBtn.setOnAction(e -> {
+            String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
+            String saveFileName = "savegame_" + username + ".dat";
+            try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(saveFileName))) {
+                oos.writeObject(gameSession);
+                crab.appcore.db.DatabaseManager.registerSave(username, saveFileName);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            mainLayout.getChildren().remove(pauseMenu);
+            pauseMenu = null;
+            screens.show("menu_main");
+        });
+
+        Button withdrawBtn = new Button("Withdraw");
+        withdrawBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20;");
+        withdrawBtn.setOnAction(e -> {
+            pauseMenu.getChildren().clear();
+
+            Label confirmLabel = new Label("Are you sure you want to withdraw?");
+            confirmLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+            Button yesBtn = new Button("Yes, Withdraw");
+            yesBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-text-fill: red;");
+            yesBtn.setOnAction(yesEvent -> {
+                mainLayout.getChildren().remove(pauseMenu);
+                pauseMenu = null;
+                screens.show("menu_main");
+            });
+
+            Button noBtn = new Button("No, Cancel");
+            noBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20;");
+            noBtn.setOnAction(noEvent -> {
+                pauseMenu.getChildren().clear();
+                pauseMenu.getChildren().addAll(pauseLabel, continueBtn, saveBtn, withdrawBtn);
+            });
+
+            HBox buttonBox = new HBox(20, yesBtn, noBtn);
+            buttonBox.setAlignment(Pos.CENTER);
+
+            pauseMenu.getChildren().addAll(confirmLabel, buttonBox);
+        });
+
+        pauseMenu = new VBox(20, pauseLabel, continueBtn, saveBtn, withdrawBtn);
+        pauseMenu.setAlignment(Pos.CENTER);
+        pauseMenu.setStyle("-fx-border-color: black; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: white;");
+        
+        mainLayout.getChildren().add(pauseMenu);
+        AnchorPane.setTopAnchor(pauseMenu, 200.0);
+        AnchorPane.setLeftAnchor(pauseMenu, 300.0);
+        AnchorPane.setRightAnchor(pauseMenu, 300.0);
     }
 
     private void updateUI() {
@@ -219,6 +319,22 @@ public class GameplayScreenController {
         statsBox.getChildren().addAll(pClass, pName, pWealth, pRep, pInfamy);
         
         container.getChildren().addAll(crabAvatar, statsBox);
+
+        if (gameSession.phase() == GamePhase.RESOLUTION) {
+            PlayerAction action = gameSession.pendingActions().get(player.id());
+            if (action != null && action.targetPlayerId() != null) {
+                String targetName = gameSession.players().stream()
+                        .filter(p -> p.id().equals(action.targetPlayerId()))
+                        .map(PlayerState::displayName)
+                        .findFirst()
+                        .orElse(action.targetPlayerId());
+                Label actionLabel = new Label("Played: " + action.card().name() + "\nTargeted: " + targetName);
+                actionLabel.setStyle("-fx-text-fill: #facc15; -fx-font-weight: bold; -fx-font-size: 11px; -fx-text-alignment: center; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 3; -fx-background-radius: 5;");
+                actionLabel.setWrapText(true);
+                actionLabel.setAlignment(Pos.CENTER);
+                container.getChildren().add(actionLabel);
+            }
+        }
 
         // Targeting logic
         container.setOnMouseClicked(e -> {
@@ -359,10 +475,15 @@ public class GameplayScreenController {
                     }
                     updateHandVisuals();
                 } else {
-                    // Left click -> Select
-                    selectedCard = card;
+                    // Left click -> Select or Unselect
+                    if (selectedCard == card) {
+                        selectedCard = null;
+                        phasePromptLabel.setText("Phase: Select Card, Right-Click to Keep 1, then Target");
+                    } else {
+                        selectedCard = card;
+                        phasePromptLabel.setText("Target an Enemy!");
+                    }
                     updateHandVisuals();
-                    phasePromptLabel.setText("Target an Enemy!");
                 }
             }
         });

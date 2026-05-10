@@ -25,7 +25,7 @@
     </VBox>
 
     <!-- Center / Top Area (Enemies) wrapped in ScrollPane for dynamic scaling/overflow -->
-    <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;" stylesheets="@/assets/ui/cartoon-style.css" AnchorPane.topAnchor="100.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="220.0">
+    <ScrollPane hbarPolicy="NEVER" vbarPolicy="NEVER" fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;" stylesheets="@/assets/ui/cartoon-style.css" AnchorPane.topAnchor="100.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="220.0">
         <content>
             <VBox fx:id="battlefieldArea" alignment="CENTER" spacing="15.0" style="-fx-background-color: transparent;" />
         </content>

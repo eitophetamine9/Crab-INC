@@ -26,6 +26,7 @@ public final class GameplayScreen implements GameScreen {
     private boolean visible;
 
     public static int requestedEnemyCount = 3;
+    public static GameSession loadedSession = null;
     private GameSession gameSession;
     private PlayerState humanPlayer;
     private List<PlayerState> aiPlayers;
@@ -48,8 +49,16 @@ public final class GameplayScreen implements GameScreen {
         visible = true;
         getGameScene().setBackgroundColor(Color.WHITE); // Plain white background
 
-        initializeGameSession();
+        if (loadedSession != null) {
+            gameSession = loadedSession;
+            humanPlayer = gameSession.players().stream().filter(p -> p.id().equals("human")).findFirst().orElse(null);
+            aiPlayers = gameSession.players().stream().filter(p -> p.id().startsWith("ai_")).collect(java.util.stream.Collectors.toList());
+            loadedSession = null; // consume it
+        } else {
+            initializeGameSession();
+        }
         
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle-screen/battle-screen.fxml"));
             root = loader.load();

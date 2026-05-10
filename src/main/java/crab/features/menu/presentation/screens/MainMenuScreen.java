@@ -2,9 +2,7 @@ package crab.features.menu.presentation.screens;
 
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
-import crab.features.demo.presentation.screens.BoxDemoScreen;
-import crab.features.demo.presentation.screens.BunnyDemoScreen;
-import crab.features.demo.presentation.screens.CrabDemoScreen;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -81,10 +79,7 @@ public final class MainMenuScreen implements GameScreen {
         subtitle.getStyleClass().add("subtitle-text");
         subtitle.setMouseTransparent(true);
 
-        // FIX: All calls MUST pass the 4th "rotation" parameter now
-        Button redSquare = menuButton("Red Square", () -> screens.show(BoxDemoScreen.ID), "#14b8a6", -2.0);
-        Button bunny = menuButton("Bunny Shader Demo", () -> screens.show(BunnyDemoScreen.ID), "#0ea5e9", 1.5);
-        Button crab = menuButton("Crab Model Demo", () -> screens.show(CrabDemoScreen.ID), "#e11d48", 3.0);
+
 
         Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "#64748b", 0.0);
         logout.setPrefWidth(140);
@@ -92,16 +87,29 @@ public final class MainMenuScreen implements GameScreen {
         Button exit = menuButton("Exit", () -> getGameController().exit(), "#334155", 0.0);
         exit.setPrefWidth(140);
 
-<<<<<<< Updated upstream
-=======
         Button play = menuButton("Play", () -> screens.show(SetupScreen.ID), "#10b981", 0.0);
         play.setPrefWidth(280);
 
->>>>>>> Stashed changes
+        String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
+        String saveFileStr = crab.appcore.db.DatabaseManager.getSaveForUser(username);
+        java.io.File saveFile = saveFileStr != null ? new java.io.File(saveFileStr) : null;
+        
+        Button continueBtn = menuButton("Continue", () -> {
+            if (saveFile == null || !saveFile.exists()) return;
+            try (java.io.ObjectInputStream ois = new java.io.ObjectInputStream(new java.io.FileInputStream(saveFile))) {
+                crab.features.gameplay.presentation.GameplayScreen.loadedSession = (crab.features.gameplay.domain.GameSession) ois.readObject();
+                screens.show(crab.features.gameplay.presentation.GameplayScreen.ID);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, "#f59e0b", 0.0);
+        continueBtn.setPrefWidth(280);
+        continueBtn.setDisable(saveFile == null || !saveFile.exists());
+
         HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
-        VBox menu = new VBox(20, title, subtitle, redSquare, bunny, crab, secondaryActions);
+        VBox menu = new VBox(20, title, subtitle, continueBtn, play, secondaryActions);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(40));
 
