@@ -21,6 +21,7 @@ public final class MenuModule implements GameModule {
         ScreenManager screens = context.require(ScreenManager.class);
         screens.register(new LoginScreen(screens));
         screens.register(new MainMenuScreen(screens));
+        screens.register(new crab.features.menu.presentation.screens.SetupScreen(screens));
     }
 
     @Override

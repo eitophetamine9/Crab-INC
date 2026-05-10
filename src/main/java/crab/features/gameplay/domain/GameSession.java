@@ -87,17 +87,20 @@ public final class GameSession {
         Objects.requireNonNull(upgradeRequests, "upgradeRequests");
 
         for (PlayerState player : players.values()) {
+<<<<<<< Updated upstream
             player.addGold(player.buildLevel().income());
+=======
+            player.addGold(player.income()); // Income based on build level
+            if (upgradeRequests != null && upgradeRequests.contains(player.id())) {
+                player.upgradeBuild();
+            }
+>>>>>>> Stashed changes
         }
 
         for (PlayerState player : players.values()) {
-            int selectedIndex = selectedCardIndexes.getOrDefault(player.id(), 0);
-            List<ActionCard> choices = List.of(drawCard(), drawCard());
-            if (selectedIndex < 0 || selectedIndex >= choices.size()) {
-                throw new IllegalArgumentException("Selected card index must be 0 or 1 for player: " + player.id());
+            while (player.hand().size() < PlayerState.MAX_HAND_SIZE) {
+                player.addCard(drawCard());
             }
-
-            player.addCard(choices.get(selectedIndex));
         }
 
         for (String playerId : upgradeRequests) {
@@ -128,6 +131,11 @@ public final class GameSession {
 
         for (PlayerAction action : pendingActions.values()) {
             PlayerState actor = requirePlayer(action.playerId());
+            actor.clearHand();
+            if (action.keptCard() != null) {
+                actor.addCard(action.keptCard());
+            }
+
             switch (action.card().type()) {
                 case HELP -> resolveHelp(actor, action, rewardReductions);
                 case STEAL -> resolveSteal(actor, action, rewardReductions);
@@ -172,31 +180,36 @@ public final class GameSession {
 
     private void resolveHelp(PlayerState actor, PlayerAction action, Map<String, Double> rewardReductions) {
         PlayerState target = requireTarget(action);
-        int effect = positiveEffect(action.card(), actor);
-        int actorReputation = reducePositiveGain(effect, rewardReductions.getOrDefault(actor.id(), 0.0));
-        int actorGold = reducePositiveGain(Math.round(effect / 2.0f), rewardReductions.getOrDefault(actor.id(), 0.0));
-        int targetWealth = reducePositiveGain(effect, rewardReductions.getOrDefault(target.id(), 0.0));
+        int actorReputationGain = calculatePositiveEffect(40, action.card().rarity(), actor);
+        int actorGoldGain = calculatePositiveEffect(15, action.card().rarity(), actor);
+        int targetWealthGain = calculatePositiveEffect(30, action.card().rarity(), target);
 
-        actor.addReputation(actorReputation);
-        actor.addGold(actorGold);
-        target.addWealth(targetWealth);
+        actorReputationGain = reduceGain(actorReputationGain, rewardReductions.getOrDefault(actor.id(), 0.0));
+        actorGoldGain = reduceGain(actorGoldGain, rewardReductions.getOrDefault(actor.id(), 0.0));
+        targetWealthGain = reduceGain(targetWealthGain, rewardReductions.getOrDefault(target.id(), 0.0));
+
+        actor.addReputation(actorReputationGain);
+        actor.addGold(actorGoldGain);
+        target.addWealth(targetWealthGain);
     }
 
     private void resolveSteal(PlayerState actor, PlayerAction action, Map<String, Double> rewardReductions) {
         PlayerState target = requireTarget(action);
-        int positiveEffect = positiveEffect(action.card(), actor);
-        int negativeEffect = negativeEffect(action.card());
-        int actorWealth = reducePositiveGain(positiveEffect, rewardReductions.getOrDefault(actor.id(), 0.0));
+        int actorWealthGain = calculatePositiveEffect(45, action.card().rarity(), actor);
+        actorWealthGain = reduceGain(actorWealthGain, rewardReductions.getOrDefault(actor.id(), 0.0));
 
-        actor.addWealth(actorWealth);
-        actor.addReputation(-negativeEffect);
-        target.addGold(-negativeEffect);
-        target.addWealth(-negativeEffect);
+        int actorReputationLoss = calculateNegativeEffect(10, action.card().rarity());
+        int targetGoldLoss = calculateNegativeEffect(35, action.card().rarity());
+
+        actor.addWealth(actorWealthGain);
+        actor.addReputation(-actorReputationLoss);
+        target.deductGold(targetGoldLoss);
     }
 
     private void resolveSabotage(PlayerState actor, PlayerAction action) {
         requireTarget(action);
-        actor.addInfamy(negativeEffect(action.card()));
+        int actorInfamyGain = calculateNegativeEffect(50, action.card().rarity());
+        actor.addInfamy(actorInfamyGain);
     }
 
     private Map<String, Double> collectRewardReductions() {
@@ -205,15 +218,22 @@ public final class GameSession {
             if (action.card().type() == CardType.SABOTAGE && action.targetPlayerId() != null) {
                 PlayerState actor = requirePlayer(action.playerId());
                 double reduction = actor.playerClass() == PlayerClass.SABOTEUR ? 0.70 : 0.50;
-                rewardReductions.merge(action.targetPlayerId(), reduction, Math::max);
+                rewardReductions.merge(action.targetPlayerId(), reduction, (a, b) -> Math.min(0.70, a + b));
             }
         }
 
         return rewardReductions;
     }
 
+<<<<<<< Updated upstream
     private int positiveEffect(ActionCard card, PlayerState actor) {
         double effect = card.baseEffect() * card.rarity().multiplier() * (1.0 + actor.buildLevel().positiveGainBonus());
+=======
+    private int calculatePositiveEffect(int base, CardRarity rarity, PlayerState actor) {
+        double buildBonus = actor.statBonus();
+        double classBonus = 0.0;
+        double effect = base * rarity.multiplier() * (1.0 + buildBonus + classBonus);
+>>>>>>> Stashed changes
         if (crabPeakActive) {
             effect *= 2.0;
         }
@@ -221,8 +241,8 @@ public final class GameSession {
         return Math.round((float) effect);
     }
 
-    private int negativeEffect(ActionCard card) {
-        double effect = card.baseEffect() * card.rarity().multiplier();
+    private int calculateNegativeEffect(int base, CardRarity rarity) {
+        double effect = base * rarity.multiplier();
         if (crabPeakActive) {
             effect *= 2.0;
         }
@@ -230,7 +250,7 @@ public final class GameSession {
         return Math.round((float) effect);
     }
 
-    private int reducePositiveGain(int effect, double reduction) {
+    private int reduceGain(int effect, double reduction) {
         return Math.round((float) (effect * (1.0 - reduction)));
     }
 

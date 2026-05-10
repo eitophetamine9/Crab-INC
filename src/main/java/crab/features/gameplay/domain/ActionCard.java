@@ -2,7 +2,7 @@ package crab.features.gameplay.domain;
 
 import java.util.Objects;
 
-public record ActionCard(String id, String name, CardType type, CardRarity rarity, int baseEffect) {
+public record ActionCard(String id, String name, CardType type, CardRarity rarity) {
     public ActionCard {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(name, "name");
@@ -13,9 +13,6 @@ public record ActionCard(String id, String name, CardType type, CardRarity rarit
         }
         if (name.isBlank()) {
             throw new IllegalArgumentException("Card name cannot be blank");
-        }
-        if (baseEffect < 0) {
-            throw new IllegalArgumentException("Card base effect cannot be negative");
         }
     }
 }

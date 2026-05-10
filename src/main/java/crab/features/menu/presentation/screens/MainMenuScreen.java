@@ -92,6 +92,12 @@ public final class MainMenuScreen implements GameScreen {
         Button exit = menuButton("Exit", () -> getGameController().exit(), "#334155", 0.0);
         exit.setPrefWidth(140);
 
+<<<<<<< Updated upstream
+=======
+        Button play = menuButton("Play", () -> screens.show(SetupScreen.ID), "#10b981", 0.0);
+        play.setPrefWidth(280);
+
+>>>>>>> Stashed changes
         HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
