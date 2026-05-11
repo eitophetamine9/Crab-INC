@@ -9,7 +9,7 @@
 - SANTIZO, JOHN ERICK (eitophetamine9)
 
 ## Project Description
-Crab Inc. is an underwater, phase-based strategy card game that explores the socio-economic phenomenon of **"Crab Mentality."** Set in a vibrant seabed district, players manage resources and navigate four distinct phases (Development, Action, Resolution, and Event). The game challenges players to balance their individual growth against community health, choosing between cooperation (Bayanihan) and destructive competition (Crab Actions).
+Crab Inc. is a beach themed, phase-based strategy card game that explores the socio-economic phenomenon of **"Crab Mentality."** Set in a vibrant seabed district, players manage resources and navigate four distinct phases (Development, Action, Resolution, and Event). The game challenges players to balance their individual growth against community health, choosing between cooperation (Bayanihan) and destructive competition (Crab Actions).
 
 ## Current Architecture
 Crab Inc. uses FXGL as the runtime foundation and JavaFX/FXML for UI.
@@ -34,9 +34,9 @@ The current scaffold proves:
 - **Phase-Based Gameplay:** Development (resource gathering), Action (secret submission), Resolution (simultaneous reveal), and Event (global modifiers).
 - **Build System:** Three distinct playstyles (Saboteur, Altruist, Opportunist) with unique passive bonuses.
 - **Card Mechanics:** Tiered rarity system (Common, Uncommon, Rare) for Help, Steal, and Sabotage actions.
-- **Status Indicators:** Dynamic visual feedback using Clams (Wealth/Pearls) and Emojis (Sentiment/Hostility).
-- **Multiplayer:** 3 to 7 player sessions with LAN host/join capabilities and local bot support.
-- **End-Game Reports:** Summary of the "Action Ledger" detailing who sabotaged whom.
+- **Status Indicators:** Dynamic visual feedback using Clams (Wealth/Pearls) and Statistic board for each player/ai (Wealth/Reputation/Infamy).
+- **Multiplayer:** 3 to 7 player sessions with LAN host/join capabilities and local bot support (CURRENTLY ONLY AI ENEMIES).
+- **End-Game Reports:** Summary of the "Action Ledger" detailing who sabotaged whom. (TO BE ADDED)
 
 ## Planned Technologies
 - Java 25
