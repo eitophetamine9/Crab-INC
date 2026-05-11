@@ -4,22 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public final class PlayerState {
+public final class PlayerState implements java.io.Serializable {
     public static final int MAX_HAND_SIZE = 3;
 
     private final String id;
     private final String displayName;
     private final PlayerClass playerClass;
     private final List<ActionCard> hand = new ArrayList<>();
-    private int gold;
+    private int clams;
     private int wealth;
     private int reputation;
     private int infamy;
-<<<<<<< Updated upstream
-    private BuildLevel buildLevel = BuildLevel.ONE;
-=======
     private int buildLevel = 1;
->>>>>>> Stashed changes
 
     private PlayerState(String id, String displayName, PlayerClass playerClass) {
         this.id = Objects.requireNonNull(id, "id");
@@ -49,8 +45,8 @@ public final class PlayerState {
         return playerClass;
     }
 
-    public int gold() {
-        return gold;
+    public int clams() {
+        return clams;
     }
 
     public int wealth() {
@@ -65,12 +61,6 @@ public final class PlayerState {
         return infamy;
     }
 
-<<<<<<< Updated upstream
-    public BuildLevel buildLevel() {
-        return buildLevel;
-    }
-
-=======
     public int buildLevel() {
         return buildLevel;
     }
@@ -110,27 +100,31 @@ public final class PlayerState {
 
     public boolean canUpgradeBuild() {
         int cost = upgradeCost();
-        return cost != -1 && gold >= cost;
+        return cost != -1 && clams >= cost;
     }
 
     public void upgradeBuild() {
         if (canUpgradeBuild()) {
-            deductGold(upgradeCost());
-            buildLevel++;
+            deductClams(upgradeCost());
+            incrementBuildLevel();
         }
     }
 
->>>>>>> Stashed changes
+    public void incrementBuildLevel() {
+        if (buildLevel < 5) {
+            buildLevel++;
+        }
+    }
     public List<ActionCard> hand() {
         return List.copyOf(hand);
     }
 
-    public void addGold(int amount) {
-        gold = Math.max(0, gold + amount);
+    public void addClams(int amount) {
+        clams = Math.max(0, clams + amount);
     }
 
-    public void deductGold(int amount) {
-        gold = Math.max(0, gold - amount);
+    public void deductClams(int amount) {
+        clams = Math.max(0, clams - amount);
     }
 
     public void addWealth(int amount) {
@@ -156,19 +150,7 @@ public final class PlayerState {
         hand.remove(card);
     }
 
-<<<<<<< Updated upstream
-    public boolean upgradeBuild() {
-        return buildLevel.next()
-                .filter(next -> gold >= next.upgradeCost())
-                .map(next -> {
-                    gold -= next.upgradeCost();
-                    buildLevel = next;
-                    return true;
-                })
-                .orElse(false);
-=======
     public void clearHand() {
         hand.clear();
->>>>>>> Stashed changes
     }
 }

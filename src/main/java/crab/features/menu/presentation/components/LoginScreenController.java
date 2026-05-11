@@ -17,6 +17,8 @@ import java.util.Objects;
  * - Single Responsibility: owns login form interaction only.
  */
 public final class LoginScreenController {
+    public static String loggedInUser = "";
+
     @FXML
     private TextField usernameField;
     @FXML
@@ -39,6 +41,7 @@ public final class LoginScreenController {
         }
 
         errorLabel.setText("");
+        loggedInUser = usernameField.getText();
         loginSuccessAction.run();
     }
 }

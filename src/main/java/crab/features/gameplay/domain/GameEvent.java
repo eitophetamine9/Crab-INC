@@ -1,15 +1,23 @@
 package crab.features.gameplay.domain;
 
-public record GameEvent(String name, String targetPlayerId, int goldDelta, int wealthDelta, int reputationDelta, int infamyDelta) {
+public record GameEvent(String name, String targetPlayerId, int clamsDelta, int wealthDelta, int reputationDelta, int infamyDelta) implements java.io.Serializable {
     public static GameEvent none() {
         return new GameEvent("Calm Current", null, 0, 0, 0, 0);
     }
 
-    public static GameEvent crabHunt(String targetPlayerId, int goldLoss) {
-        if (goldLoss < 0) {
-            throw new IllegalArgumentException("Gold loss must be positive");
-        }
+    public static GameEvent crabHunt(String targetId, int clamsLoss) {
+        return new GameEvent("Crab Hunt", targetId, -clamsLoss, 0, 0, 0);
+    }
 
-        return new GameEvent("Crab Hunt", targetPlayerId, -goldLoss, 0, 0, 0);
+    public static GameEvent travellingShop() {
+        return new GameEvent("Travelling Shop", null, 0, 0, 0, 0);
+    }
+
+    public static GameEvent marketCrash(int wealthLoss) {
+        return new GameEvent("Market Crash", null, 0, -wealthLoss, 0, 0);
+    }
+
+    public static GameEvent charityWave() {
+        return new GameEvent("Charity Wave", null, 0, 0, 0, 0);
     }
 }
