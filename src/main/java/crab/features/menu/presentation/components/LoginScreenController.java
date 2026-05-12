@@ -2,6 +2,7 @@ package crab.features.menu.presentation.components;
 
 import crab.appcore.db.DatabaseUserCredentialsRepository;
 import crab.features.menu.auth.AuthService;
+import crab.features.menu.auth.DevFallbackUserCredentialsRepository;
 import crab.features.menu.auth.PasswordHasher;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -33,10 +34,7 @@ public final class LoginScreenController {
     };
     private Runnable loginSuccessAction = () -> {
     };
-    private AuthService authService = new AuthService(
-            new DatabaseUserCredentialsRepository(),
-            new PasswordHasher()
-    );
+    private AuthService authService = createDefaultAuthService();
 
     public void setLoginSuccessAction(Runnable action) {
         loginSuccessAction = Objects.requireNonNull(action, "action");
@@ -52,6 +50,14 @@ public final class LoginScreenController {
 
     public void setAuthService(AuthService authService) {
         this.authService = Objects.requireNonNull(authService, "authService");
+    }
+
+    private static AuthService createDefaultAuthService() {
+        PasswordHasher passwordHasher = new PasswordHasher();
+        return new AuthService(
+                new DevFallbackUserCredentialsRepository(new DatabaseUserCredentialsRepository(), passwordHasher),
+                passwordHasher
+        );
     }
 
     @FXML

@@ -88,6 +88,19 @@ final class AuthServiceTest {
         assertEquals(SignUpResult.PASSWORD_MISMATCH, result);
     }
 
+    @Test
+    void devFallbackAllowsDemoSignInWhenPrimaryRepositoryHasNoUser() {
+        PasswordHasher hasher = new PasswordHasher();
+        UserCredentialsRepository users = new DevFallbackUserCredentialsRepository(
+                new FakeUserCredentialsRepository(),
+                hasher
+        );
+        AuthService auth = new AuthService(users, hasher);
+
+        assertTrue(auth.signIn("demo", "demo"));
+        assertFalse(auth.signIn("demo", "wrong"));
+    }
+
     private static final class FakeUserCredentialsRepository implements UserCredentialsRepository {
         private final Map<String, String> hashesByUsername = new HashMap<>();
 
