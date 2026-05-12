@@ -61,6 +61,7 @@ public final class SignupScreenController {
             case BLANK_INPUT -> errorLabel.setText("Please enter a username and password.");
             case PASSWORD_MISMATCH -> errorLabel.setText("Passwords do not match.");
             case USERNAME_TAKEN -> errorLabel.setText("Username already exists.");
+            case DATABASE_ERROR -> errorLabel.setText("Database error. Check connection.");
         }
     }
 

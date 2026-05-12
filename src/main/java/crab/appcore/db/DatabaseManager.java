@@ -13,16 +13,18 @@ import crab.features.menu.auth.UserCredentials;
 
 public class DatabaseManager {
     private static final String URL = env("CRABINC_DB_URL",
-            "jdbc:mysql://localhost:3306/crabinc?serverTimezone=UTC");
-    private static final String USER = env("CRABINC_DB_USER", "crabinc");
-    private static final String PASS = env("CRABINC_DB_PASSWORD", "crabinc");
+            "jdbc:mysql://localhost:3306/crabinc");
+    private static final String USER = env("CRABINC_DB_USER", "root");
+    private static final String PASS = env("CRABINC_DB_PASSWORD", "crabinc-root");
 
     private static String env(String name, String fallback) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    public static void initDB() {
+    private static boolean initialized = false;
+    public static synchronized void initDB() {
+        if (initialized) return;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
@@ -35,6 +37,22 @@ public class DatabaseManager {
                             password_hash VARCHAR(255) NOT NULL,
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        )
+                        """);
+                stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                            username VARCHAR(80) NOT NULL UNIQUE,
+                            password_hash VARCHAR(255) NOT NULL,
+                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """);
+                stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS player_stats (
+                            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                            username VARCHAR(80) NOT NULL,
+                            score INT NOT NULL DEFAULT 0,
+                            games_played INT NOT NULL DEFAULT 0
                         )
                         """);
                 stmt.execute("""
@@ -57,6 +75,7 @@ public class DatabaseManager {
             migrateLegacyAppUsers();
             ensureSavesCrabUserColumn();
             ensureDevelopmentUser();
+            initialized = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -93,15 +112,14 @@ public class DatabaseManager {
         String password = env("CRABINC_DEV_PASSWORD", "demo");
         String hash = new PasswordHasher().hash(password.toCharArray());
         String sql = """
-                INSERT INTO crab_user(username, display_name, password_hash)
-                VALUES(?, ?, ?)
-                ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)
+                INSERT INTO users(username, password_hash)
+                VALUES(?, ?)
+                ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)
                 """;
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, CrabUser.demo().displayName());
-            pstmt.setString(3, hash);
+            pstmt.setString(2, hash);
             pstmt.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
@@ -110,7 +128,7 @@ public class DatabaseManager {
 
     public static Optional<UserCredentials> findCredentials(String username) {
         initDB();
-        String sql = "SELECT id, username, display_name, password_hash FROM crab_user WHERE username = ?";
+        String sql = "SELECT id, username, password_hash FROM users WHERE username = ?";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
@@ -119,7 +137,7 @@ public class DatabaseManager {
                     CrabUser user = CrabUser.create(
                             rs.getLong("id"),
                             rs.getString("username"),
-                            rs.getString("display_name")
+                            rs.getString("username") // Use username as display_name for backwards compatibility
                     );
                     return Optional.of(new UserCredentials(user, rs.getString("password_hash")));
                 }
@@ -157,19 +175,21 @@ public class DatabaseManager {
 
     public static boolean createUser(String username, String passwordHash) {
         initDB();
-        String sql = "INSERT INTO crab_user(username, display_name, password_hash) VALUES(?, ?, ?)";
+        String sql = "INSERT INTO users(username, password_hash) VALUES(?, ?)";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, username);
-            pstmt.setString(3, passwordHash);
+            pstmt.setString(2, passwordHash);
             pstmt.executeUpdate();
             return true;
         } catch (java.sql.SQLIntegrityConstraintViolationException e) {
+            // This is a real duplicate found in the database
+            System.err.println("Signup failed: Username '" + username + "' already exists.");
             return false;
         } catch (Exception e) {
+            System.err.println("Database error during signup:");
             e.printStackTrace();
-            return false;
+            throw new RuntimeException("Database error during signup", e);
         }
     }
 

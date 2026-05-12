@@ -11,7 +11,15 @@ import javafx.scene.paint.Color;
 import java.io.IOException;
 import java.net.URL;
 
-import static com.almasb.fxgl.dsl.FXGL.getGameScene;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
+import static com.almasb.fxgl.dsl.FXGL.*;
+import com.almasb.fxgl.particle.ParticleEmitter;
+import com.almasb.fxgl.particle.ParticleEmitters;
+import com.almasb.fxgl.particle.ParticleSystem;
+import javafx.geometry.Point2D;
+import com.almasb.fxgl.core.math.FXGLMath;
 
 /**
  * Login entry screen for the existing FXGL application flow.
@@ -29,6 +37,10 @@ public final class LoginScreen implements GameScreen {
     private final ScreenManager screens;
     private Parent root;
     private boolean visible;
+
+    private MediaPlayer mediaPlayer;
+    private MediaView mediaView;
+    private ParticleSystem particleSystem;
 
     public LoginScreen(ScreenManager screens) {
         this.screens = screens;
@@ -50,9 +62,58 @@ public final class LoginScreen implements GameScreen {
         }
 
         visible = true;
-        getGameScene().setBackgroundColor(Color.rgb(20, 33, 47));
+        
+        // Video Background Integration
+        try {
+            var resource = getClass().getResource("/assets/textures/underwater_scene.mp4");
+            if (resource != null) {
+                Media media = new Media(resource.toExternalForm());
+                mediaPlayer = new MediaPlayer(media);
+                mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                mediaPlayer.setMute(true);
+
+                mediaView = new MediaView(mediaPlayer);
+                mediaView.setPreserveRatio(false);
+                
+                // Static sizing via DSL to ensure compilation in 17.3
+                mediaView.setFitWidth(getAppWidth());
+                mediaView.setFitHeight(getAppHeight());
+
+                // Ensure it's behind UI
+                getGameScene().getContentRoot().getChildren().add(0, mediaView);
+                mediaPlayer.play();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         root = loadView();
+        
+        // 3D Tilt for Titles
+        root.lookupAll(".title-text").forEach(node -> {
+            node.setRotationAxis(javafx.scene.transform.Rotate.Y_AXIS);
+            node.setRotate(10);
+        });
+
         getGameScene().addUINode(root);
+        addBubbles();
+    }
+
+    private void addBubbles() {
+        ParticleEmitter emitter = ParticleEmitters.newFireEmitter();
+        emitter.setStartColor(Color.web("rgba(255, 255, 255, 0.3)"));
+        emitter.setEndColor(Color.TRANSPARENT);
+        emitter.setNumParticles(2);
+        emitter.setEmissionRate(0.2);
+        emitter.setSize(1, 4);
+        emitter.setVelocityFunction(i -> new Point2D(FXGLMath.random(-1, 1), -FXGLMath.random(5, 15)));
+        emitter.setAccelerationFunction(() -> new Point2D(0, -0.05));
+        emitter.setSpawnPointFunction(i -> new Point2D(FXGLMath.random(0, getAppWidth()), getAppHeight()));
+        
+        this.particleSystem = new ParticleSystem();
+        this.particleSystem.addParticleEmitter(emitter, 0, getAppHeight());
+        // Add at index 1 (behind UI at index 2, in front of video at index 0)
+        getGameScene().getContentRoot().getChildren().add(1, particleSystem.getPane());
     }
 
     @Override
@@ -65,6 +126,20 @@ public final class LoginScreen implements GameScreen {
         if (root != null) {
             getGameScene().removeUINode(root);
             root = null;
+        }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
+        if (mediaView != null) {
+            getGameScene().getContentRoot().getChildren().remove(mediaView);
+            mediaView = null;
+        }
+        if (particleSystem != null) {
+            getGameScene().getContentRoot().getChildren().remove(particleSystem.getPane());
+            particleSystem = null;
         }
     }
 

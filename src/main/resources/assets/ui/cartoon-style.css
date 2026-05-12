@@ -7,22 +7,27 @@
 
 /* 2. The Main Panel (Giant Shell/Sand) */
 .menu-panel {
-    -fx-background-color: #f1c40f;
-    -fx-background-radius: 40 10 40 10;
-    -fx-border-color: #d35400;
-    -fx-border-width: 8;
-    -fx-border-radius: 40 10 40 10;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 0, 0, 10, 10);
-    -fx-padding: 40;
+    -fx-background-color: rgba(173, 216, 230, 0.7);
+    -fx-background-radius: 25;
+    -fx-border-color: white;
+    -fx-border-width: 4;
+    -fx-border-radius: 25;
+    /* Deep Sea Glow */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 150, 255, 0.5), 20, 0, 0, 0);
+    -fx-padding: 20 50 50 50; /* 20px Top Padding as requested */
+    -fx-pref-width: 550;
+    -fx-max-width: 550;
+    -fx-pref-height: 620;
+    -fx-max-height: 620;
 }
 
 /* 3. The Titles */
 .title-text {
-    -fx-font-family: "Luckiest Guy", "Arial Rounded MT Bold", sans-serif;
-    -fx-font-size: 64px;
-    -fx-text-fill: white;
-    /* Chunky Hard Shadow */
-    -fx-effect: dropshadow(one-pass-box, #e67e22, 0, 0, 6, 6);
+    -fx-font-family: "Luckiest Guy";
+    -fx-font-size: 72px;
+    -fx-text-fill: linear-gradient(to bottom, #FF8C00, #FFD700);
+    /* 3D Hero Pop with Heavy Dark Blue Outline */
+    -fx-effect: dropshadow(one-pass-box, #000033, 0, 1, 4, 4);
 }
 
 .subtitle-text {
@@ -34,27 +39,45 @@
 
 /* 4. The Wood Plank Buttons (Hover Rotation Fix) */
 .menu-button {
-    -fx-background-color: linear-gradient(to bottom, #a04000, #5d4037);
     -fx-background-radius: 12;
-    -fx-border-color: #3e2723;
-    -fx-border-width: 4;
+    -fx-border-color: rgba(255, 255, 255, 0.4); /* Pearl inner-stroke */
+    -fx-border-width: 2;
     -fx-border-radius: 12;
-    -fx-text-fill: #f1c40f; /* Keep text yellow */
+    -fx-text-fill: white;
     -fx-font-family: "Luckiest Guy", "Arial Rounded MT Bold", sans-serif;
-    -fx-font-size: 22px;
+    -fx-font-size: 24px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
-    /* 3D Bevel effect */
-    -fx-effect: inner-shadow(three-pass-box, rgba(255,255,255,0.3), 0, 3, 0, 0);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 3);
 }
 
-/* THE FIX: Ensure text-fill doesn't turn white on hover/focus */
-.menu-button:hover, .menu-button:focused {
+/* Play/Start Buttons: Seafoam Green to Deep Emerald */
+.btn-play {
+    -fx-background-color: linear-gradient(to bottom, #a3e635, #065f46);
+}
+
+/* Login/Signup Buttons: Sandy Gold to Burnt Orange */
+.btn-auth {
+    -fx-background-color: linear-gradient(to bottom, #fbbf24, #ea580c);
+}
+
+.btn-secondary {
+    -fx-background-color: linear-gradient(to bottom, #94a3b8, #334155);
+}
+
+/* Only apply the highlight/scale effect when actually hovering */
+.menu-button:hover {
     -fx-background-color: linear-gradient(to bottom, #d35400, #a04000);
     -fx-text-fill: #f1c40f;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
-    -fx-rotate: -2; /* BRINGS BACK THE WOBBLE */
+    -fx-rotate: -2;
+}
+
+/* Default state for focused/unhovered buttons to match flat look */
+.menu-button:focused {
+    -fx-border-color: #fbbf24;
+    -fx-border-width: 3;
 }
 
 /* 5. Chunky Inputs (PvZ Style) */

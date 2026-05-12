@@ -10,10 +10,18 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
 
-import static com.almasb.fxgl.dsl.FXGL.getGameController;
-import static com.almasb.fxgl.dsl.FXGL.getGameScene;
+import static com.almasb.fxgl.dsl.FXGL.*;
+import com.almasb.fxgl.particle.ParticleEmitter;
+import com.almasb.fxgl.particle.ParticleEmitters;
+import com.almasb.fxgl.particle.ParticleSystem;
+import javafx.geometry.Point2D;
+import com.almasb.fxgl.core.math.FXGLMath;
 
 /**
  * Main menu screen for navigating into the existing demo/game surfaces.
@@ -26,13 +34,17 @@ import static com.almasb.fxgl.dsl.FXGL.getGameScene;
  */
 public final class MainMenuScreen implements GameScreen {
     public static final String ID = "menu_main";
-    private static final double APP_WIDTH = 1024;
+    private static final double APP_WIDTH = 1080;
     private static final double APP_HEIGHT = 720;
-    private static final double PANEL_WIDTH = 560;
+    private static final double PANEL_WIDTH = 550;
 
     private final ScreenManager screens;
     private Parent root;
     private boolean visible;
+
+    private MediaPlayer mediaPlayer;
+    private MediaView mediaView;
+    private ParticleSystem particleSystem;
 
     public MainMenuScreen(ScreenManager screens) {
         // MOVED CSS INJECTION TO createView() to avoid Java compile errors
@@ -51,9 +63,57 @@ public final class MainMenuScreen implements GameScreen {
         }
 
         visible = true;
-        getGameScene().setBackgroundColor(Color.rgb(13, 22, 34));
+        // Video Background Integration
+        try {
+            var resource = getClass().getResource("/assets/textures/underwater_scene.mp4");
+            if (resource != null) {
+                Media media = new Media(resource.toExternalForm());
+                mediaPlayer = new MediaPlayer(media);
+                mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                mediaPlayer.setMute(true);
+
+                mediaView = new MediaView(mediaPlayer);
+                mediaView.setPreserveRatio(false);
+
+                // Static sizing via DSL to ensure compilation in 17.3
+                mediaView.setFitWidth(getAppWidth());
+                mediaView.setFitHeight(getAppHeight());
+
+                // Ensure it's behind UI
+                getGameScene().getContentRoot().getChildren().add(0, mediaView);
+                mediaPlayer.play();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         root = createView();
+        
+        // 3D Tilt for Titles
+        root.lookupAll(".title-text").forEach(node -> {
+            node.setRotationAxis(javafx.scene.transform.Rotate.Y_AXIS);
+            node.setRotate(10);
+        });
+
         getGameScene().addUINode(root);
+        addBubbles();
+    }
+
+    private void addBubbles() {
+        ParticleEmitter emitter = ParticleEmitters.newFireEmitter();
+        emitter.setStartColor(Color.web("rgba(255, 255, 255, 0.3)"));
+        emitter.setEndColor(Color.TRANSPARENT);
+        emitter.setNumParticles(2);
+        emitter.setEmissionRate(0.2);
+        emitter.setSize(1, 4);
+        emitter.setVelocityFunction(i -> new Point2D(FXGLMath.random(-1, 1), -FXGLMath.random(5, 15)));
+        emitter.setAccelerationFunction(() -> new Point2D(0, -0.05));
+        emitter.setSpawnPointFunction(i -> new Point2D(FXGLMath.random(0, getAppWidth()), getAppHeight()));
+        
+        this.particleSystem = new ParticleSystem();
+        this.particleSystem.addParticleEmitter(emitter, 0, getAppHeight());
+        // Add at index 1 (behind UI at index 2, in front of video at index 0)
+        getGameScene().getContentRoot().getChildren().add(1, particleSystem.getPane());
     }
 
     @Override
@@ -67,6 +127,20 @@ public final class MainMenuScreen implements GameScreen {
             getGameScene().removeUINode(root);
             root = null;
         }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
+        if (mediaView != null) {
+            getGameScene().getContentRoot().getChildren().remove(mediaView);
+            mediaView = null;
+        }
+        if (particleSystem != null) {
+            getGameScene().getContentRoot().getChildren().remove(particleSystem.getPane());
+            particleSystem = null;
+        }
     }
 
     // --- Replace your createView method with this ---
@@ -79,16 +153,17 @@ public final class MainMenuScreen implements GameScreen {
         subtitle.getStyleClass().add("subtitle-text");
         subtitle.setMouseTransparent(true);
 
+        Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "btn-secondary", 0.0);
+        logout.setPrefWidth(190);
+        logout.setPrefHeight(60);
 
+        Button exit = menuButton("Exit", () -> getGameController().exit(), "btn-secondary", 0.0);
+        exit.setPrefWidth(190);
+        exit.setPrefHeight(60);
 
-        Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "#64748b", 0.0);
-        logout.setPrefWidth(140);
-
-        Button exit = menuButton("Exit", () -> getGameController().exit(), "#334155", 0.0);
-        exit.setPrefWidth(140);
-
-        Button play = menuButton("Play", () -> screens.show(SetupScreen.ID), "#10b981", 0.0);
-        play.setPrefWidth(280);
+        Button play = menuButton("Play", () -> screens.show(SetupScreen.ID), "btn-play", 0.0);
+        play.setPrefWidth(400);
+        play.setPrefHeight(60);
 
         String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
         String saveFileStr = crab.appcore.db.DatabaseManager.getSaveForUser(username);
@@ -102,39 +177,45 @@ public final class MainMenuScreen implements GameScreen {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, "#f59e0b", 0.0);
-        continueBtn.setPrefWidth(280);
-        continueBtn.setDisable(saveFile == null || !saveFile.exists());
+        }, "btn-auth", 0.0);
+        continueBtn.setPrefWidth(400);
+        continueBtn.setPrefHeight(60);
 
         HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
-        VBox menu = new VBox(20, title, subtitle, continueBtn, play, secondaryActions);
+        VBox menu = new VBox(30, title, subtitle, continueBtn, play, secondaryActions);
         menu.setAlignment(Pos.CENTER);
-        menu.setPadding(new Insets(40));
+        menu.setPadding(new Insets(20, 50, 50, 50));
 
         // CRITICAL: Set the size so the CSS panel background shows up!
         menu.setPrefWidth(PANEL_WIDTH);
         menu.setMaxWidth(PANEL_WIDTH);
         menu.getStyleClass().add("menu-panel");
+        menu.setPrefHeight(620);
+        menu.setMaxHeight(620);
+
+        // Use StackPane for centering to avoid translation issues
+        StackPane rootWrapper = new StackPane(menu);
+        rootWrapper.setPrefSize(APP_WIDTH, APP_HEIGHT);
+        rootWrapper.setAlignment(Pos.CENTER);
 
         // Ensure CSS is loaded from the root resources
         String cssPath = "/assets/ui/cartoon-style.css";
         var resource = getClass().getResource(cssPath);
         if (resource != null) {
-            menu.getStylesheets().add(resource.toExternalForm());
+            rootWrapper.getStylesheets().add(resource.toExternalForm());
         }
 
-        menu.setTranslateX((APP_WIDTH - PANEL_WIDTH) / 2.0);
-        menu.setTranslateY((APP_HEIGHT - 500) / 2.0);
-        return menu;
+        return rootWrapper;
     }
 
     // --- Ensure your menuButton method looks like this ---
-    private static Button menuButton(String text, Runnable action, String color, double rotation) {
+    private static Button menuButton(String text, Runnable action, String styleClass, double rotation) {
         Button button = new Button(text);
-        button.setPrefWidth(280);
-        button.getStyleClass().add("menu-button");
+        button.setPrefWidth(400);
+        button.setPrefHeight(60);
+        button.getStyleClass().addAll("menu-button", styleClass);
         button.setRotate(rotation); // Base rotation
 
         // 🦀 THE WOBBLE TRICK: Add listeners for hover
@@ -150,7 +231,6 @@ public final class MainMenuScreen implements GameScreen {
             button.setRotate(rotation); // Return to base tilt
         });
 
-        button.setStyle("-fx-background-color: linear-gradient(to bottom, %s, derive(%s, -30%%));".formatted(color, color));
         button.setOnAction(event -> action.run());
         return button;
     }

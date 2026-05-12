@@ -9,29 +9,29 @@
 
 <StackPane prefHeight="720" prefWidth="1024" stylesheets="@../../assets/ui/cartoon-style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.menu.presentation.components.LoginScreenController">
     <!-- Removed hardcoded styling attributes and applied classes. Kept padding as requested for spacing. -->
-    <VBox alignment="CENTER" maxWidth="420" prefWidth="420" maxHeight="-Infinity" spacing="25" styleClass="menu-panel">
+    <VBox alignment="CENTER" maxWidth="550" prefWidth="550" maxHeight="620" prefHeight="620" spacing="30" styleClass="menu-panel">
 
         <!-- The Top Anchor Icon -->
         <Label text="⚓" style="-fx-font-size: 70px; -fx-text-fill: #d35400; -fx-padding: -40 0 0 0;" />
 
         <VBox alignment="CENTER" spacing="5">
-            <Label styleClass="title-text" text="CRAB INC." />
-            <Label text="THE OFFICIAL CORPORATE SHELLFISH PORTAL"
+            <Label styleClass="title-text" text="Crab Inc." />
+            <Label text="The Official Corporate Shellfish Portal"
                    style="-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-weight: bold; -fx-text-fill: #0d2b3e; -fx-opacity: 0.6; -fx-font-size: 10px;"/>
         </VBox>
 
         <Label text="Log in to start your climb to the top."
                style="-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-size: 15px; -fx-text-fill: #0d2b3e;"/>
 
-        <VBox spacing="12" maxWidth="320">
-            <TextField fx:id="usernameField" promptText="Username" styleClass="text-field" />
-            <PasswordField fx:id="passwordField" promptText="Password" styleClass="text-field" />
+        <VBox spacing="12" maxWidth="400">
+            <TextField fx:id="usernameField" promptText="Username" styleClass="text-field" prefWidth="400" />
+            <PasswordField fx:id="passwordField" promptText="Password" styleClass="text-field" prefWidth="400" />
         </VBox>
 
         <Label fx:id="errorLabel" minHeight="24" style="-fx-font-size: 13px; -fx-text-fill: #f87171;" />
 
-        <Button onAction="#handleLogin" prefWidth="220" styleClass="menu-button" text="LOGIN" />
-        <Button onAction="#handleCreateAccount" prefWidth="220" styleClass="menu-button" text="CREATE ACCOUNT" />
+        <Button onAction="#handleLogin" prefWidth="400" prefHeight="60" styleClass="menu-button, btn-auth" text="Login" />
+        <Button onAction="#handleCreateAccount" prefWidth="400" prefHeight="60" styleClass="menu-button, btn-auth" text="Create Account" />
     </VBox>
 
 </StackPane>

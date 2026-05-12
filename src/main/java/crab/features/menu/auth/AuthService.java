@@ -36,9 +36,17 @@ public final class AuthService {
         }
 
         String normalizedUsername = username.trim();
+        if (users.findCredentials(normalizedUsername).isPresent()) {
+            return SignUpResult.USERNAME_TAKEN;
+        }
+
         String passwordHash = passwordHasher.hash(password.toCharArray());
-        return users.createUser(normalizedUsername, passwordHash)
-                ? SignUpResult.CREATED
-                : SignUpResult.USERNAME_TAKEN;
+        try {
+            return users.createUser(normalizedUsername, passwordHash)
+                    ? SignUpResult.CREATED
+                    : SignUpResult.USERNAME_TAKEN;
+        } catch (Exception e) {
+            return SignUpResult.DATABASE_ERROR;
+        }
     }
 }

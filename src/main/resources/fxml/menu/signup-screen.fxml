@@ -8,24 +8,24 @@
 <?import javafx.scene.layout.VBox?>
 
 <StackPane prefHeight="720" prefWidth="1024" stylesheets="@../../assets/ui/cartoon-style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.menu.presentation.components.SignupScreenController">
-    <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="420" prefWidth="420" spacing="20" styleClass="menu-panel">
+    <VBox alignment="CENTER" maxWidth="550" prefWidth="550" maxHeight="620" prefHeight="620" spacing="30" styleClass="menu-panel">
         <Label text="⚓" style="-fx-font-size: 64px; -fx-text-fill: #d35400; -fx-padding: -35 0 0 0;" />
 
         <VBox alignment="CENTER" spacing="5">
-            <Label styleClass="title-text" text="JOIN" />
-            <Label text="CREATE YOUR SHELLFISH PORTAL ACCOUNT"
+            <Label styleClass="title-text" text="Join" />
+            <Label text="Create Your Shellfish Portal Account"
                    style="-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-weight: bold; -fx-text-fill: #0d2b3e; -fx-opacity: 0.6; -fx-font-size: 10px;"/>
         </VBox>
 
-        <VBox maxWidth="320" spacing="12">
-            <TextField fx:id="usernameField" promptText="Username" styleClass="text-field" />
-            <PasswordField fx:id="passwordField" promptText="Password" styleClass="text-field" />
-            <PasswordField fx:id="confirmPasswordField" promptText="Confirm password" styleClass="text-field" />
+        <VBox maxWidth="400" spacing="12">
+            <TextField fx:id="usernameField" promptText="Username" styleClass="text-field" prefWidth="400" />
+            <PasswordField fx:id="passwordField" promptText="Password" styleClass="text-field" prefWidth="400" />
+            <PasswordField fx:id="confirmPasswordField" promptText="Confirm password" styleClass="text-field" prefWidth="400" />
         </VBox>
 
         <Label fx:id="errorLabel" minHeight="24" style="-fx-font-size: 13px; -fx-text-fill: #f87171;" />
 
-        <Button onAction="#handleSignup" prefWidth="220" styleClass="menu-button" text="SIGN UP" />
-        <Button onAction="#handleBackToLogin" prefWidth="220" styleClass="menu-button" text="BACK TO LOGIN" />
+        <Button onAction="#handleSignup" prefWidth="400" prefHeight="60" styleClass="menu-button, btn-auth" text="Sign Up" />
+        <Button onAction="#handleBackToLogin" prefWidth="400" prefHeight="60" styleClass="menu-button, btn-auth" text="Back to Login" />
     </VBox>
 </StackPane>

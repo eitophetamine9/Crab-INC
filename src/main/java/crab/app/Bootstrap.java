@@ -28,7 +28,7 @@ public final class Bootstrap {
     private boolean modulesInitialized;
 
     public void configure(GameSettings settings) {
-        settings.setWidth(1024);
+        settings.setWidth(1080);
         settings.setHeight(720);
         settings.setTitle("Crab Inc.");
         settings.setVersion("0.1");

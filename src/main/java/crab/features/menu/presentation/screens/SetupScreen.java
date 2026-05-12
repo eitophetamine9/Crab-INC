@@ -10,19 +10,32 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
 
-import static com.almasb.fxgl.dsl.FXGL.getGameScene;
+import static com.almasb.fxgl.dsl.FXGL.*;
+import com.almasb.fxgl.particle.ParticleEmitter;
+import com.almasb.fxgl.particle.ParticleEmitters;
+import com.almasb.fxgl.particle.ParticleSystem;
+import javafx.geometry.Point2D;
+import com.almasb.fxgl.core.math.FXGLMath;
 
 public final class SetupScreen implements GameScreen {
     public static final String ID = "setup";
-    private static final double APP_WIDTH = 1024;
+    private static final double APP_WIDTH = 1080;
     private static final double APP_HEIGHT = 720;
-    private static final double PANEL_WIDTH = 560;
+    private static final double PANEL_WIDTH = 550;
 
     private final ScreenManager screens;
     private Parent root;
     private boolean visible;
+
+    private MediaPlayer mediaPlayer;
+    private MediaView mediaView;
+    private ParticleSystem particleSystem;
 
     public SetupScreen(ScreenManager screens) {
         this.screens = screens;
@@ -40,9 +53,57 @@ public final class SetupScreen implements GameScreen {
         }
 
         visible = true;
-        getGameScene().setBackgroundColor(Color.rgb(13, 22, 34));
+        // Video Background Integration
+        try {
+            var resource = getClass().getResource("/assets/textures/underwater_scene.mp4");
+            if (resource != null) {
+                Media media = new Media(resource.toExternalForm());
+                mediaPlayer = new MediaPlayer(media);
+                mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                mediaPlayer.setMute(true);
+
+                mediaView = new MediaView(mediaPlayer);
+                mediaView.setPreserveRatio(false);
+
+                // Static sizing via DSL to ensure compilation in 17.3
+                mediaView.setFitWidth(getAppWidth());
+                mediaView.setFitHeight(getAppHeight());
+
+                // Ensure it's behind UI
+                getGameScene().getContentRoot().getChildren().add(0, mediaView);
+                mediaPlayer.play();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         root = createView();
+        
+        // 3D Tilt for Titles
+        root.lookupAll(".title-text").forEach(node -> {
+            node.setRotationAxis(javafx.scene.transform.Rotate.Y_AXIS);
+            node.setRotate(10);
+        });
+
         getGameScene().addUINode(root);
+        addBubbles();
+    }
+
+    private void addBubbles() {
+        ParticleEmitter emitter = ParticleEmitters.newFireEmitter();
+        emitter.setStartColor(Color.web("rgba(255, 255, 255, 0.3)"));
+        emitter.setEndColor(Color.TRANSPARENT);
+        emitter.setNumParticles(2);
+        emitter.setEmissionRate(0.2);
+        emitter.setSize(1, 4);
+        emitter.setVelocityFunction(i -> new Point2D(FXGLMath.random(-1, 1), -FXGLMath.random(5, 15)));
+        emitter.setAccelerationFunction(() -> new Point2D(0, -0.05));
+        emitter.setSpawnPointFunction(i -> new Point2D(FXGLMath.random(0, getAppWidth()), getAppHeight()));
+        
+        this.particleSystem = new ParticleSystem();
+        this.particleSystem.addParticleEmitter(emitter, 0, getAppHeight());
+        // Add at index 1 (behind UI at index 2, in front of video at index 0)
+        getGameScene().getContentRoot().getChildren().add(1, particleSystem.getPane());
     }
 
     @Override
@@ -55,6 +116,20 @@ public final class SetupScreen implements GameScreen {
         if (root != null) {
             getGameScene().removeUINode(root);
             root = null;
+        }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
+        if (mediaView != null) {
+            getGameScene().getContentRoot().getChildren().remove(mediaView);
+            mediaView = null;
+        }
+        if (particleSystem != null) {
+            getGameScene().getContentRoot().getChildren().remove(particleSystem.getPane());
+            particleSystem = null;
         }
     }
 
@@ -80,35 +155,40 @@ public final class SetupScreen implements GameScreen {
         });
 
         Button startBtn = new Button("Start Game");
-        startBtn.getStyleClass().add("menu-button");
-        startBtn.setStyle("-fx-background-color: linear-gradient(to bottom, #10b981, derive(#10b981, -30%));");
-        startBtn.setPrefWidth(200);
+        startBtn.getStyleClass().addAll("menu-button", "btn-play");
+        startBtn.setPrefWidth(400);
+        startBtn.setPrefHeight(60);
         startBtn.setOnAction(e -> {
             GameplayScreen.requestedEnemyCount = (int) enemySlider.getValue();
             screens.show(GameplayScreen.ID);
         });
 
         Button backBtn = new Button("Back");
-        backBtn.getStyleClass().add("menu-button");
-        backBtn.setStyle("-fx-background-color: linear-gradient(to bottom, #64748b, derive(#64748b, -30%));");
-        backBtn.setPrefWidth(200);
+        backBtn.getStyleClass().addAll("menu-button", "btn-secondary");
+        backBtn.setPrefWidth(400);
+        backBtn.setPrefHeight(60);
         backBtn.setOnAction(e -> screens.show(MainMenuScreen.ID));
 
-        VBox menu = new VBox(20, title, subtitle, enemySlider, enemyCountLabel, startBtn, backBtn);
+        VBox menu = new VBox(30, title, subtitle, enemySlider, enemyCountLabel, startBtn, backBtn);
         menu.setAlignment(Pos.CENTER);
-        menu.setPadding(new Insets(40));
+        menu.setPadding(new Insets(20, 50, 50, 50));
         menu.setPrefWidth(PANEL_WIDTH);
         menu.setMaxWidth(PANEL_WIDTH);
+        menu.setPrefHeight(620);
+        menu.setMaxHeight(620);
         menu.getStyleClass().add("menu-panel");
+
+        // Use StackPane for centering
+        StackPane rootWrapper = new StackPane(menu);
+        rootWrapper.setPrefSize(APP_WIDTH, APP_HEIGHT);
+        rootWrapper.setAlignment(Pos.CENTER);
 
         String cssPath = "/assets/ui/cartoon-style.css";
         var resource = getClass().getResource(cssPath);
         if (resource != null) {
-            menu.getStylesheets().add(resource.toExternalForm());
+            rootWrapper.getStylesheets().add(resource.toExternalForm());
         }
 
-        menu.setTranslateX((APP_WIDTH - PANEL_WIDTH) / 2.0);
-        menu.setTranslateY((APP_HEIGHT - 500) / 2.0);
-        return menu;
+        return rootWrapper;
     }
 }
