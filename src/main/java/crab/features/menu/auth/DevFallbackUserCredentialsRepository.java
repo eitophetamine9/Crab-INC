@@ -17,15 +17,15 @@ public final class DevFallbackUserCredentialsRepository implements UserCredentia
     }
 
     @Override
-    public Optional<String> findPasswordHash(String username) {
-        Optional<String> primaryHash = primary.findPasswordHash(username);
-        if (primaryHash.isPresent()) {
-            return primaryHash;
+    public Optional<UserCredentials> findCredentials(String username) {
+        Optional<UserCredentials> primaryCredentials = primary.findCredentials(username);
+        if (primaryCredentials.isPresent()) {
+            return primaryCredentials;
         }
 
         // Offline mode only: keep demo/demo usable while Docker MySQL is unavailable during development.
         if (DEV_USERNAME.equals(username)) {
-            return Optional.of(devPasswordHash);
+            return Optional.of(new UserCredentials(CrabUser.demo(), devPasswordHash));
         }
         return Optional.empty();
     }

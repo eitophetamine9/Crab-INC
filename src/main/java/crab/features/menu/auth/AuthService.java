@@ -1,6 +1,7 @@
 package crab.features.menu.auth;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public final class AuthService {
     private final UserCredentialsRepository users;
@@ -12,14 +13,18 @@ public final class AuthService {
     }
 
     public boolean signIn(String username, String password) {
+        return signInUser(username, password).isPresent();
+    }
+
+    public Optional<CrabUser> signInUser(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            return false;
+            return Optional.empty();
         }
 
         String normalizedUsername = username.trim();
-        return users.findPasswordHash(normalizedUsername)
-                .map(hash -> passwordHasher.verify(password.toCharArray(), hash))
-                .orElse(false);
+        return users.findCredentials(normalizedUsername)
+                .filter(credentials -> passwordHasher.verify(password.toCharArray(), credentials.passwordHash()))
+                .map(UserCredentials::user);
     }
 
     public SignUpResult signUp(String username, String password, String confirmPassword) {

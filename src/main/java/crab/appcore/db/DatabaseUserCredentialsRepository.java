@@ -1,13 +1,14 @@
 package crab.appcore.db;
 
 import crab.features.menu.auth.UserCredentialsRepository;
+import crab.features.menu.auth.UserCredentials;
 
 import java.util.Optional;
 
 public final class DatabaseUserCredentialsRepository implements UserCredentialsRepository {
     @Override
-    public Optional<String> findPasswordHash(String username) {
-        return DatabaseManager.findPasswordHash(username);
+    public Optional<UserCredentials> findCredentials(String username) {
+        return DatabaseManager.findCredentials(username);
     }
 
     @Override

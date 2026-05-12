@@ -2,6 +2,7 @@ package crab.features.menu.presentation.components;
 
 import crab.appcore.db.DatabaseUserCredentialsRepository;
 import crab.features.menu.auth.AuthService;
+import crab.features.menu.auth.CrabUser;
 import crab.features.menu.auth.DevFallbackUserCredentialsRepository;
 import crab.features.menu.auth.PasswordHasher;
 import javafx.fxml.FXML;
@@ -22,6 +23,7 @@ import java.util.Objects;
  */
 public final class LoginScreenController {
     public static String loggedInUser = "";
+    public static CrabUser currentUser = CrabUser.demo();
 
     @FXML
     private TextField usernameField;
@@ -74,13 +76,15 @@ public final class LoginScreenController {
         }
 
         String username = usernameField.getText().trim();
-        if (!authService.signIn(username, passwordField.getText())) {
+        java.util.Optional<CrabUser> signedInUser = authService.signInUser(username, passwordField.getText());
+        if (signedInUser.isEmpty()) {
             errorLabel.setText("Invalid username or password.");
             return;
         }
 
         errorLabel.setText("");
-        loggedInUser = username;
+        currentUser = signedInUser.orElseThrow();
+        loggedInUser = currentUser.username();
         loginSuccessAction.run();
     }
 }

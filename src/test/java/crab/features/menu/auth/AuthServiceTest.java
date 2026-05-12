@@ -12,21 +12,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class AuthServiceTest {
     @Test
+    void crabUserDemoHasDefaultFallbackValues() {
+        CrabUser demo = CrabUser.demo();
+
+        assertEquals(0, demo.id());
+        assertEquals("demo", demo.username());
+        assertEquals("Demo Crab", demo.displayName());
+    }
+
+    @Test
     void signInAcceptsMatchingPasswordHash() {
         PasswordHasher hasher = new PasswordHasher();
         FakeUserCredentialsRepository users = new FakeUserCredentialsRepository();
-        users.put("player", hasher.hash("secret".toCharArray()));
+        users.put(CrabUser.create(42, "player", "Player"), hasher.hash("secret".toCharArray()));
 
         AuthService auth = new AuthService(users, hasher);
 
         assertTrue(auth.signIn("player", "secret"));
+        assertEquals(42, auth.signInUser("player", "secret").orElseThrow().id());
     }
 
     @Test
     void signInRejectsWrongPassword() {
         PasswordHasher hasher = new PasswordHasher();
         FakeUserCredentialsRepository users = new FakeUserCredentialsRepository();
-        users.put("player", hasher.hash("secret".toCharArray()));
+        users.put(CrabUser.create(42, "player", "Player"), hasher.hash("secret".toCharArray()));
 
         AuthService auth = new AuthService(users, hasher);
 
@@ -44,7 +54,7 @@ final class AuthServiceTest {
     @Test
     void signInRejectsMalformedStoredHash() {
         FakeUserCredentialsRepository users = new FakeUserCredentialsRepository();
-        users.put("player", "pbkdf2_sha256$65536$***$***");
+        users.put(CrabUser.create(42, "player", "Player"), "pbkdf2_sha256$65536$***$***");
 
         AuthService auth = new AuthService(users, new PasswordHasher());
 
@@ -58,7 +68,10 @@ final class AuthServiceTest {
         SignUpResult result = auth.signUp(" player ", "secret", "secret");
 
         assertEquals(SignUpResult.CREATED, result);
-        assertTrue(auth.signIn("player", "secret"));
+        CrabUser createdUser = auth.signInUser("player", "secret").orElseThrow();
+        assertTrue(createdUser.id() > 0);
+        assertEquals("player", createdUser.username());
+        assertEquals("player", createdUser.displayName());
     }
 
     @Test
@@ -99,26 +112,28 @@ final class AuthServiceTest {
 
         assertTrue(auth.signIn("demo", "demo"));
         assertFalse(auth.signIn("demo", "wrong"));
+        assertEquals(CrabUser.demo(), auth.signInUser("demo", "demo").orElseThrow());
     }
 
     private static final class FakeUserCredentialsRepository implements UserCredentialsRepository {
-        private final Map<String, String> hashesByUsername = new HashMap<>();
+        private final Map<String, UserCredentials> credentialsByUsername = new HashMap<>();
+        private long nextId = 1;
 
-        private void put(String username, String passwordHash) {
-            hashesByUsername.put(username, passwordHash);
+        private void put(CrabUser user, String passwordHash) {
+            credentialsByUsername.put(user.username(), new UserCredentials(user, passwordHash));
         }
 
         @Override
-        public Optional<String> findPasswordHash(String username) {
-            return Optional.ofNullable(hashesByUsername.get(username));
+        public Optional<UserCredentials> findCredentials(String username) {
+            return Optional.ofNullable(credentialsByUsername.get(username));
         }
 
         @Override
         public boolean createUser(String username, String passwordHash) {
-            if (hashesByUsername.containsKey(username)) {
+            if (credentialsByUsername.containsKey(username)) {
                 return false;
             }
-            hashesByUsername.put(username, passwordHash);
+            put(CrabUser.create(nextId++, username, username), passwordHash);
             return true;
         }
     }

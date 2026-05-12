@@ -7,7 +7,9 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Optional;
 
+import crab.features.menu.auth.CrabUser;
 import crab.features.menu.auth.PasswordHasher;
+import crab.features.menu.auth.UserCredentials;
 
 public class DatabaseManager {
     private static final String URL = env("CRABINC_DB_URL",
@@ -26,6 +28,16 @@ public class DatabaseManager {
             try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
                  Statement stmt = conn.createStatement()) {
                 stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS crab_user (
+                            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                            username VARCHAR(80) NOT NULL UNIQUE,
+                            display_name VARCHAR(120) NOT NULL,
+                            password_hash VARCHAR(255) NOT NULL,
+                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        )
+                        """);
+                stmt.execute("""
                         CREATE TABLE IF NOT EXISTS app_user (
                             username VARCHAR(80) PRIMARY KEY,
                             password_hash VARCHAR(255) NOT NULL,
@@ -33,9 +45,44 @@ public class DatabaseManager {
                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                         )
                         """);
-                stmt.execute("CREATE TABLE IF NOT EXISTS saves (username VARCHAR(255) PRIMARY KEY, filepath VARCHAR(255))");
+                stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS saves (
+                            username VARCHAR(255) PRIMARY KEY,
+                            crab_user_id BIGINT UNSIGNED NULL,
+                            filepath VARCHAR(255),
+                            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        )
+                        """);
             }
+            migrateLegacyAppUsers();
+            ensureSavesCrabUserColumn();
             ensureDevelopmentUser();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void migrateLegacyAppUsers() {
+        String sql = """
+                INSERT IGNORE INTO crab_user(username, display_name, password_hash)
+                SELECT username, username, password_hash FROM app_user
+                """;
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void ensureSavesCrabUserColumn() {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+             ResultSet columns = conn.getMetaData().getColumns(null, null, "saves", "crab_user_id")) {
+            if (!columns.next()) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE saves ADD COLUMN crab_user_id BIGINT UNSIGNED NULL AFTER username");
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -45,26 +92,61 @@ public class DatabaseManager {
         String username = env("CRABINC_DEV_USERNAME", "demo");
         String password = env("CRABINC_DEV_PASSWORD", "demo");
         String hash = new PasswordHasher().hash(password.toCharArray());
-        String sql = "INSERT IGNORE INTO app_user(username, password_hash) VALUES(?, ?)";
+        String sql = """
+                INSERT INTO crab_user(username, display_name, password_hash)
+                VALUES(?, ?, ?)
+                ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)
+                """;
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, hash);
+            pstmt.setString(2, CrabUser.demo().displayName());
+            pstmt.setString(3, hash);
             pstmt.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static Optional<String> findPasswordHash(String username) {
+    public static Optional<UserCredentials> findCredentials(String username) {
         initDB();
-        String sql = "SELECT password_hash FROM app_user WHERE username = ?";
+        String sql = "SELECT id, username, display_name, password_hash FROM crab_user WHERE username = ?";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(rs.getString("password_hash"));
+                    CrabUser user = CrabUser.create(
+                            rs.getLong("id"),
+                            rs.getString("username"),
+                            rs.getString("display_name")
+                    );
+                    return Optional.of(new UserCredentials(user, rs.getString("password_hash")));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<String> findPasswordHash(String username) {
+        return findCredentials(username).map(UserCredentials::passwordHash);
+    }
+
+    public static Optional<CrabUser> findCrabUser(String username) {
+        return findCredentials(username).map(UserCredentials::user);
+    }
+
+    private static Optional<Long> findCrabUserId(String username) {
+        initDB();
+        String sql = "SELECT id FROM crab_user WHERE username = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(rs.getLong("id"));
                 }
             }
         } catch (Exception e) {
@@ -75,11 +157,12 @@ public class DatabaseManager {
 
     public static boolean createUser(String username, String passwordHash) {
         initDB();
-        String sql = "INSERT INTO app_user(username, password_hash) VALUES(?, ?)";
+        String sql = "INSERT INTO crab_user(username, display_name, password_hash) VALUES(?, ?, ?)";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, passwordHash);
+            pstmt.setString(2, username);
+            pstmt.setString(3, passwordHash);
             pstmt.executeUpdate();
             return true;
         } catch (java.sql.SQLIntegrityConstraintViolationException e) {
@@ -92,12 +175,20 @@ public class DatabaseManager {
 
     public static void registerSave(String username, String filepath) {
         initDB();
-        String sql = "INSERT INTO saves(username, filepath) VALUES(?, ?) ON DUPLICATE KEY UPDATE filepath = ?";
+        Optional<Long> crabUserId = findCrabUserId(username);
+        String sql = "INSERT INTO saves(username, crab_user_id, filepath) VALUES(?, ?, ?) ON DUPLICATE KEY UPDATE crab_user_id = ?, filepath = ?";
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, filepath);
+            if (crabUserId.isPresent()) {
+                pstmt.setLong(2, crabUserId.orElseThrow());
+                pstmt.setLong(4, crabUserId.orElseThrow());
+            } else {
+                pstmt.setNull(2, java.sql.Types.BIGINT);
+                pstmt.setNull(4, java.sql.Types.BIGINT);
+            }
             pstmt.setString(3, filepath);
+            pstmt.setString(5, filepath);
             pstmt.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
