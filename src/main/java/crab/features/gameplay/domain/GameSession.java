@@ -134,9 +134,9 @@ public final class GameSession implements java.io.Serializable {
             }
 
             switch (action.card().type()) {
-                case HELP -> resolveHelp(actor, action, rewardReductions);
-                case STEAL -> resolveSteal(actor, action, rewardReductions);
-                case SABOTAGE -> resolveSabotage(actor, action);
+                case HELP, SIGNATURE_ALTRUIST       -> resolveHelp(actor, action, rewardReductions);
+                case STEAL, SIGNATURE_OPPORTUNIST   -> resolveSteal(actor, action, rewardReductions);
+                case SABOTAGE, SIGNATURE_SABOTEUR   -> resolveSabotage(actor, action);
             }
         }
 
@@ -212,7 +212,8 @@ public final class GameSession implements java.io.Serializable {
     private Map<String, Double> collectRewardReductions() {
         Map<String, Double> rewardReductions = new LinkedHashMap<>();
         for (PlayerAction action : pendingActions.values()) {
-            if (action.card().type() == CardType.SABOTAGE && action.targetPlayerId() != null) {
+            CardType ct = action.card().type();
+            if ((ct == CardType.SABOTAGE || ct == CardType.SIGNATURE_SABOTEUR) && action.targetPlayerId() != null) {
                 PlayerState actor = requirePlayer(action.playerId());
                 double reduction = actor.playerClass() == PlayerClass.SABOTEUR ? 0.70 : 0.50;
                 rewardReductions.merge(action.targetPlayerId(), reduction, (a, b) -> Math.min(0.70, a + b));

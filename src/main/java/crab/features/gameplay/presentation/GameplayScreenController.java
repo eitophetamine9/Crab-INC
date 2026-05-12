@@ -2,15 +2,19 @@ package crab.features.gameplay.presentation;
 
 import crab.appcore.screen.ScreenManager;
 import crab.features.gameplay.domain.*;
+import javafx.animation.TranslateTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
+import javafx.util.Duration;
 
 import java.util.List;
 import java.util.Map;
@@ -411,24 +415,76 @@ public class GameplayScreenController {
         });
     }
 
+    /** Returns the path under /assets/card-art/ for a given card. */
+    private String getCardArtPath(ActionCard card) {
+        String rarity = switch (card.rarity()) {
+            case COMMON    -> "common";
+            case UNCOMMON  -> "uncommon";
+            case RARE      -> "rare";
+            case SIGNATURE -> "signature";
+        };
+        return switch (card.type()) {
+            case HELP, SIGNATURE_ALTRUIST     -> "/assets/card-art/altruist_"    + rarity + "_help.png";
+            case STEAL, SIGNATURE_OPPORTUNIST -> "/assets/card-art/oppurtunist_" + rarity + "_steal.png";
+            case SABOTAGE, SIGNATURE_SABOTEUR -> "/assets/card-art/sabotuer_"    + rarity + "_sabotage.png";
+        };
+    }
+
+    /** Human-readable effect preview string for tooltip. */
+    private String getCardEffectDescription(ActionCard card) {
+        double mult = card.rarity().multiplier();
+        return switch (card.type()) {
+            case HELP, SIGNATURE_ALTRUIST ->
+                String.format("Help a target:\n+%d Rep (you)  +%d Gold (you)\n+%d Wealth (target)",
+                        Math.round(40 * mult), Math.round(15 * mult), Math.round(30 * mult));
+            case STEAL, SIGNATURE_OPPORTUNIST ->
+                String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Gold (target)",
+                        Math.round(45 * mult), Math.round(10 * mult), Math.round(35 * mult));
+            case SABOTAGE, SIGNATURE_SABOTEUR ->
+                String.format("Sabotage a target:\n+%d Infamy (you)\nReduces target's gains by 50%%",
+                        Math.round(50 * mult));
+        };
+    }
+
+    /** Rarity accent color for the card border / banner. */
+    private String getRarityColor(CardRarity rarity) {
+        return switch (rarity) {
+            case COMMON    -> "#9ca3af"; // grey
+            case UNCOMMON  -> "#34d399"; // green
+            case RARE      -> "#60a5fa"; // blue
+            case SIGNATURE -> "#fbbf24"; // gold
+        };
+    }
+
     private void updateHandVisuals() {
         for (javafx.scene.Node node : handArea.getChildren()) {
             StackPane stack = (StackPane) node;
-            VBox cardBox = (VBox) stack.getChildren().get(0);
-            Label keepLabel = (Label) stack.getChildren().get(1);
-            
             ActionCard c = (ActionCard) stack.getUserData();
-            if (c == selectedCard) {
-                cardBox.setStyle("-fx-background-color: white; -fx-border-color: #eab308; -fx-border-width: 4; -fx-background-image: url('/assets/card-art/placeholdercard.png'); -fx-background-size: cover;");
+            ImageView artView = (ImageView) stack.lookup("#cardArt_" + c.id());
+            Label keepLabel  = (Label)     stack.lookup("#keepLabel_" + c.id());
+
+            boolean isSelected = (c == selectedCard);
+            boolean isKept     = (c == keptCardToSave);
+
+            // Glow / drop-shadow
+            DropShadow glow = new DropShadow();
+            if (isSelected) {
+                glow.setColor(Color.web("#fbbf24"));
+                glow.setRadius(22);
+                glow.setSpread(0.4);
+                stack.setScaleX(1.12);
+                stack.setScaleY(1.12);
             } else {
-                cardBox.setStyle("-fx-background-color: white; -fx-border-color: black; -fx-border-width: 2; -fx-background-image: url('/assets/card-art/placeholdercard.png'); -fx-background-size: cover;");
+                glow.setColor(Color.web(getRarityColor(c.rarity())));
+                glow.setRadius(8);
+                glow.setSpread(0.1);
+                stack.setScaleX(1.0);
+                stack.setScaleY(1.0);
             }
-            
-            // Show K icon if kept
-            if (c == keptCardToSave) {
-                keepLabel.setVisible(true);
-            } else {
-                keepLabel.setVisible(false);
+            stack.setEffect(glow);
+
+            if (keepLabel != null) {
+                keepLabel.setVisible(isKept);
             }
         }
     }
@@ -436,46 +492,99 @@ public class GameplayScreenController {
     private StackPane createHandCardView(ActionCard card) {
         StackPane stack = new StackPane();
         stack.setUserData(card);
+        stack.setPrefSize(108, 155);
+        stack.setMaxSize(108, 155);
 
-        VBox cardBox = new VBox(5);
-        cardBox.setAlignment(Pos.CENTER);
-        cardBox.setPrefSize(100, 140);
-        cardBox.setStyle("-fx-background-color: white; -fx-border-color: black; -fx-border-width: 2; -fx-background-image: url('/assets/card-art/placeholdercard.png'); -fx-background-size: cover;");
-        
-        Label name = new Label(card.name());
-        name.setWrapText(true);
-        name.setStyle("-fx-font-weight: bold; -fx-background-color: rgba(255,255,255,0.8); -fx-padding: 2;");
-        
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-        
-        Label type = new Label(card.type().name());
-        type.setStyle("-fx-font-size: 10px; -fx-background-color: rgba(255,255,255,0.8); -fx-padding: 2;");
-        Label desc = new Label("Rarity: " + card.rarity().name());
-        desc.setStyle("-fx-font-size: 10px; -fx-background-color: rgba(255,255,255,0.8); -fx-padding: 2;");
+        // ---- Art image ----
+        ImageView artView = new ImageView();
+        artView.setId("cardArt_" + card.id());
+        artView.setFitWidth(108);
+        artView.setFitHeight(155);
+        artView.setPreserveRatio(false);
+        artView.setSmooth(true);
+        String artPath = getCardArtPath(card);
+        var res = getClass().getResource(artPath);
+        if (res != null) {
+            artView.setImage(new Image(res.toExternalForm()));
+        } else {
+            // Fallback to placeholder
+            var ph = getClass().getResource("/assets/card-art/placeholdercard.png");
+            if (ph != null) artView.setImage(new Image(ph.toExternalForm()));
+        }
 
-        cardBox.getChildren().addAll(name, spacer, type, desc);
-        
-        // Keep Icon "K"
+        // Clip corners
+        Rectangle clip = new Rectangle(108, 155);
+        clip.setArcWidth(14);
+        clip.setArcHeight(14);
+        artView.setClip(clip);
+
+        // ---- Rarity banner overlay (bottom strip) ----
+        String rarityColor = getRarityColor(card.rarity());
+        Label rarityBadge = new Label(card.rarity().name());
+        rarityBadge.setStyle(
+                "-fx-background-color: " + rarityColor + "cc; " +
+                "-fx-text-fill: white; -fx-font-size: 9px; -fx-font-weight: bold; " +
+                "-fx-padding: 2 6; -fx-background-radius: 0 0 7 7;");
+        rarityBadge.setMaxWidth(Double.MAX_VALUE);
+        rarityBadge.setAlignment(Pos.CENTER);
+        StackPane.setAlignment(rarityBadge, Pos.BOTTOM_CENTER);
+
+        // ---- Card name overlay (top strip) ----
+        Label nameBadge = new Label(card.name());
+        nameBadge.setWrapText(true);
+        nameBadge.setAlignment(Pos.CENTER);
+        nameBadge.setStyle(
+                "-fx-background-color: rgba(0,0,0,0.55); " +
+                "-fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; " +
+                "-fx-padding: 3 5; -fx-background-radius: 7 7 0 0;");
+        nameBadge.setMaxWidth(Double.MAX_VALUE);
+        StackPane.setAlignment(nameBadge, Pos.TOP_CENTER);
+
+        // ---- Keep badge ----
         Label keepLabel = new Label("Ⓚ");
-        keepLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #10b981; -fx-font-weight: bold; -fx-background-color: white; -fx-background-radius: 10;");
+        keepLabel.setId("keepLabel_" + card.id());
+        keepLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #10b981; -fx-font-weight: bold; " +
+                "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10; -fx-padding: 1 4;");
         keepLabel.setVisible(false);
         StackPane.setAlignment(keepLabel, Pos.TOP_RIGHT);
-        
-        stack.getChildren().addAll(cardBox, keepLabel);
-        
+
+        stack.getChildren().addAll(artView, nameBadge, rarityBadge, keepLabel);
+
+        // Initial rarity glow
+        DropShadow initGlow = new DropShadow();
+        initGlow.setColor(Color.web(rarityColor));
+        initGlow.setRadius(8);
+        initGlow.setSpread(0.1);
+        stack.setEffect(initGlow);
+
+        // ---- Tooltip with effect description ----
+        Tooltip tip = new Tooltip(getCardEffectDescription(card));
+        tip.setStyle("-fx-font-size: 12px;");
+        Tooltip.install(stack, tip);
+
+        // ---- Hover: lift the card ----
+        TranslateTransition hoverUp   = new TranslateTransition(Duration.millis(120), stack);
+        TranslateTransition hoverDown = new TranslateTransition(Duration.millis(120), stack);
+        stack.setOnMouseEntered(e -> {
+            hoverDown.stop();
+            hoverUp.setToY(-12);
+            hoverUp.play();
+        });
+        stack.setOnMouseExited(e -> {
+            hoverUp.stop();
+            hoverDown.setToY(0);
+            hoverDown.play();
+        });
+
+        // ---- Click handler ----
         stack.setOnMouseClicked(e -> {
             if (gameSession.phase() == GamePhase.ACTION) {
                 if (e.getButton() == MouseButton.SECONDARY) {
-                    // Right click -> Toggle Keep
-                    if (keptCardToSave == card) {
-                        keptCardToSave = null;
-                    } else {
-                        keptCardToSave = card;
-                    }
+                    // Right-click: toggle keep
+                    keptCardToSave = (keptCardToSave == card) ? null : card;
                     updateHandVisuals();
                 } else {
-                    // Left click -> Select or Unselect
+                    // Left-click: select / deselect
                     if (selectedCard == card) {
                         selectedCard = null;
                         phasePromptLabel.setText("Phase: Select Card, Right-Click to Keep 1, then Target");
@@ -487,7 +596,7 @@ public class GameplayScreenController {
                 }
             }
         });
-        
+
         return stack;
     }
 
