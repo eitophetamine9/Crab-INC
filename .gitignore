@@ -21,6 +21,8 @@ bin/
 out/
 target/
 system/
+.worktrees/
+worktrees/
 
 # Local planning / scratch docs
 TMPREADME.md

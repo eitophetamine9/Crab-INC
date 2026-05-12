@@ -5,6 +5,7 @@ import crab.appcore.context.GameModule;
 import crab.appcore.screen.ScreenManager;
 import crab.features.menu.presentation.screens.LoginScreen;
 import crab.features.menu.presentation.screens.MainMenuScreen;
+import crab.features.menu.presentation.screens.SignupScreen;
 
 /**
  * Registers menu screens that belong to the application shell.
@@ -20,6 +21,7 @@ public final class MenuModule implements GameModule {
     public void initialize(GameContext context) {
         ScreenManager screens = context.require(ScreenManager.class);
         screens.register(new LoginScreen(screens));
+        screens.register(new SignupScreen(screens));
         screens.register(new MainMenuScreen(screens));
         screens.register(new crab.features.menu.presentation.screens.SetupScreen(screens));
         screens.register(new crab.features.gameplay.presentation.GameplayScreen(screens));

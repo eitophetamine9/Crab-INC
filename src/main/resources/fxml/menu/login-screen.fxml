@@ -30,7 +30,8 @@
 
         <Label fx:id="errorLabel" minHeight="24" style="-fx-font-size: 13px; -fx-text-fill: #f87171;" />
 
-        <Button onAction="#handleLogin" prefWidth="180" styleClass="menu-button" text="LOGIN" />
+        <Button onAction="#handleLogin" prefWidth="220" styleClass="menu-button" text="LOGIN" />
+        <Button onAction="#handleCreateAccount" prefWidth="220" styleClass="menu-button" text="CREATE ACCOUNT" />
     </VBox>
 
 </StackPane>

@@ -1,5 +1,8 @@
 package crab.features.menu.presentation.components;
 
+import crab.appcore.db.DatabaseUserCredentialsRepository;
+import crab.features.menu.auth.AuthService;
+import crab.features.menu.auth.PasswordHasher;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -26,11 +29,35 @@ public final class LoginScreenController {
     @FXML
     private Label errorLabel;
 
+    private Runnable createAccountAction = () -> {
+    };
     private Runnable loginSuccessAction = () -> {
     };
+    private AuthService authService = new AuthService(
+            new DatabaseUserCredentialsRepository(),
+            new PasswordHasher()
+    );
 
     public void setLoginSuccessAction(Runnable action) {
         loginSuccessAction = Objects.requireNonNull(action, "action");
+    }
+
+    public void setCreateAccountAction(Runnable action) {
+        createAccountAction = Objects.requireNonNull(action, "action");
+    }
+
+    public void setStatusMessage(String message) {
+        errorLabel.setText(message == null ? "" : message);
+    }
+
+    public void setAuthService(AuthService authService) {
+        this.authService = Objects.requireNonNull(authService, "authService");
+    }
+
+    @FXML
+    private void handleCreateAccount() {
+        errorLabel.setText("");
+        createAccountAction.run();
     }
 
     @FXML
@@ -40,8 +67,14 @@ public final class LoginScreenController {
             return;
         }
 
+        String username = usernameField.getText().trim();
+        if (!authService.signIn(username, passwordField.getText())) {
+            errorLabel.setText("Invalid username or password.");
+            return;
+        }
+
         errorLabel.setText("");
-        loggedInUser = usernameField.getText();
+        loggedInUser = username;
         loginSuccessAction.run();
     }
 }

@@ -59,6 +59,45 @@ Or run from terminal:
 
 If Maven reports that the project requires Java 25, set the project SDK and Maven runner JRE to an installed JDK 25.
 
+## Local MySQL
+Crab Inc. includes a local Docker Compose database stack based on the Space.h setup.
+
+Start MySQL and phpMyAdmin:
+```bash
+docker compose up -d mysql phpmyadmin
+```
+
+Local endpoints:
+
+| Service | URL |
+| --- | --- |
+| MySQL | `localhost:3306` |
+| phpMyAdmin | `http://localhost:8081` |
+
+Default local credentials:
+
+| Key | Value |
+| --- | --- |
+| Database | `crabinc` |
+| User | `crabinc` |
+| Password | `crabinc` |
+| Root password | `crabinc-root` |
+
+Default game sign-in:
+
+| Username | Password |
+| --- | --- |
+| `demo` | `demo` |
+
+The Java app reads these optional environment variables:
+```bash
+CRABINC_DB_URL=jdbc:mysql://localhost:3306/crabinc?serverTimezone=UTC
+CRABINC_DB_USER=crabinc
+CRABINC_DB_PASSWORD=crabinc
+CRABINC_DEV_USERNAME=demo
+CRABINC_DEV_PASSWORD=demo
+```
+
 ## Evaluation Criteria Mapping
 - **OOP:** Use of inheritance for card types and strategy-based event effects. Small classes with clear responsibilities and Doxygen class comments for intentional patterns/SOLID usage.
 - **GUI:** Use FXGL for runtime scene integration and JavaFX/FXML for UI panels.

@@ -2,7 +2,7 @@ package crab.features.menu.presentation.screens;
 
 import crab.appcore.screen.GameScreen;
 import crab.appcore.screen.ScreenManager;
-import crab.features.menu.presentation.components.LoginScreenController;
+import crab.features.menu.presentation.components.SignupScreenController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
@@ -13,29 +13,15 @@ import java.net.URL;
 
 import static com.almasb.fxgl.dsl.FXGL.getGameScene;
 
-/**
- * Login entry screen for the existing FXGL application flow.
- *
- * Design patterns:
- * - State: represents the unauthenticated application state.
- *
- * SOLID:
- * - Single Responsibility: owns login presentation and validation only.
- */
-public final class LoginScreen implements GameScreen {
-    public static final String ID = "menu_login";
-    private static String pendingStatusMessage = "";
+public final class SignupScreen implements GameScreen {
+    public static final String ID = "menu_signup";
 
     private final ScreenManager screens;
     private Parent root;
     private boolean visible;
 
-    public LoginScreen(ScreenManager screens) {
+    public SignupScreen(ScreenManager screens) {
         this.screens = screens;
-    }
-
-    public static void setPendingStatusMessage(String message) {
-        pendingStatusMessage = message == null ? "" : message;
     }
 
     @Override
@@ -69,22 +55,23 @@ public final class LoginScreen implements GameScreen {
     }
 
     private Parent loadView() {
-        URL resource = getClass().getResource("/fxml/menu/login-screen.fxml");
+        URL resource = getClass().getResource("/fxml/menu/signup-screen.fxml");
         if (resource == null) {
-            return fallbackLabel("Missing /fxml/menu/login-screen.fxml");
+            return fallbackLabel("Missing /fxml/menu/signup-screen.fxml");
         }
 
         try {
             FXMLLoader loader = new FXMLLoader(resource);
             Parent loadedRoot = loader.load();
-            LoginScreenController controller = loader.getController();
-            controller.setLoginSuccessAction(() -> screens.show(MainMenuScreen.ID));
-            controller.setCreateAccountAction(() -> screens.show(SignupScreen.ID));
-            controller.setStatusMessage(pendingStatusMessage);
-            pendingStatusMessage = "";
+            SignupScreenController controller = loader.getController();
+            controller.setBackToLoginAction(() -> screens.show(LoginScreen.ID));
+            controller.setSignupSuccessHandler(message -> {
+                LoginScreen.setPendingStatusMessage(message);
+                screens.show(LoginScreen.ID);
+            });
             return loadedRoot;
         } catch (IOException exception) {
-            return fallbackLabel("Login screen load failed: " + exception.getMessage());
+            return fallbackLabel("Signup screen load failed: " + exception.getMessage());
         }
     }
 
