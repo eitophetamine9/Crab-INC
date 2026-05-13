@@ -2,17 +2,19 @@ package crab.features.gameplay.presentation;
 
 import crab.appcore.screen.ScreenManager;
 import crab.features.gameplay.domain.*;
-import crab.features.menu.presentation.components.LoginScreenController;
-import crab.appcore.db.DatabaseManager;
+import javafx.animation.TranslateTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
+import javafx.util.Duration;
 
 import java.util.List;
 import java.util.Map;
@@ -40,19 +42,14 @@ public class GameplayScreenController {
     @FXML private ImageView heroAvatarImage;
     @FXML private Label heroClassLabel;
     @FXML private Label heroNameLabel;
-    @FXML
-    private Label topClamsLabel;
-    @FXML
-    private Label roundGemLabel;
     @FXML private Label heroWealthLabel;
     @FXML private Label heroReputationLabel;
     @FXML private Label heroInfamyLabel;
     @FXML private HBox handArea;
     @FXML private Button endTurnBtn;
+    @FXML private Label roundGemLabel;
     @FXML private StackPane enemyScrollContainer;
     @FXML private ScrollPane enemyScrollPane;
-    @FXML private VBox actionLogContainer;
-    @FXML private ScrollPane actionLogScroll;
 
     private ScreenManager screens;
     private GameSession gameSession;
@@ -61,14 +58,10 @@ public class GameplayScreenController {
     
     private ActionCard selectedCard;
     private ActionCard keptCardToSave;
-    private StackPane selectedCardNode;
-    private StackPane keptCardNode;
     private ActionCard lastAiCardPlayed;
     
     private boolean isFemale = false;
     private VBox pauseMenu;
-    private StackPane draftOverlay;
-    private final Map<String, VBox> playerViews = new java.util.HashMap<>();
 
     private final Random random = new Random();
 
@@ -179,11 +172,11 @@ public class GameplayScreenController {
         Button saveBtn = new Button("Save and Return to Menu");
         saveBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-text-fill: #10b981;");
         saveBtn.setOnAction(e -> {
-            String username = LoginScreenController.loggedInUser;
+            String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
             String saveFileName = "savegame_" + username + ".dat";
             try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(saveFileName))) {
                 oos.writeObject(gameSession);
-                DatabaseManager.registerSave(username, saveFileName);
+                crab.appcore.db.DatabaseManager.registerSave(username, saveFileName);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -234,11 +227,10 @@ public class GameplayScreenController {
     private void updateUI() {
         if (gameSession == null) return;
 
-        topClamsLabel.setText("Clams: " + humanPlayer.clams());
+        topGoldLabel.setText("Gold: " + humanPlayer.gold());
         roundGemLabel.setText("Round: " + gameSession.currentRound());
 
         battlefieldArea.getChildren().clear();
-        playerViews.clear();
         
         int totalEnemies = aiPlayers.size();
         int topCount = (int) Math.ceil(totalEnemies / 2.0);
@@ -266,30 +258,27 @@ public class GameplayScreenController {
         heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
         heroReputationLabel.setText("Reputation: " + humanPlayer.reputation());
         heroInfamyLabel.setText("Infamy: " + humanPlayer.infamy());
-        
 
         handArea.getChildren().clear();
         selectedCard = null;
         keptCardToSave = null;
-        selectedCardNode = null;
-        keptCardNode = null;
 
         endTurnBtn.setDisable(true);
         endTurnBtn.setOnAction(null);
 
         switch (gameSession.phase()) {
-            case DEVELOPMENT -> showDevelopmentUI();
+            case DEVELOPMENT -> {
+                Map<String, Integer> selections = gameSession.players().stream()
+                        .collect(Collectors.toMap(PlayerState::id, p -> 0));
+                gameSession.resolveDevelopment(selections, java.util.Set.of());
+                updateUI();
+            }
             case ACTION -> showActionUI();
             case RESOLUTION -> showResolutionUI();
             case EVENT -> {
-                GameEvent event = generateRoundEvent();
-                if (event.name().equals("Travelling Shop")) {
-                    showTravellingShopUI();
-                } else if (!event.name().equals("Calm Current")) {
-                    showEventOverlay(event);
-                } else {
-                    updateUI();
-                }
+                phasePromptLabel.setText("Resolving Events...");
+                gameSession.applyEvent(GameEvent.none());
+                updateUI();
             }
             case ROUND_COMPLETE -> {
                 gameSession.completeRound();
@@ -370,7 +359,6 @@ public class GameplayScreenController {
             statsBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: " + (isHuman ? "#10b981" : "white") + "; -fx-border-width: 2; -fx-padding: 5;");
         });
 
-        playerViews.put(player.id(), container);
         return container;
     }
 
@@ -421,204 +409,82 @@ public class GameplayScreenController {
         endTurnBtn.setDisable(false);
         endTurnBtn.setText("RESOLVE");
         endTurnBtn.setOnAction(e -> {
-            for (PlayerAction action : gameSession.pendingActions().values()) {
-                if (action.targetPlayerId() != null) {
-                    String cardName = action.card().name();
-            // User requirement: own cards show rarity, enemies don't in log
-            if (!action.playerId().equals(humanPlayer.id())) {
-                // Strip first word if it looks like a rarity (e.g. "Rare Steal" -> "Steal")
-                String[] parts = cardName.split(" ", 2);
-                if (parts.length > 1) {
-                    cardName = parts[1];
-                }
-            }
-            
-            addLog(getDisplayName(action.playerId()) + " used " + cardName + " on " + getDisplayName(action.targetPlayerId()));
-                    spawnEmoji(action.targetPlayerId(), action.card().type() == CardType.HELP ? "😊" : "😠");
-                } else {
-                    addLog(getDisplayName(action.playerId()) + " passed.");
-                }
-            }
             gameSession.resolveActions();
             lastAiCardPlayed = null;
             updateUI();
         });
     }
 
-    private void showDevelopmentUI() {
-        phasePromptLabel.setText("Phase: Development - Pick a Draft Card!");
-        
-        if (gameSession.currentDrafts().isEmpty()) {
-            gameSession.resolveDevelopment(Map.of(), java.util.Set.of());
-            updateUI();
-            return;
-        }
-
-        List<ActionCard> humanDrafts = gameSession.currentDrafts().get(humanPlayer.id());
-        if (humanDrafts == null || humanDrafts.isEmpty()) {
-            Map<String, Integer> aiSelections = generateAiDraftSelections();
-            gameSession.resolveDevelopment(aiSelections, java.util.Set.of());
-            updateUI();
-            return;
-        }
-
-        HBox draftBox = new HBox(20);
-        draftBox.setAlignment(Pos.CENTER);
-        
-        for (int i = 0; i < humanDrafts.size(); i++) {
-            ActionCard draftCard = humanDrafts.get(i);
-            int index = i;
-            StackPane cardView = createHandCardView(draftCard);
-            cardView.setOnMouseClicked(e -> {
-                Map<String, Integer> selections = generateAiDraftSelections();
-                selections.put(humanPlayer.id(), index);
-                
-                mainLayout.getChildren().remove(draftOverlay);
-                draftOverlay = null;
-                gameSession.resolveDevelopment(selections, java.util.Set.of());
-                updateUI();
-            });
-            draftBox.getChildren().add(cardView);
-        }
-        
-        Label title = new Label("Choose a card to add to your hand!");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: rgba(0,0,0,0.7); -fx-padding: 10;");
-
-        VBox overlayContent = new VBox(20, title, draftBox);
-        overlayContent.setAlignment(Pos.CENTER);
-        overlayContent.setStyle("-fx-background-color: rgba(0,0,0,0.8);");
-        
-        draftOverlay = new StackPane(overlayContent);
-        AnchorPane.setTopAnchor(draftOverlay, 0.0);
-        AnchorPane.setBottomAnchor(draftOverlay, 0.0);
-        AnchorPane.setLeftAnchor(draftOverlay, 0.0);
-        AnchorPane.setRightAnchor(draftOverlay, 0.0);
-        
-        mainLayout.getChildren().add(draftOverlay);
+    /** Returns the path under /assets/card-art/ for a given card. */
+    private String getCardArtPath(ActionCard card) {
+        String rarity = switch (card.rarity()) {
+            case COMMON    -> "common";
+            case UNCOMMON  -> "uncommon";
+            case RARE      -> "rare";
+            case SIGNATURE -> "signature";
+        };
+        return switch (card.type()) {
+            case HELP, SIGNATURE_ALTRUIST     -> "/assets/card-art/altruist_"    + rarity + "_help.png";
+            case STEAL, SIGNATURE_OPPORTUNIST -> "/assets/card-art/oppurtunist_" + rarity + "_steal.png";
+            case SABOTAGE, SIGNATURE_SABOTEUR -> "/assets/card-art/sabotuer_"    + rarity + "_sabotage.png";
+        };
     }
 
-    private Map<String, Integer> generateAiDraftSelections() {
-        Map<String, Integer> selections = new java.util.HashMap<>();
-        for (PlayerState ai : aiPlayers) {
-            List<ActionCard> drafts = gameSession.currentDrafts().get(ai.id());
-            if (drafts != null && !drafts.isEmpty()) {
-                selections.put(ai.id(), random.nextInt(drafts.size()));
-            }
-        }
-        return selections;
+    /** Human-readable effect preview string for tooltip. */
+    private String getCardEffectDescription(ActionCard card) {
+        double mult = card.rarity().multiplier();
+        return switch (card.type()) {
+            case HELP, SIGNATURE_ALTRUIST ->
+                String.format("Help a target:\n+%d Rep (you)  +%d Gold (you)\n+%d Wealth (target)",
+                        Math.round(40 * mult), Math.round(15 * mult), Math.round(30 * mult));
+            case STEAL, SIGNATURE_OPPORTUNIST ->
+                String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Gold (target)",
+                        Math.round(45 * mult), Math.round(10 * mult), Math.round(35 * mult));
+            case SABOTAGE, SIGNATURE_SABOTEUR ->
+                String.format("Sabotage a target:\n+%d Infamy (you)\nReduces target's gains by 50%%",
+                        Math.round(50 * mult));
+        };
     }
 
-    private GameEvent generateRoundEvent() {
-        double roll = random.nextDouble();
-        if (roll > 0.7) {
-            return GameEvent.none();
-        }
-        
-        if (roll < 0.15) {
-            return GameEvent.marketCrash(50 + gameSession.currentRound() * 5);
-        } else if (roll < 0.3) {
-            return GameEvent.charityWave();
-        } else if (roll < 0.45) {
-            // Find player with highest wealth
-            PlayerState richest = gameSession.players().stream()
-                    .max(java.util.Comparator.comparingInt(PlayerState::wealth))
-                    .orElse(humanPlayer);
-            return GameEvent.crabHunt(richest.id(), 20 + gameSession.currentRound() * 3);
-        } else if (roll < 0.6) {
-            return GameEvent.travellingShop();
-        } else {
-            List<PlayerState> targets = gameSession.players();
-            int totalInfamy = targets.stream().mapToInt(p -> Math.max(1, p.infamy())).sum();
-            int targetRoll = random.nextInt(totalInfamy);
-            int current = 0;
-            PlayerState target = targets.get(0);
-            for (PlayerState p : targets) {
-                current += Math.max(1, p.infamy());
-                if (targetRoll < current) {
-                    target = p;
-                    break;
-                }
-            }
-            return new GameEvent("Shark Attack", target.id(), 0, 0, -20, 0);
-        }
-    }
-
-    private void addLog(String message) {
-        if (actionLogContainer == null) return;
-        Label l = new Label(message);
-        l.setStyle("-fx-text-fill: white; -fx-font-size: 11px;");
-        l.setWrapText(true);
-        actionLogContainer.getChildren().add(l);
-        if (actionLogContainer.getChildren().size() > 20) {
-            actionLogContainer.getChildren().remove(0);
-        }
-        javafx.application.Platform.runLater(() -> actionLogScroll.setVvalue(1.0));
-    }
-
-    private void spawnEmoji(String playerId, String emoji) {
-        VBox view = playerViews.get(playerId);
-        if (view == null) {
-            // Check if it's the human player
-            if (playerId.equals(humanPlayer.id())) {
-                // heroArea contains the human avatar and stats
-                // we'll just use heroArea as the target
-                spawnEmojiOnNode(heroArea, emoji);
-            }
-            return;
-        }
-        spawnEmojiOnNode(view, emoji);
-    }
-
-    private void spawnEmojiOnNode(javafx.scene.Node node, String emoji) {
-        Label emojiLabel = new Label(emoji);
-        emojiLabel.setStyle("-fx-font-size: 40px;");
-        emojiLabel.setMouseTransparent(true);
-        
-        mainLayout.getChildren().add(emojiLabel);
-        
-        javafx.geometry.Bounds bounds = node.localToScene(node.getBoundsInLocal());
-        emojiLabel.setLayoutX(bounds.getMinX() + bounds.getWidth()/2 - 20);
-        emojiLabel.setLayoutY(bounds.getMinY() - 50);
-
-        javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(2), emojiLabel);
-        fade.setFromValue(1.0);
-        fade.setToValue(0.0);
-        
-        javafx.animation.TranslateTransition move = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(2), emojiLabel);
-        move.setByY(-100);
-        
-        fade.setOnFinished(e -> mainLayout.getChildren().remove(emojiLabel));
-        
-        fade.play();
-        move.play();
-    }
-
-    private String getDisplayName(String playerId) {
-        return gameSession.players().stream()
-                .filter(p -> p.id().equals(playerId))
-                .map(PlayerState::displayName)
-                .findFirst()
-                .orElse(playerId);
+    /** Rarity accent color for the card border / banner. */
+    private String getRarityColor(CardRarity rarity) {
+        return switch (rarity) {
+            case COMMON    -> "#9ca3af"; // grey
+            case UNCOMMON  -> "#34d399"; // green
+            case RARE      -> "#60a5fa"; // blue
+            case SIGNATURE -> "#fbbf24"; // gold
+        };
     }
 
     private void updateHandVisuals() {
         for (javafx.scene.Node node : handArea.getChildren()) {
             StackPane stack = (StackPane) node;
-            VBox cardBox = (VBox) stack.getChildren().get(0);
-            Label keepLabel = (Label) stack.getChildren().get(1);
-            
             ActionCard c = (ActionCard) stack.getUserData();
-            if (stack == selectedCardNode) {
-                cardBox.setStyle("-fx-background-color: white; -fx-border-color: #eab308; -fx-border-width: 4; -fx-background-image: url('/assets/card-art/placeholdercard.png'); -fx-background-size: cover;");
+            ImageView artView = (ImageView) stack.lookup("#cardArt_" + c.id());
+            Label keepLabel  = (Label)     stack.lookup("#keepLabel_" + c.id());
+
+            boolean isSelected = (c == selectedCard);
+            boolean isKept     = (c == keptCardToSave);
+
+            // Glow / drop-shadow
+            DropShadow glow = new DropShadow();
+            if (isSelected) {
+                glow.setColor(Color.web("#fbbf24"));
+                glow.setRadius(22);
+                glow.setSpread(0.4);
+                stack.setScaleX(1.12);
+                stack.setScaleY(1.12);
             } else {
-                cardBox.setStyle("-fx-background-color: white; -fx-border-color: black; -fx-border-width: 2; -fx-background-image: url('/assets/card-art/placeholdercard.png'); -fx-background-size: cover;");
+                glow.setColor(Color.web(getRarityColor(c.rarity())));
+                glow.setRadius(8);
+                glow.setSpread(0.1);
+                stack.setScaleX(1.0);
+                stack.setScaleY(1.0);
             }
-            
-            // Show K icon if kept
-            if (stack == keptCardNode) {
-                keepLabel.setVisible(true);
-            } else {
-                keepLabel.setVisible(false);
+            stack.setEffect(glow);
+
+            if (keepLabel != null) {
+                keepLabel.setVisible(isKept);
             }
         }
     }
@@ -626,52 +492,103 @@ public class GameplayScreenController {
     private StackPane createHandCardView(ActionCard card) {
         StackPane stack = new StackPane();
         stack.setUserData(card);
+        stack.setPrefSize(108, 155);
+        stack.setMaxSize(108, 155);
 
-        VBox cardBox = new VBox(5);
-        cardBox.setAlignment(Pos.CENTER);
-        cardBox.setPrefSize(100, 140);
-        cardBox.setStyle("-fx-background-color: white; -fx-border-color: black; -fx-border-width: 2; -fx-background-image: url('/assets/card-art/placeholdercard.png'); -fx-background-size: cover;");
-        
-        Label name = new Label(card.name());
-        name.setWrapText(true);
-        name.setStyle("-fx-font-weight: bold; -fx-background-color: rgba(255,255,255,0.8); -fx-padding: 2;");
-        
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-        
-        Label typeLabel = new Label(card.type().name());
-        typeLabel.setStyle("-fx-font-size: 10px; -fx-background-color: rgba(255,255,255,0.8); -fx-padding: 2;");
-        
-        cardBox.getChildren().addAll(name, spacer, typeLabel);
-        
-        // Keep Icon "K"
+        // ---- Art image ----
+        ImageView artView = new ImageView();
+        artView.setId("cardArt_" + card.id());
+        artView.setFitWidth(108);
+        artView.setFitHeight(155);
+        artView.setPreserveRatio(false);
+        artView.setSmooth(true);
+        String artPath = getCardArtPath(card);
+        var res = getClass().getResource(artPath);
+        if (res != null) {
+            artView.setImage(new Image(res.toExternalForm()));
+        } else {
+            // Fallback to placeholder
+            var ph = getClass().getResource("/assets/card-art/placeholdercard.png");
+            if (ph != null) artView.setImage(new Image(ph.toExternalForm()));
+        }
+
+        // Clip corners
+        Rectangle clip = new Rectangle(108, 155);
+        clip.setArcWidth(14);
+        clip.setArcHeight(14);
+        artView.setClip(clip);
+
+        // ---- Rarity banner overlay (bottom strip) ----
+        String rarityColor = getRarityColor(card.rarity());
+        Label rarityBadge = new Label(card.rarity().name());
+        rarityBadge.setStyle(
+                "-fx-background-color: " + rarityColor + "cc; " +
+                "-fx-text-fill: white; -fx-font-size: 9px; -fx-font-weight: bold; " +
+                "-fx-padding: 2 6; -fx-background-radius: 0 0 7 7;");
+        rarityBadge.setMaxWidth(Double.MAX_VALUE);
+        rarityBadge.setAlignment(Pos.CENTER);
+        StackPane.setAlignment(rarityBadge, Pos.BOTTOM_CENTER);
+
+        // ---- Card name overlay (top strip) ----
+        Label nameBadge = new Label(card.name());
+        nameBadge.setWrapText(true);
+        nameBadge.setAlignment(Pos.CENTER);
+        nameBadge.setStyle(
+                "-fx-background-color: rgba(0,0,0,0.55); " +
+                "-fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; " +
+                "-fx-padding: 3 5; -fx-background-radius: 7 7 0 0;");
+        nameBadge.setMaxWidth(Double.MAX_VALUE);
+        StackPane.setAlignment(nameBadge, Pos.TOP_CENTER);
+
+        // ---- Keep badge ----
         Label keepLabel = new Label("Ⓚ");
-        keepLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #10b981; -fx-font-weight: bold; -fx-background-color: white; -fx-background-radius: 10;");
+        keepLabel.setId("keepLabel_" + card.id());
+        keepLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #10b981; -fx-font-weight: bold; " +
+                "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10; -fx-padding: 1 4;");
         keepLabel.setVisible(false);
         StackPane.setAlignment(keepLabel, Pos.TOP_RIGHT);
-        
-        stack.getChildren().addAll(cardBox, keepLabel);
-        
+
+        stack.getChildren().addAll(artView, nameBadge, rarityBadge, keepLabel);
+
+        // Initial rarity glow
+        DropShadow initGlow = new DropShadow();
+        initGlow.setColor(Color.web(rarityColor));
+        initGlow.setRadius(8);
+        initGlow.setSpread(0.1);
+        stack.setEffect(initGlow);
+
+        // ---- Tooltip with effect description ----
+        Tooltip tip = new Tooltip(getCardEffectDescription(card));
+        tip.setStyle("-fx-font-size: 12px;");
+        Tooltip.install(stack, tip);
+
+        // ---- Hover: lift the card ----
+        TranslateTransition hoverUp   = new TranslateTransition(Duration.millis(120), stack);
+        TranslateTransition hoverDown = new TranslateTransition(Duration.millis(120), stack);
+        stack.setOnMouseEntered(e -> {
+            hoverDown.stop();
+            hoverUp.setToY(-12);
+            hoverUp.play();
+        });
+        stack.setOnMouseExited(e -> {
+            hoverUp.stop();
+            hoverDown.setToY(0);
+            hoverDown.play();
+        });
+
+        // ---- Click handler ----
         stack.setOnMouseClicked(e -> {
             if (gameSession.phase() == GamePhase.ACTION) {
                 if (e.getButton() == MouseButton.SECONDARY) {
-                    // Right click -> Toggle Keep
-                    if (keptCardNode == stack) {
-                        keptCardNode = null;
-                        keptCardToSave = null;
-                    } else {
-                        keptCardNode = stack;
-                        keptCardToSave = card;
-                    }
+                    // Right-click: toggle keep
+                    keptCardToSave = (keptCardToSave == card) ? null : card;
                     updateHandVisuals();
                 } else {
-                    // Left click -> Select or Unselect
-                    if (selectedCardNode == stack) {
-                        selectedCardNode = null;
+                    // Left-click: select / deselect
+                    if (selectedCard == card) {
                         selectedCard = null;
                         phasePromptLabel.setText("Phase: Select Card, Right-Click to Keep 1, then Target");
                     } else {
-                        selectedCardNode = stack;
                         selectedCard = card;
                         phasePromptLabel.setText("Target an Enemy!");
                     }
@@ -679,131 +596,8 @@ public class GameplayScreenController {
                 }
             }
         });
-        
+
         return stack;
-    }
-
-    private void showTravellingShopUI() {
-        phasePromptLabel.setText("Travelling Shop is Open!");
-        
-        VBox shopBox = new VBox(20);
-        shopBox.setAlignment(Pos.CENTER);
-        shopBox.setStyle("-fx-background-color: rgba(0,0,0,0.85); -fx-padding: 30; -fx-border-color: #f59e0b; -fx-border-width: 5;");
-        
-        ImageView merchantImg = new ImageView(new Image(getClass().getResourceAsStream("/assets/textures/opportunistfm.png")));
-        merchantImg.setFitHeight(250);
-        merchantImg.setPreserveRatio(true);
-        
-        Label welcome = new Label("Welcome! What would you like to buy?");
-        welcome.setStyle("-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
-        
-        Button upgradeBtn = new Button("Upgrade Build (30 Clams)");
-        upgradeBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10; -fx-min-width: 250;");
-        upgradeBtn.setDisable(humanPlayer.clams() < 30 || humanPlayer.buildLevel() >= 5);
-        upgradeBtn.setOnAction(e -> {
-            humanPlayer.deductClams(30);
-            humanPlayer.incrementBuildLevel();
-            
-            mainLayout.getChildren().remove(draftOverlay);
-            draftOverlay = null;
-            gameSession.applyEvent(GameEvent.none()); // Advance phase
-            updateUI();
-        });
-        
-        Button rareBtn = new Button("Rare Card (15 Clams)");
-        rareBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10; -fx-min-width: 250;");
-        rareBtn.setDisable(humanPlayer.clams() < 15);
-        rareBtn.setOnAction(e -> {
-            humanPlayer.deductClams(15);
-            ActionCard base = gameSession.generateCard(humanPlayer);
-            ActionCard rare = new ActionCard(base.id(), base.name(), base.type(), CardRarity.RARE);
-            humanPlayer.addCard(rare);
-            
-            mainLayout.getChildren().remove(draftOverlay);
-            draftOverlay = null;
-            gameSession.applyEvent(GameEvent.none()); // Advance phase
-            updateUI();
-        });
-        
-        Button leaveBtn = new Button("Leave");
-        leaveBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10; -fx-min-width: 250;");
-        leaveBtn.setOnAction(e -> {
-            mainLayout.getChildren().remove(draftOverlay);
-            draftOverlay = null;
-            gameSession.applyEvent(GameEvent.none()); // Advance phase
-            updateUI();
-        });
-        
-        shopBox.getChildren().addAll(merchantImg, welcome, upgradeBtn, rareBtn, leaveBtn);
-        
-        draftOverlay = new StackPane(shopBox);
-        AnchorPane.setTopAnchor(draftOverlay, 50.0);
-        AnchorPane.setBottomAnchor(draftOverlay, 50.0);
-        AnchorPane.setLeftAnchor(draftOverlay, 200.0);
-        AnchorPane.setRightAnchor(draftOverlay, 200.0);
-        
-        mainLayout.getChildren().add(draftOverlay);
-    }
-
-    private void showEventOverlay(GameEvent event) {
-        phasePromptLabel.setText("Event: " + event.name());
-        
-        VBox eventBox = new VBox(20);
-        eventBox.setAlignment(Pos.CENTER);
-        eventBox.setStyle("-fx-background-color: rgba(0,0,0,0.85); -fx-padding: 30; -fx-border-color: white; -fx-border-width: 5;");
-        
-        String imagePath = "/assets/textures/altruistcrab.png"; // default
-        String description = "Something happened!";
-        
-        if (event.name().equals("Market Crash")) {
-            imagePath = "/assets/textures/opportunistfm.png";
-            description = "Market Crash! Everyone loses wealth!";
-        } else if (event.name().equals("Charity Wave")) {
-            imagePath = "/assets/textures/altruistfm.png";
-            description = "Charity Wave! Help cards are more effective next round!";
-        } else if (event.name().equals("Crab Hunt")) {
-            imagePath = "/assets/textures/saboteurfm.png";
-            PlayerState target = gameSession.players().stream()
-                    .filter(p -> p.id().equals(event.targetPlayerId()))
-                    .findFirst().orElse(null);
-            description = "Crab Hunt! " + (target != null ? target.displayName() : "The richest") + " loses clams!";
-        } else if (event.name().equals("Shark Attack")) {
-            imagePath = "/assets/textures/saboteurcrab.png";
-            PlayerState target = gameSession.players().stream()
-                    .filter(p -> p.id().equals(event.targetPlayerId()))
-                    .findFirst().orElse(null);
-            description = "Shark Attack targets " + (target != null ? target.displayName() : "someone") + "!";
-        }
-        
-        ImageView eventImg = new ImageView(new Image(getClass().getResourceAsStream(imagePath)));
-        eventImg.setFitHeight(250);
-        eventImg.setPreserveRatio(true);
-        
-        Label title = new Label(event.name());
-        title.setStyle("-fx-text-fill: gold; -fx-font-size: 28px; -fx-font-weight: bold;");
-        
-        Label desc = new Label(description);
-        desc.setStyle("-fx-text-fill: white; -fx-font-size: 18px;");
-        
-        Button okBtn = new Button("OK");
-        okBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 40;");
-        okBtn.setOnAction(e -> {
-            mainLayout.getChildren().remove(draftOverlay);
-            draftOverlay = null;
-            gameSession.applyEvent(event);
-            addLog("Event: " + event.name());
-            updateUI();
-        });
-        
-        eventBox.getChildren().addAll(eventImg, title, desc, okBtn);
-        
-        draftOverlay = new StackPane(eventBox);
-        AnchorPane.setTopAnchor(draftOverlay, 100.0);
-        AnchorPane.setBottomAnchor(draftOverlay, 100.0);
-        AnchorPane.setLeftAnchor(draftOverlay, 250.0);
-        AnchorPane.setRightAnchor(draftOverlay, 250.0);
-        
-        mainLayout.getChildren().add(draftOverlay);
     }
 
     private void showGameOverUI() {

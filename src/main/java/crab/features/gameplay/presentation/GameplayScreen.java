@@ -107,11 +107,25 @@ public final class GameplayScreen implements GameScreen {
 
     private List<ActionCard> createStandardDeck() {
         List<ActionCard> deck = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            deck.add(new ActionCard("take", "Take", CardType.STEAL, CardRarity.COMMON));
-            deck.add(new ActionCard("give", "Give", CardType.HELP, CardRarity.COMMON));
-            deck.add(new ActionCard("share", "Share", CardType.HELP, CardRarity.COMMON));
-        }
+
+        // Help cards (Altruist art) – all rarities
+        deck.add(new ActionCard("give_common",    "Give",          CardType.HELP,    CardRarity.COMMON));
+        deck.add(new ActionCard("give_uncommon",  "Generous Give", CardType.HELP,    CardRarity.UNCOMMON));
+        deck.add(new ActionCard("give_rare",      "Gracious Give", CardType.HELP,    CardRarity.RARE));
+        deck.add(new ActionCard("give_signature", "Grand Gesture", CardType.SIGNATURE_ALTRUIST, CardRarity.SIGNATURE));
+
+        // Steal cards (Opportunist art) – all rarities
+        deck.add(new ActionCard("take_common",    "Take",          CardType.STEAL,              CardRarity.COMMON));
+        deck.add(new ActionCard("take_uncommon",  "Snatch",        CardType.STEAL,              CardRarity.UNCOMMON));
+        deck.add(new ActionCard("take_rare",      "Heist",         CardType.STEAL,              CardRarity.RARE));
+        deck.add(new ActionCard("take_signature", "Grand Heist",   CardType.SIGNATURE_OPPORTUNIST, CardRarity.SIGNATURE));
+
+        // Sabotage cards (Saboteur art) – all rarities
+        deck.add(new ActionCard("sabotage_common",    "Sabotage",       CardType.SABOTAGE,           CardRarity.COMMON));
+        deck.add(new ActionCard("sabotage_uncommon",  "Scheme",         CardType.SABOTAGE,           CardRarity.UNCOMMON));
+        deck.add(new ActionCard("sabotage_rare",      "Conspiracy",     CardType.SABOTAGE,           CardRarity.RARE));
+        deck.add(new ActionCard("sabotage_signature", "Master Sabotage",CardType.SIGNATURE_SABOTEUR, CardRarity.SIGNATURE));
+
         return deck;
     }
 }
