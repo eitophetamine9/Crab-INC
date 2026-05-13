@@ -34,7 +34,7 @@ public class GameplayScreenController {
 
     @FXML private AnchorPane mainLayout;
     @FXML private ImageView backgroundImageView;
-    @FXML private Label topGoldLabel;
+    @FXML private Label topClamsLabel;
     @FXML private VBox battlefieldArea;
     @FXML private Label phasePromptLabel;
     @FXML private HBox heroArea;
@@ -50,6 +50,8 @@ public class GameplayScreenController {
     @FXML private Label roundGemLabel;
     @FXML private StackPane enemyScrollContainer;
     @FXML private ScrollPane enemyScrollPane;
+    @FXML private ScrollPane actionLogScroll;
+    @FXML private VBox actionLogContainer;
 
     private ScreenManager screens;
     private GameSession gameSession;
@@ -62,8 +64,29 @@ public class GameplayScreenController {
     
     private boolean isFemale = false;
     private VBox pauseMenu;
+    private int logRound = 0; // tracks last logged round to avoid duplicate log entries
 
     private final Random random = new Random();
+
+    /** Appends a line to the action log panel with optional color. */
+    private void appendLog(String text, String cssColor) {
+        if (actionLogContainer == null) return;
+        Label entry = new Label(text);
+        entry.setWrapText(true);
+        entry.setMaxWidth(220);
+        entry.setStyle("-fx-text-fill: " + cssColor + "; -fx-font-size: 11px;");
+        actionLogContainer.getChildren().add(entry);
+        // Auto-scroll to bottom
+        if (actionLogScroll != null) {
+            actionLogScroll.layout();
+            actionLogScroll.setVvalue(1.0);
+        }
+    }
+
+    /** Appends a white log entry. */
+    private void appendLog(String text) {
+        appendLog(text, "white");
+    }
 
     private String getGoalString(PlayerClass playerClass) {
         return switch (playerClass) {
@@ -74,11 +97,13 @@ public class GameplayScreenController {
     }
 
     private Image getHumanAvatarImage(PlayerClass playerClass, boolean female) {
-        String path = switch (playerClass) {
-            case SABOTEUR -> female ? "/assets/textures/saboteurfm.png" : "/assets/textures/saboteurm.png";
-            case ALTRUIST -> female ? "/assets/textures/altruistfm.png" : "/assets/textures/altruistm.png";
-            case OPPORTUNIST -> female ? "/assets/textures/opportunistfm.png" : "/assets/textures/opportunistm.png";
+        String baseName = switch (playerClass) {
+            case SABOTEUR -> "saboteur";
+            case ALTRUIST -> "altruist";
+            case OPPORTUNIST -> "opportunist";
         };
+        String suffix = female ? "fm.gif" : "m.gif";
+        String path = "/assets/humanoid-art/" + baseName + suffix;
         var res = getClass().getResource(path);
         if (res != null) {
             return new Image(res.toExternalForm());
@@ -87,11 +112,12 @@ public class GameplayScreenController {
     }
 
     private Image getCrabImage(PlayerClass playerClass) {
-        String path = switch (playerClass) {
-            case SABOTEUR -> "/assets/textures/saboteurcrab.png";
-            case ALTRUIST -> "/assets/textures/altruistcrab.png";
-            case OPPORTUNIST -> "/assets/textures/opportunistcrab.png";
+        String baseName = switch (playerClass) {
+            case SABOTEUR -> "sabotuer";
+            case ALTRUIST -> "altruist";
+            case OPPORTUNIST -> "oppurtunist";
         };
+        String path = "/assets/crab-art/" + baseName + "_idle.gif";
         var res = getClass().getResource(path);
         if (res != null) {
             return new Image(res.toExternalForm());
@@ -119,23 +145,8 @@ public class GameplayScreenController {
         });
 
         if (enemyScrollContainer != null && enemyScrollPane != null) {
-            Rectangle fadeMask = new Rectangle();
-            fadeMask.widthProperty().bind(enemyScrollContainer.widthProperty());
-            fadeMask.heightProperty().bind(enemyScrollContainer.heightProperty());
-            fadeMask.setFill(new LinearGradient(
-                    0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                    new Stop(0, Color.TRANSPARENT),
-                    new Stop(0.15, Color.WHITE),
-                    new Stop(0.85, Color.WHITE),
-                    new Stop(1, Color.TRANSPARENT)
-            ));
-            fadeMask.setBlendMode(BlendMode.MULTIPLY);
-            
-            Group blendGroup = new Group(enemyScrollPane, fadeMask);
-            blendGroup.setBlendMode(BlendMode.SRC_OVER);
-            
             enemyScrollContainer.getChildren().clear();
-            enemyScrollContainer.getChildren().add(blendGroup);
+            enemyScrollContainer.getChildren().add(enemyScrollPane);
             enemyScrollPane.prefWidthProperty().bind(enemyScrollContainer.widthProperty());
             enemyScrollPane.prefHeightProperty().bind(enemyScrollContainer.heightProperty());
         }
@@ -227,7 +238,7 @@ public class GameplayScreenController {
     private void updateUI() {
         if (gameSession == null) return;
 
-        topGoldLabel.setText("Gold: " + humanPlayer.gold());
+        topClamsLabel.setText("Clams: " + humanPlayer.clams());
         roundGemLabel.setText("Round: " + gameSession.currentRound());
 
         battlefieldArea.getChildren().clear();
@@ -268,19 +279,22 @@ public class GameplayScreenController {
 
         switch (gameSession.phase()) {
             case DEVELOPMENT -> {
+                appendLog("--- Round " + gameSession.currentRound() + " ---", "#fbbf24");
                 Map<String, Integer> selections = gameSession.players().stream()
                         .collect(Collectors.toMap(PlayerState::id, p -> 0));
                 gameSession.resolveDevelopment(selections, java.util.Set.of());
+                appendLog("Income granted. Draw phase complete.", "#34d399");
                 updateUI();
             }
+            case DRAWING -> showDrawingUI();
             case ACTION -> showActionUI();
             case RESOLUTION -> showResolutionUI();
             case EVENT -> {
-                phasePromptLabel.setText("Resolving Events...");
-                gameSession.applyEvent(GameEvent.none());
-                updateUI();
+                GameEvent event = gameSession.selectWeightedEvent();
+                showEventUI(event);
             }
             case ROUND_COMPLETE -> {
+                appendLog("Round " + gameSession.currentRound() + " complete.", "#fbbf24");
                 gameSession.completeRound();
                 updateUI();
             }
@@ -298,9 +312,23 @@ public class GameplayScreenController {
         crabAvatar.setFitWidth(100);
         crabAvatar.setFitHeight(80);
         crabAvatar.setPreserveRatio(true);
-        Image img = getCrabImage(player.playerClass());
-        if (img != null) {
-            crabAvatar.setImage(img);
+        
+        String crabArtBase = switch (player.playerClass()) {
+            case SABOTEUR -> "sabotuer";
+            case ALTRUIST -> "altruist";
+            case OPPORTUNIST -> "oppurtunist";
+        };
+        
+        Image idleImg = new Image(getClass().getResourceAsStream("/assets/crab-art/" + crabArtBase + "_idle.gif"));
+        Image damageImg = new Image(getClass().getResourceAsStream("/assets/crab-art/" + crabArtBase + "_damage.gif"));
+        
+        // Show damage art if targeted in resolution phase
+        if (gameSession.phase() == GamePhase.RESOLUTION) {
+            boolean isIncomingTarget = gameSession.pendingActions().values().stream()
+                    .anyMatch(a -> player.id().equals(a.targetPlayerId()));
+            crabAvatar.setImage(isIncomingTarget ? damageImg : idleImg);
+        } else {
+            crabAvatar.setImage(idleImg);
         }
         
         // 2. Stats Box (Has background)
@@ -353,18 +381,20 @@ public class GameplayScreenController {
         container.setOnMouseEntered(e -> {
             if (gameSession.phase() == GamePhase.ACTION && selectedCard != null) {
                 statsBox.setStyle("-fx-background-color: rgba(200,50,50,0.8); -fx-border-color: red; -fx-border-width: 3; -fx-padding: 4;");
+                crabAvatar.setImage(damageImg);
             }
         });
         container.setOnMouseExited(e -> {
             statsBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: " + (isHuman ? "#10b981" : "white") + "; -fx-border-width: 2; -fx-padding: 5;");
+            if (gameSession.phase() != GamePhase.RESOLUTION) {
+                crabAvatar.setImage(idleImg);
+            }
         });
 
         return container;
     }
 
     private void showActionUI() {
-        phasePromptLabel.setText("Phase: Select Card, Right-Click to Keep 1, then Target");
-
         endTurnBtn.setDisable(false);
         endTurnBtn.setText("PASS");
         endTurnBtn.setOnAction(e -> {
@@ -372,6 +402,12 @@ public class GameplayScreenController {
             submitAiActions();
             updateUI();
         });
+        
+        if (humanPlayer.hand().size() >= 3) {
+            phasePromptLabel.setText("Phase: Select Card, RIGHT-CLICK TO KEEP 1, then Target");
+        } else {
+            phasePromptLabel.setText("Phase: Select Card, Target an Enemy (Keep 1 Optional)");
+        }
 
         List<ActionCard> hand = new java.util.ArrayList<>(humanPlayer.hand());
         hand.sort(java.util.Comparator.comparingInt(c -> java.util.List.of("Take", "Give", "Share").indexOf(c.name())));
@@ -385,22 +421,146 @@ public class GameplayScreenController {
     private void submitAiActions() {
         List<PlayerState> allPlayers = gameSession.players();
         for (PlayerState ai : aiPlayers) {
-            ActionCard keptCard = ai.hand().isEmpty() ? null : ai.hand().get(random.nextInt(ai.hand().size()));
-            
-            if (ai.hand().isEmpty()) {
+            List<ActionCard> availableHand = new java.util.ArrayList<>(ai.hand());
+            ActionCard keptCard = availableHand.isEmpty() ? null
+                    : availableHand.get(random.nextInt(availableHand.size()));
+
+            // Remove kept card from candidates so AI doesn't also play it
+            if (keptCard != null) {
+                availableHand = availableHand.stream()
+                        .filter(c -> c != keptCard)
+                        .collect(java.util.stream.Collectors.toList());
+            }
+
+            if (availableHand.isEmpty()) {
+                // No card to play — submit a pass
                 lastAiCardPlayed = new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON);
-                gameSession.submitAction(new PlayerAction(ai.id(), lastAiCardPlayed, humanPlayer.id(), null));
+                gameSession.submitAction(new PlayerAction(ai.id(), lastAiCardPlayed, humanPlayer.id(), keptCard));
             } else {
                 if (random.nextInt(10) == 0) {
-                    gameSession.submitAction(new PlayerAction(ai.id(), new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON), humanPlayer.id(), keptCard));
+                    // Random 10% chance to pass
+                    gameSession.submitAction(new PlayerAction(ai.id(),
+                            new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON),
+                            humanPlayer.id(), keptCard));
                     continue;
                 }
-                ActionCard aiCard = ai.hand().get(random.nextInt(ai.hand().size()));
+                ActionCard aiCard = availableHand.get(random.nextInt(availableHand.size()));
                 lastAiCardPlayed = aiCard;
-                PlayerState target = allPlayers.get(random.nextInt(allPlayers.size()));
+                // Pick a random target that is NOT self
+                List<PlayerState> validTargets = allPlayers.stream()
+                        .filter(p -> !p.id().equals(ai.id()))
+                        .collect(java.util.stream.Collectors.toList());
+                PlayerState target = validTargets.isEmpty() ? humanPlayer
+                        : validTargets.get(random.nextInt(validTargets.size()));
                 gameSession.submitAction(new PlayerAction(ai.id(), aiCard, target.id(), keptCard));
             }
         }
+    }
+
+    private void showDrawingUI() {
+        phasePromptLabel.setText("Drawing Cards...");
+        
+        // Resolve drawing in domain (adds 1 card to each player)
+        gameSession.resolveDrawing();
+        
+        // Show temporary overlay
+        StackPane overlay = new StackPane();
+        overlay.setPrefSize(400, 200);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.8); -fx-background-radius: 20; -fx-border-color: #3b82f6; -fx-border-width: 3; -fx-border-radius: 20;");
+        
+        Label l = new Label("DRAW PHASE\n+1 Card Added to Hand");
+        l.setStyle("-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-alignment: center;");
+        overlay.getChildren().add(l);
+        
+        mainLayout.getChildren().add(overlay);
+        AnchorPane.setTopAnchor(overlay, 200.0);
+        AnchorPane.setLeftAnchor(overlay, 340.0);
+        
+        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(1.0), overlay);
+        ft.setFromValue(1.0);
+        ft.setToValue(0.0);
+        ft.setDelay(javafx.util.Duration.seconds(1.0));
+        ft.setOnFinished(e -> {
+            mainLayout.getChildren().remove(overlay);
+            updateUI(); // Refresh to show ACTION phase with new card
+        });
+        ft.play();
+    }
+
+    private void showEventUI(GameEvent event) {
+        phasePromptLabel.setText("EVENT: " + event.name());
+        
+        StackPane overlay = new StackPane();
+        overlay.setPrefSize(550, 450);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.9); -fx-background-radius: 20; -fx-border-color: #f87171; -fx-border-width: 4; -fx-border-radius: 20;");
+        
+        VBox content = new VBox(15);
+        content.setAlignment(Pos.CENTER);
+        
+        Label title = new Label("--- WORLD EVENT ---");
+        title.setStyle("-fx-text-fill: #f87171; -fx-font-size: 26px; -fx-font-weight: bold;");
+        
+        String imgPath = switch (event.name()) {
+            case "Market Crash" -> "/assets/event-art/market_crash_event.png";
+            case "Charity Wave" -> "/assets/event-art/charity_wave_event.png";
+            case "Crab Hunt" -> "/assets/event-art/crab_hunt_event.png";
+            case "Travelling Shop" -> "/assets/event-art/travelling_merchant_event.png";
+            default -> "/assets/event-art/charity_wave_event.png";
+        };
+        
+        ImageView eventImg = new ImageView(new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath)));
+        eventImg.setFitHeight(180);
+        eventImg.setPreserveRatio(true);
+        
+        Label name = new Label(event.name());
+        name.setStyle("-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;");
+        
+        Label desc = new Label(event.description());
+        desc.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 16px; -fx-text-alignment: center;");
+        desc.setWrapText(true);
+        desc.setMaxWidth(450);
+        
+        Button okBtn = new Button("CONTINUE");
+        okBtn.setStyle("-fx-background-color: #f87171; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30; -fx-background-radius: 8; -fx-cursor: hand;");
+        
+        if ("Travelling Shop".equals(event.name())) {
+            Button shopBtn = new Button("BUY RARE CARD (50 Clams)");
+            shopBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
+            shopBtn.setOnAction(e -> {
+                if (humanPlayer.clams() >= 50 && humanPlayer.hand().size() < PlayerState.MAX_HAND_SIZE) {
+                    gameSession.buyRareCard(humanPlayer.id());
+                    appendLog("Travelling Shop: Purchased a Rare card!", "#3b82f6");
+                    shopBtn.setDisable(true);
+                    // Update stats directly to avoid stacking overlays via updateUI()
+                    topClamsLabel.setText("Clams: " + humanPlayer.clams());
+                    heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
+                } else if (humanPlayer.hand().size() >= PlayerState.MAX_HAND_SIZE) {
+                    appendLog("Hand is full! Cannot buy more cards.", "#ef4444");
+                } else {
+                    appendLog("Not enough Clams!", "#ef4444");
+                }
+            });
+            content.getChildren().addAll(title, eventImg, name, desc, shopBtn, okBtn);
+        } else {
+            content.getChildren().addAll(title, eventImg, name, desc, okBtn);
+        }
+
+        okBtn.setOnAction(e -> {
+            if (event.targetPlayerId() == null && (event.clamsDelta() != 0 || event.wealthDelta() != 0)) {
+                gameSession.applyEventToAll(event);
+            } else {
+                gameSession.applyEvent(event);
+            }
+            appendLog("EVENT: " + event.name() + " applied.", "#f87171");
+            mainLayout.getChildren().remove(overlay);
+            updateUI();
+        });
+        
+        overlay.getChildren().add(content);
+        
+        mainLayout.getChildren().add(overlay);
+        AnchorPane.setTopAnchor(overlay, 100.0);
+        AnchorPane.setLeftAnchor(overlay, 265.0);
     }
 
     private void showResolutionUI() {
@@ -409,6 +569,23 @@ public class GameplayScreenController {
         endTurnBtn.setDisable(false);
         endTurnBtn.setText("RESOLVE");
         endTurnBtn.setOnAction(e -> {
+            // Log actions before they are cleared
+            Map<String, PlayerAction> actions = gameSession.pendingActions();
+            for (PlayerAction action : actions.values()) {
+                String actorName = gameSession.players().stream()
+                        .filter(p -> p.id().equals(action.playerId()))
+                        .map(PlayerState::displayName)
+                        .findFirst().orElse(action.playerId());
+                
+                String targetName = gameSession.players().stream()
+                        .filter(p -> p.id().equals(action.targetPlayerId()))
+                        .map(PlayerState::displayName)
+                        .findFirst().orElse("nobody");
+
+                String color = action.playerId().equals(humanPlayer.id()) ? "#60a5fa" : "white";
+                appendLog(actorName + " used " + action.card().name() + " -> " + targetName, color);
+            }
+
             gameSession.resolveActions();
             lastAiCardPlayed = null;
             updateUI();
@@ -435,10 +612,10 @@ public class GameplayScreenController {
         double mult = card.rarity().multiplier();
         return switch (card.type()) {
             case HELP, SIGNATURE_ALTRUIST ->
-                String.format("Help a target:\n+%d Rep (you)  +%d Gold (you)\n+%d Wealth (target)",
+                String.format("Help a target:\n+%d Rep (you)  +%d Clams (you)\n+%d Wealth (target)",
                         Math.round(40 * mult), Math.round(15 * mult), Math.round(30 * mult));
             case STEAL, SIGNATURE_OPPORTUNIST ->
-                String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Gold (target)",
+                String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Clams (target)",
                         Math.round(45 * mult), Math.round(10 * mult), Math.round(35 * mult));
             case SABOTAGE, SIGNATURE_SABOTEUR ->
                 String.format("Sabotage a target:\n+%d Infamy (you)\nReduces target's gains by 50%%",

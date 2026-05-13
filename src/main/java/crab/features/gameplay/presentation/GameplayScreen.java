@@ -102,7 +102,7 @@ public final class GameplayScreen implements GameScreen {
             allPlayers.add(ai);
         }
 
-        gameSession = GameSession.newLocal(allPlayers, 15, List.of());
+        gameSession = GameSession.newLocal(allPlayers, 15, createStandardDeck());
     }
 
     private List<ActionCard> createStandardDeck() {

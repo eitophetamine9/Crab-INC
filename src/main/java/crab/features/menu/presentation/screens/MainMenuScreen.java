@@ -42,8 +42,7 @@ public final class MainMenuScreen implements GameScreen {
     private Parent root;
     private boolean visible;
 
-    private MediaPlayer mediaPlayer;
-    private MediaView mediaView;
+    private javafx.scene.image.ImageView backgroundImageView;
     private ParticleSystem particleSystem;
 
     public MainMenuScreen(ScreenManager screens) {
@@ -63,25 +62,17 @@ public final class MainMenuScreen implements GameScreen {
         }
 
         visible = true;
-        // Video Background Integration
+        // GIF Background Integration
         try {
-            var resource = getClass().getResource("/assets/textures/underwater_scene.mp4");
+            var resource = getClass().getResource("/assets/textures/bg_underwater.gif");
             if (resource != null) {
-                Media media = new Media(resource.toExternalForm());
-                mediaPlayer = new MediaPlayer(media);
-                mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-                mediaPlayer.setMute(true);
-
-                mediaView = new MediaView(mediaPlayer);
-                mediaView.setPreserveRatio(false);
-
-                // Static sizing via DSL to ensure compilation in 17.3
-                mediaView.setFitWidth(getAppWidth());
-                mediaView.setFitHeight(getAppHeight());
+                backgroundImageView = new javafx.scene.image.ImageView(new javafx.scene.image.Image(resource.toExternalForm()));
+                backgroundImageView.setFitWidth(getAppWidth());
+                backgroundImageView.setFitHeight(getAppHeight());
+                backgroundImageView.setPreserveRatio(false);
 
                 // Ensure it's behind UI
-                getGameScene().getContentRoot().getChildren().add(0, mediaView);
-                mediaPlayer.play();
+                getGameScene().getContentRoot().getChildren().add(0, backgroundImageView);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -128,14 +119,9 @@ public final class MainMenuScreen implements GameScreen {
             root = null;
         }
 
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.dispose();
-            mediaPlayer = null;
-        }
-        if (mediaView != null) {
-            getGameScene().getContentRoot().getChildren().remove(mediaView);
-            mediaView = null;
+        if (backgroundImageView != null) {
+            getGameScene().getContentRoot().getChildren().remove(backgroundImageView);
+            backgroundImageView = null;
         }
         if (particleSystem != null) {
             getGameScene().getContentRoot().getChildren().remove(particleSystem.getPane());
@@ -180,6 +166,11 @@ public final class MainMenuScreen implements GameScreen {
         }, "btn-auth", 0.0);
         continueBtn.setPrefWidth(400);
         continueBtn.setPrefHeight(60);
+        if (saveFile == null || !saveFile.exists()) {
+            continueBtn.setDisable(true);
+            continueBtn.setOpacity(0.5);
+            continueBtn.setMouseTransparent(true);
+        }
 
         HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
@@ -220,12 +211,14 @@ public final class MainMenuScreen implements GameScreen {
 
         // 🦀 THE WOBBLE TRICK: Add listeners for hover
         button.setOnMouseEntered(e -> {
+            if (button.isDisable()) return;
             button.setScaleX(1.1);
             button.setScaleY(1.1);
             button.setRotate(rotation * -1.5); // Tilt the other way on hover!
         });
 
         button.setOnMouseExited(e -> {
+            if (button.isDisable()) return;
             button.setScaleX(1.0);
             button.setScaleY(1.0);
             button.setRotate(rotation); // Return to base tilt

@@ -76,7 +76,18 @@ public final class LoginScreenController {
         }
 
         String username = usernameField.getText().trim();
-        java.util.Optional<CrabUser> signedInUser = authService.signInUser(username, passwordField.getText());
+        String password = passwordField.getText();
+
+        // Guest login bypass
+        if ("guest".equalsIgnoreCase(username) && "guest".equals(password)) {
+            currentUser = new CrabUser(999, "guest", "Guest Crab");
+            loggedInUser = "guest";
+            errorLabel.setText("");
+            loginSuccessAction.run();
+            return;
+        }
+
+        java.util.Optional<CrabUser> signedInUser = authService.signInUser(username, password);
         if (signedInUser.isEmpty()) {
             errorLabel.setText("Invalid username or password.");
             return;

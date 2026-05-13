@@ -28,8 +28,7 @@ public final class SignupScreen implements GameScreen {
     private Parent root;
     private boolean visible;
 
-    private MediaPlayer mediaPlayer;
-    private MediaView mediaView;
+    private javafx.scene.image.ImageView backgroundImageView;
     private ParticleSystem particleSystem;
 
     public SignupScreen(ScreenManager screens) {
@@ -49,25 +48,17 @@ public final class SignupScreen implements GameScreen {
 
         visible = true;
         
-        // Video Background Integration
+        // GIF Background Integration
         try {
-            var resource = getClass().getResource("/assets/textures/underwater_scene.mp4");
+            var resource = getClass().getResource("/assets/textures/bg_underwater.gif");
             if (resource != null) {
-                Media media = new Media(resource.toExternalForm());
-                mediaPlayer = new MediaPlayer(media);
-                mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-                mediaPlayer.setMute(true);
-
-                mediaView = new MediaView(mediaPlayer);
-                mediaView.setPreserveRatio(false);
-                
-                // Static sizing via DSL to ensure compilation in 17.3
-                mediaView.setFitWidth(getAppWidth());
-                mediaView.setFitHeight(getAppHeight());
+                backgroundImageView = new javafx.scene.image.ImageView(new javafx.scene.image.Image(resource.toExternalForm()));
+                backgroundImageView.setFitWidth(getAppWidth());
+                backgroundImageView.setFitHeight(getAppHeight());
+                backgroundImageView.setPreserveRatio(false);
 
                 // Ensure it's behind UI
-                getGameScene().getContentRoot().getChildren().add(0, mediaView);
-                mediaPlayer.play();
+                getGameScene().getContentRoot().getChildren().add(0, backgroundImageView);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -114,14 +105,9 @@ public final class SignupScreen implements GameScreen {
             root = null;
         }
 
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.dispose();
-            mediaPlayer = null;
-        }
-        if (mediaView != null) {
-            getGameScene().getContentRoot().getChildren().remove(mediaView);
-            mediaView = null;
+        if (backgroundImageView != null) {
+            getGameScene().getContentRoot().getChildren().remove(backgroundImageView);
+            backgroundImageView = null;
         }
         if (particleSystem != null) {
             getGameScene().getContentRoot().getChildren().remove(particleSystem.getPane());

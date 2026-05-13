@@ -6,69 +6,101 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="mainLayout" prefHeight="720.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.gameplay.presentation.GameplayScreenController">
+<AnchorPane fx:id="mainLayout" prefHeight="720.0" prefWidth="1080.0"
+            xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="crab.features.gameplay.presentation.GameplayScreenController">
+
     <!-- Background -->
-    <ImageView fx:id="backgroundImageView" fitHeight="720.0" fitWidth="1024.0" preserveRatio="false" />
+    <ImageView fx:id="backgroundImageView" fitHeight="720.0" fitWidth="1080.0" preserveRatio="false" />
 
-    <!-- Top Left -->
-    <Button fx:id="settingsBtn" mnemonicParsing="false" onAction="#handleSettings" text="Settings" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="10.0" />
+    <!-- Top Left: Settings -->
+    <Button fx:id="settingsBtn" mnemonicParsing="false" onAction="#handleSettings" text="⚙ Settings"
+            AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="10.0" />
 
-    <!-- Top Center -->
-    <VBox alignment="CENTER" spacing="10.0" AnchorPane.topAnchor="10.0" AnchorPane.leftAnchor="300.0" AnchorPane.rightAnchor="300.0">
-        <Label fx:id="roundGemLabel" style="-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;" text="Round: 1" />
-        <Label fx:id="phasePromptLabel" style="-fx-font-size: 20px; -fx-text-fill: yellow; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.5); -fx-padding: 5;" text="Phase Prompt" />
+    <!-- Top Center: Round + Phase labels -->
+    <VBox alignment="CENTER" spacing="4.0"
+          AnchorPane.topAnchor="10.0" AnchorPane.leftAnchor="350.0" AnchorPane.rightAnchor="350.0">
+        <Label fx:id="roundGemLabel"
+               style="-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;"
+               text="Round: 1" />
+        <Label fx:id="phasePromptLabel"
+               style="-fx-font-size: 16px; -fx-text-fill: yellow; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.55); -fx-padding: 4 8; -fx-background-radius: 6;"
+               text="Phase Prompt" />
     </VBox>
 
-    <!-- Top Right (Action Log) -->
-    <VBox spacing="5.0" AnchorPane.topAnchor="10.0" AnchorPane.rightAnchor="10.0" style="-fx-background-color: rgba(0,0,0,0.5); -fx-padding: 10; -fx-border-color: white; -fx-border-width: 2;">
+    <!-- Top Right: Action Log panel -->
+    <VBox spacing="5.0"
+          AnchorPane.topAnchor="10.0" AnchorPane.rightAnchor="10.0"
+          style="-fx-background-color: rgba(0,0,0,0.55); -fx-padding: 8; -fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 6; -fx-background-radius: 6;">
         <Label text="Action Log" style="-fx-text-fill: white; -fx-font-weight: bold;" />
-        <ScrollPane fx:id="actionLogScroll" prefHeight="150.0" prefWidth="250.0" hbarPolicy="NEVER" style="-fx-background: transparent; -fx-background-color: transparent;">
+        <ScrollPane fx:id="actionLogScroll" prefHeight="150.0" prefWidth="240.0"
+                    hbarPolicy="NEVER"
+                    style="-fx-background: transparent; -fx-background-color: transparent;">
             <content>
                 <VBox fx:id="actionLogContainer" spacing="3.0" />
             </content>
         </ScrollPane>
     </VBox>
 
-    <!-- Center / Top Area (Enemies) wrapped in ScrollPane for dynamic scaling/overflow -->
-    <ScrollPane hbarPolicy="NEVER" vbarPolicy="NEVER" fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;" stylesheets="@/assets/ui/cartoon-style.css" AnchorPane.topAnchor="100.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="220.0">
-        <content>
-            <VBox fx:id="battlefieldArea" alignment="CENTER" spacing="15.0" style="-fx-background-color: transparent;" />
-        </content>
-    </ScrollPane>
+    <!-- Center: Enemy battlefield wrapped in StackPane for fade-mask overlay effect -->
+    <StackPane fx:id="enemyScrollContainer"
+               AnchorPane.topAnchor="100.0" AnchorPane.leftAnchor="20.0"
+               AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="220.0">
+        <ScrollPane fx:id="enemyScrollPane"
+                    hbarPolicy="NEVER" vbarPolicy="NEVER" fitToWidth="true"
+                    style="-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;">
+            <content>
+                <VBox fx:id="battlefieldArea" alignment="CENTER" spacing="15.0"
+                      style="-fx-background-color: transparent;" />
+            </content>
+        </ScrollPane>
+    </StackPane>
 
-    <!-- Bottom Left (Hero Area) -->
-    <HBox fx:id="heroArea" spacing="10.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0">
-        <!-- Avatar Box -->
-        <VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: white; -fx-border-width: 2; -fx-padding: 5;">
+    <!-- Bottom Left: Hero panel (avatar + stats) -->
+    <HBox fx:id="heroArea" spacing="10.0"
+          AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0">
+
+        <!-- Avatar box -->
+        <VBox alignment="CENTER" spacing="5.0"
+              style="-fx-background-color: rgba(0,0,0,0.65); -fx-border-color: #10b981; -fx-border-width: 2; -fx-padding: 5; -fx-border-radius: 6; -fx-background-radius: 6;">
             <StackPane>
-                <ImageView fx:id="heroAvatarImage" fitHeight="200.0" fitWidth="160.0" preserveRatio="true"/>
+                <ImageView fx:id="heroAvatarImage" fitHeight="200.0" fitWidth="160.0" preserveRatio="true" />
                 <Button fx:id="genderBtn" StackPane.alignment="TOP_RIGHT" />
             </StackPane>
         </VBox>
-        <!-- Stats Box -->
-        <VBox alignment="CENTER_LEFT" spacing="5.0" prefWidth="130.0" style="-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: white; -fx-border-width: 2; -fx-padding: 10;">
-            <Label fx:id="heroClassLabel" style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" text="CLASS" />
-            <Label fx:id="heroNameLabel" style="-fx-text-fill: gold; -fx-font-weight: bold; -fx-font-size: 14px;" text="Player" />
-            <Label fx:id="heroWealthLabel" style="-fx-text-fill: white; -fx-font-size: 12px;" text="Wealth: 0" />
-            <Label fx:id="heroReputationLabel" style="-fx-text-fill: white; -fx-font-size: 12px;" text="Reputation: 0" />
-            <Label fx:id="heroInfamyLabel" style="-fx-text-fill: white; -fx-font-size: 12px;" text="Infamy: 0" />
+
+        <!-- Stats box -->
+        <VBox alignment="CENTER_LEFT" spacing="5.0" prefWidth="140.0"
+              style="-fx-background-color: rgba(0,0,0,0.65); -fx-border-color: white; -fx-border-width: 2; -fx-padding: 10; -fx-border-radius: 6; -fx-background-radius: 6;">
+            <Label fx:id="heroClassLabel"  style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" text="CLASS" />
+            <Label fx:id="heroNameLabel"   style="-fx-text-fill: gold;  -fx-font-weight: bold; -fx-font-size: 14px;" text="Player" />
+            <Label fx:id="heroWealthLabel"     style="-fx-text-fill: #34d399; -fx-font-size: 12px;" text="Wealth: 0" />
+            <Label fx:id="heroReputationLabel" style="-fx-text-fill: #60a5fa; -fx-font-size: 12px;" text="Reputation: 0" />
+            <Label fx:id="heroInfamyLabel"     style="-fx-text-fill: #f87171; -fx-font-size: 12px;" text="Infamy: 0" />
         </VBox>
     </HBox>
 
-    <!-- Bottom Center (Economy & Hand) -->
-    <VBox alignment="BOTTOM_CENTER" spacing="10.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="320.0" AnchorPane.rightAnchor="200.0">
-        <Label fx:id="topClamsLabel" style="-fx-font-size: 18px; -fx-text-fill: cyan; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.5); -fx-padding: 5;" text="Clams: 0" />
-        <HBox fx:id="handArea" alignment="BOTTOM_CENTER" spacing="15.0" style="-fx-padding: 10; -fx-background-color: rgba(0,0,0,0.3); -fx-background-radius: 10;" />
+    <!-- Bottom Center: Gold display + Hand area -->
+    <VBox alignment="BOTTOM_CENTER" spacing="8.0"
+          AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="330.0" AnchorPane.rightAnchor="210.0">
+        <Label fx:id="topClamsLabel"
+               style="-fx-font-size: 18px; -fx-text-fill: cyan; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.55); -fx-padding: 5 10; -fx-background-radius: 6;"
+               text="Clams: 0" />
+        <HBox fx:id="handArea" alignment="BOTTOM_CENTER" spacing="15.0"
+              style="-fx-padding: 10; -fx-background-color: rgba(0,0,0,0.35); -fx-background-radius: 10;" />
     </VBox>
 
-    <!-- Bottom Right (Goal & End Phase) -->
-    <VBox alignment="CENTER" spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="20.0">
-        <Button fx:id="endTurnBtn" mnemonicParsing="false" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #f59e0b; -fx-text-fill: white; -fx-padding: 10 20;" text="END PHASE" />
+    <!-- Bottom Right: End Phase button -->
+    <VBox alignment="CENTER" spacing="15.0"
+          AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="20.0">
+        <Button fx:id="endTurnBtn" mnemonicParsing="false"
+                style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #f59e0b; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;"
+                text="END PHASE" />
     </VBox>
 
 </AnchorPane>
