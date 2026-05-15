@@ -2,6 +2,7 @@ package crab.features.gameplay.domain;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,6 @@ public final class GameSession implements java.io.Serializable {
     private static final double CRAB_PEAK_TRIGGER_PERCENT = 0.80;
 
     private final Map<String, PlayerState> players = new LinkedHashMap<>();
-    private final Queue<ActionCard> deck = new ArrayDeque<>();
     private final List<ActionCard> deckTemplate;
     private final Map<String, PlayerAction> pendingActions = new LinkedHashMap<>();
     private final int maxRounds;
@@ -60,11 +60,10 @@ public final class GameSession implements java.io.Serializable {
         this.maxRounds = maxRounds;
         this.winThreshold = winThreshold;
         this.deckTemplate = List.copyOf(deck);
-        this.deck.addAll(deck);
 
         // Each player starts with 1 card initially
         for (PlayerState player : players) {
-            player.addCard(drawCard());
+            player.addCard(drawCard(player));
         }
     }
 
@@ -105,18 +104,41 @@ public final class GameSession implements java.io.Serializable {
     }
 
     public void buyRareCard(String playerId) {
+        // Shop is active during EVENT phase if it was rolled
         if (!travellingShopActive) return;
         PlayerState p = requirePlayer(playerId);
         if (p.clams() >= 50) {
-            p.deductClams(50);
-            p.addCard(drawRareCard());
+            p.addClams(-50); // Direct deduct
+            p.addCard(drawRareCard(p));
         }
     }
 
-    private ActionCard drawRareCard() {
-        return deckTemplate.stream()
-                .filter(c -> c.rarity() == CardRarity.RARE)
-                .findFirst().orElse(drawCard());
+    private ActionCard drawRareCard(PlayerState player) {
+        // 10% chance for a Signature card for the player's class
+        int roll = rng.nextInt(100);
+        CardRarity targetRarity = (roll < 10) ? CardRarity.SIGNATURE : CardRarity.RARE;
+
+        List<ActionCard> candidates = deckTemplate.stream()
+                .filter(c -> c.rarity() == targetRarity && isStrictlyCompatible(c, player.playerClass()))
+                .collect(java.util.stream.Collectors.toList());
+
+        if (candidates.isEmpty()) {
+            // Fallback to RARE if no signatures available, still strictly compatible
+            candidates = deckTemplate.stream()
+                    .filter(c -> c.rarity() == CardRarity.RARE && isStrictlyCompatible(c, player.playerClass()))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        if (candidates.isEmpty()) return drawCard(player);
+        return candidates.get(rng.nextInt(candidates.size()));
+    }
+
+    private boolean isStrictlyCompatible(ActionCard card, PlayerClass playerClass) {
+        return switch (playerClass) {
+            case ALTRUIST -> card.type() == CardType.HELP || card.type() == CardType.SIGNATURE_ALTRUIST;
+            case OPPORTUNIST -> card.type() == CardType.STEAL || card.type() == CardType.SIGNATURE_OPPORTUNIST;
+            case SABOTEUR -> card.type() == CardType.SABOTAGE || card.type() == CardType.SIGNATURE_SABOTEUR;
+        };
     }
 
     public void resolveDevelopment(Map<String, Integer> selectedCardIndexes, Set<String> upgradeRequests) {
@@ -138,7 +160,7 @@ public final class GameSession implements java.io.Serializable {
     public void resolveDrawing() {
         requirePhase(GamePhase.DRAWING);
         for (PlayerState player : players.values()) {
-            player.addCard(drawCard());
+            player.addCard(drawCard(player));
         }
         phase = GamePhase.ACTION;
     }
@@ -250,9 +272,8 @@ public final class GameSession implements java.io.Serializable {
         charityWaveActive = nextRoundCharityWave;
         nextRoundCharityWave = false;
         travellingShopActive = false; 
-        // User says "buy one Rare card using Clams". Usually implies during the event phase.
 
-        if (currentRound >= maxRounds || isCompletedCrabPeakFinalRound()) {
+        if (currentRound >= maxRounds || isCompletedCrabPeakFinalRound() || hasPlayerReachedThreshold()) {
             phase = GamePhase.GAME_OVER;
             winner = determineWinner();
             return;
@@ -267,18 +288,32 @@ public final class GameSession implements java.io.Serializable {
         phase = GamePhase.DEVELOPMENT;
     }
 
+    private boolean hasPlayerReachedThreshold() {
+        for (PlayerState p : players.values()) {
+            int score = switch (p.playerClass()) {
+                case OPPORTUNIST -> p.wealth();
+                case ALTRUIST -> p.reputation();
+                case SABOTEUR -> p.infamy();
+            };
+            if (score >= winThreshold) return true;
+        }
+        return false;
+    }
+
     /**
-     * Help card: +40 Rep + +15 Clams (actor), +30 Wealth (target).
-     * Signature Altruist: actor also gains 50% of the Wealth the target receives.
+     * Help card: +40 Rep, +15 Clams (actor), +30 Wealth (target).
+     * Signature Altruist: +80 Rep, +50% Shared Wealth.
      */
     private void resolveHelp(PlayerState actor, PlayerAction action,
                              Map<String, Double> rewardReductions,
                              Set<String> doubleNegativeTargets,
                              boolean isSignature) {
         PlayerState target = requireTarget(action);
-        int actorReputationGain = calculatePositiveEffect(40, action.card().rarity(), actor);
+        
+        int baseRep = isSignature ? 80 : 40;
+        int actorReputationGain = calculatePositiveEffect(baseRep, action.card().rarity(), actor);
         int actorClamsGain      = calculatePositiveEffect(15, action.card().rarity(), actor);
-        int targetWealthGain   = calculatePositiveEffect(30, action.card().rarity(), target);
+        int targetWealthGain    = calculatePositiveEffect(30, action.card().rarity(), target);
 
         // Charity Wave Bonus: Help cards give bonus Reputation (+20) next round
         if (charityWaveActive) {
@@ -290,7 +325,9 @@ public final class GameSession implements java.io.Serializable {
         actorClamsGain       = reduceGain(actorClamsGain,       rewardReductions.getOrDefault(actor.id(), 0.0));
         targetWealthGain    = reduceGain(targetWealthGain,    rewardReductions.getOrDefault(target.id(), 0.0));
 
-        // Double-negative from Signature Saboteur (target receives doubled damage)
+        // Double-negative logic: target wealth gain is halved? 
+        // User says "Double negative effects". Helping is positive. 
+        // But usually sabotage makes "gains" smaller. I'll halve the gain as before.
         if (doubleNegativeTargets.contains(target.id())) {
             targetWealthGain = Math.max(0, targetWealthGain / 2);
         }
@@ -299,10 +336,10 @@ public final class GameSession implements java.io.Serializable {
         actor.addClams(actorClamsGain);
         target.addWealth(targetWealthGain);
 
-        // Signature Altruist: actor gains 50% of the Wealth given to the target
+        // Signature Altruist: Shared Wealth Gain (50% of target Wealth gain)
         if (isSignature) {
-            int altruistBonus = Math.round(targetWealthGain * 0.5f);
-            actor.addWealth(altruistBonus);
+            int sharedWealth = Math.round(targetWealthGain * 0.5f);
+            actor.addWealth(sharedWealth);
         }
 
         // Opportunist Signature passive: +10 Wealth for any Opportunist who sees an opponent gain Rep
@@ -310,7 +347,7 @@ public final class GameSession implements java.io.Serializable {
     }
 
     /**
-     * Steal card: +45 Wealth (actor), -10 Rep (actor), -35 Clams (target).
+     * Steal card: +45 Wealth, -10 Rep (actor), -35 Clams (target).
      * Signature Opportunist: in addition, actor gains +10 Wealth whenever an opponent gains Reputation
      * (already handled via opportunist passive trigger — here we apply the base steal as normal).
      */
@@ -336,12 +373,14 @@ public final class GameSession implements java.io.Serializable {
     }
 
     /**
-     * Sabotage card: +50 Infamy (actor), 50% reward reduction on target this round.
-     * Signature Saboteur: target takes double negative effects for 1 round (collected separately).
+     * Sabotage card: +50 Infamy (actor), 50% reward reduction on target (Capped at 70%).
+     * Signature Saboteur: +100 Infamy, Double negative effects on target for 1 round.
      */
     private void resolveSabotage(PlayerState actor, PlayerAction action) {
-        requireTarget(action); // validates target exists
-        int actorInfamyGain = calculateNegativeEffect(50, action.card().rarity());
+        requireTarget(action);
+        boolean isSignature = action.card().type() == CardType.SIGNATURE_SABOTEUR;
+        int baseInfamy = isSignature ? 100 : 50;
+        int actorInfamyGain = calculateNegativeEffect(baseInfamy, action.card().rarity());
         actor.addInfamy(actorInfamyGain);
     }
 
@@ -349,17 +388,17 @@ public final class GameSession implements java.io.Serializable {
      * Opportunist Signature Passive: any Opportunist-class player gains +10 Wealth
      * whenever an opponent gains Reputation, up to 5 triggers per round.
      */
-    private void triggerOpportunistPassive(String reputationGainerId, int repGained) {
+    private void triggerOpportunistPassive(String gainerId, int repGained) {
         if (repGained <= 0) return;
         for (PlayerState p : players.values()) {
             if (p.playerClass() == PlayerClass.OPPORTUNIST
-                    && !p.id().equals(reputationGainerId)
-                    && opportunistSigTriggersThisRound < 5) {
-                // Only triggers if Opportunist had a SIGNATURE_OPPORTUNIST action this round
+                    && !p.id().equals(gainerId)) {
+                
                 boolean hasOpportunistSig = pendingActions.values().stream()
                         .anyMatch(a -> a.playerId().equals(p.id())
                                 && a.card().type() == CardType.SIGNATURE_OPPORTUNIST);
-                if (hasOpportunistSig) {
+                
+                if (hasOpportunistSig && opportunistSigTriggersThisRound < 5) {
                     p.addWealth(10);
                     opportunistSigTriggersThisRound++;
                 }
@@ -368,17 +407,22 @@ public final class GameSession implements java.io.Serializable {
     }
 
     private Map<String, Double> collectRewardReductions() {
-        Map<String, Double> rewardReductions = new LinkedHashMap<>();
+        Map<String, Double> reductions = new LinkedHashMap<>();
         for (PlayerAction action : pendingActions.values()) {
             CardType ct = action.card().type();
             if ((ct == CardType.SABOTAGE || ct == CardType.SIGNATURE_SABOTEUR) && action.targetPlayerId() != null) {
-                PlayerState actor = requirePlayer(action.playerId());
-                // Saboteur class passive: 70% max; otherwise base 50%
-                double reduction = actor.playerClass() == PlayerClass.SABOTEUR ? 0.70 : 0.50;
-                rewardReductions.merge(action.targetPlayerId(), reduction, (a, b) -> Math.min(0.70, a + b));
+                // Distortion Formula: Base Distortion (50%) * RarityMultiplier
+                double baseDistortion = 0.50;
+                double multiplier = action.card().rarity().multiplier();
+                double distortion = baseDistortion * multiplier;
+                
+                // Distortion Cap: 70%
+                distortion = Math.min(0.70, distortion);
+                
+                reductions.merge(action.targetPlayerId(), distortion, (a, b) -> Math.min(0.70, a + b));
             }
         }
-        return rewardReductions;
+        return reductions;
     }
 
     /** Collects the set of player IDs that are targeted by a SIGNATURE_SABOTEUR this round. */
@@ -399,7 +443,7 @@ public final class GameSession implements java.io.Serializable {
     public GameEvent selectWeightedEvent() {
         requirePhase(GamePhase.EVENT);
         
-        // Choose event type (Round 3, 6, 9, 12, 15)
+        // Equal 25% chance for each of the 4 events
         int roll = rng.nextInt(100);
         if (roll < 25) {
             // Market Crash: All lose Wealth
@@ -416,6 +460,7 @@ public final class GameSession implements java.io.Serializable {
             return GameEvent.crabHunt(targetId, 40 + rng.nextInt(21)); // 40-60 clams
         } else {
             // Travelling Shop: Buy Rare card
+            travellingShopActive = true;
             return GameEvent.travellingShop();
         }
     }
@@ -445,6 +490,13 @@ public final class GameSession implements java.io.Serializable {
         double classBonus = 0.0;
         double effect = base * rarity.multiplier() * (1.0 + buildBonus + classBonus);
 
+        // Round-based multipliers
+        if (currentRound >= 14) {
+            effect *= 2.0;
+        } else if (currentRound >= 12) {
+            effect *= 1.5;
+        }
+
         if (crabPeakActive) {
             effect *= 2.0;
         }
@@ -454,6 +506,16 @@ public final class GameSession implements java.io.Serializable {
 
     private int calculateNegativeEffect(int base, CardRarity rarity) {
         double effect = base * rarity.multiplier();
+
+        // Round-based multipliers for negative effects too? 
+        // User says "points gained", but usually games scale everything.
+        // I'll apply it to negative as well to keep the pressure.
+        if (currentRound >= 14) {
+            effect *= 2.0;
+        } else if (currentRound >= 12) {
+            effect *= 1.5;
+        }
+
         if (crabPeakActive) {
             effect *= 2.0;
         }
@@ -465,12 +527,37 @@ public final class GameSession implements java.io.Serializable {
         return Math.round((float) (effect * (1.0 - reduction)));
     }
 
-    private ActionCard drawCard() {
-        if (deck.isEmpty()) {
-            deck.addAll(deckTemplate);
+    private ActionCard drawCard(PlayerState player) {
+        int roll = rng.nextInt(100);
+        CardRarity rarity;
+        if (roll < 60) rarity = CardRarity.COMMON;
+        else if (roll < 85) rarity = CardRarity.UNCOMMON;
+        else if (roll < 95) rarity = CardRarity.RARE;
+        else rarity = CardRarity.SIGNATURE;
+
+        List<ActionCard> candidates = deckTemplate.stream()
+                .filter(c -> c.rarity() == rarity && isCompatible(c, player.playerClass()))
+                .collect(java.util.stream.Collectors.toList());
+
+        if (candidates.isEmpty()) {
+            // Fallback: draw any compatible card if specific rarity is empty (shouldn't happen with standard deck)
+            candidates = deckTemplate.stream()
+                    .filter(c -> isCompatible(c, player.playerClass()))
+                    .collect(java.util.stream.Collectors.toList());
         }
 
-        return deck.remove();
+        return candidates.get(rng.nextInt(candidates.size()));
+    }
+
+    private boolean isCompatible(ActionCard card, PlayerClass playerClass) {
+        if (card.rarity() != CardRarity.SIGNATURE) {
+            return true;
+        }
+        return switch (playerClass) {
+            case ALTRUIST -> card.type() == CardType.SIGNATURE_ALTRUIST;
+            case OPPORTUNIST -> card.type() == CardType.SIGNATURE_OPPORTUNIST;
+            case SABOTEUR -> card.type() == CardType.SIGNATURE_SABOTEUR;
+        };
     }
 
     private PlayerState requireTarget(PlayerAction action) {
@@ -503,30 +590,49 @@ public final class GameSession implements java.io.Serializable {
     private int highestScore() {
         int highest = 0;
         for (PlayerState player : players.values()) {
-            highest = Math.max(highest, player.wealth());
-            highest = Math.max(highest, player.reputation());
-            highest = Math.max(highest, player.infamy());
+            int score = switch (player.playerClass()) {
+                case OPPORTUNIST -> player.wealth();
+                case ALTRUIST -> player.reputation();
+                case SABOTEUR -> player.infamy();
+            };
+            highest = Math.max(highest, score);
         }
-
         return highest;
     }
-
     private WinnerResult determineWinner() {
-        int maxWealth = players.values().stream().mapToInt(PlayerState::wealth).max().orElse(0);
-        int maxRep = players.values().stream().mapToInt(PlayerState::reputation).max().orElse(0);
-        int maxInfamy = players.values().stream().mapToInt(PlayerState::infamy).max().orElse(0);
-
-        // Tie-breaking or priority order if one player is highest in multiple?
-        // Usually, these are global highests.
-        if (maxWealth >= maxRep && maxWealth >= maxInfamy) {
-            PlayerState winner = players.values().stream().filter(p -> p.wealth() == maxWealth).findFirst().get();
-            return new WinnerResult(winner.id(), PlayerClass.OPPORTUNIST, winner.wealth());
-        } else if (maxRep >= maxWealth && maxRep >= maxInfamy) {
-            PlayerState winner = players.values().stream().filter(p -> p.reputation() == maxRep).findFirst().get();
-            return new WinnerResult(winner.id(), PlayerClass.ALTRUIST, winner.reputation());
-        } else {
-            PlayerState winner = players.values().stream().filter(p -> p.infamy() == maxInfamy).findFirst().get();
-            return new WinnerResult(winner.id(), PlayerClass.SABOTEUR, winner.infamy());
+        // Priority 1: Who met their goal?
+        for (PlayerState p : players.values()) {
+            int score = switch (p.playerClass()) {
+                case OPPORTUNIST -> p.wealth();
+                case ALTRUIST -> p.reputation();
+                case SABOTEUR -> p.infamy();
+            };
+            if (score >= winThreshold) {
+                return new WinnerResult(p.id(), p.playerClass(), score);
+            }
         }
+
+        // Priority 2: Closest to goal if time ran out
+        PlayerState best = null;
+        double bestProgress = -1.0;
+        for (PlayerState p : players.values()) {
+            int score = switch (p.playerClass()) {
+                case OPPORTUNIST -> p.wealth();
+                case ALTRUIST -> p.reputation();
+                case SABOTEUR -> p.infamy();
+            };
+            double progress = (double) score / winThreshold;
+            if (progress > bestProgress) {
+                bestProgress = progress;
+                best = p;
+            }
+        }
+        
+        int finalScore = switch (best.playerClass()) {
+            case OPPORTUNIST -> best.wealth();
+            case ALTRUIST -> best.reputation();
+            case SABOTEUR -> best.infamy();
+        };
+        return new WinnerResult(best.id(), best.playerClass(), finalScore);
     }
 }

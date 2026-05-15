@@ -4,7 +4,7 @@ public enum CardRarity {
     COMMON(1.0),
     UNCOMMON(1.5),
     RARE(2.5),
-    SIGNATURE(4.0);
+    SIGNATURE(1.0);
 
     private final double multiplier;
 

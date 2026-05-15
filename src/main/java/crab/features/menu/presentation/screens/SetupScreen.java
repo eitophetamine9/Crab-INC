@@ -140,13 +140,38 @@ public final class SetupScreen implements GameScreen {
             enemyCountLabel.setText(newVal.intValue() + " Enemies");
         });
 
-        Button startBtn = new Button("Start Game");
+        Label diffSubtitle = new Label("Select Difficulty:");
+        diffSubtitle.getStyleClass().add("subtitle-text");
+
+        Slider diffSlider = new Slider(0, 2, 1);
+        diffSlider.setShowTickLabels(true);
+        diffSlider.setShowTickMarks(true);
+        diffSlider.setMajorTickUnit(1);
+        diffSlider.setMinorTickCount(0);
+        diffSlider.setSnapToTicks(true);
+        diffSlider.setPrefWidth(300);
+        
+        // Custom labels for difficulty slider
+        Label diffLabel = new Label("Medium");
+        diffLabel.getStyleClass().add("subtitle-text");
+        diffSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            String d = switch (newVal.intValue()) {
+                case 0 -> "Easy";
+                case 1 -> "Medium";
+                case 2 -> "Hard";
+                default -> "Medium";
+            };
+            diffLabel.setText(d);
+        });
+
+        Button startBtn = new Button("Continue to Character Selection");
         startBtn.getStyleClass().addAll("menu-button", "btn-play");
         startBtn.setPrefWidth(400);
         startBtn.setPrefHeight(60);
         startBtn.setOnAction(e -> {
             GameplayScreen.requestedEnemyCount = (int) enemySlider.getValue();
-            screens.show(GameplayScreen.ID);
+            GameplayScreen.difficulty = diffLabel.getText();
+            screens.show(CharacterSelectionScreen.ID);
         });
 
         Button backBtn = new Button("Back");
@@ -155,7 +180,7 @@ public final class SetupScreen implements GameScreen {
         backBtn.setPrefHeight(60);
         backBtn.setOnAction(e -> screens.show(MainMenuScreen.ID));
 
-        VBox menu = new VBox(30, title, subtitle, enemySlider, enemyCountLabel, startBtn, backBtn);
+        VBox menu = new VBox(20, title, subtitle, enemySlider, enemyCountLabel, diffSubtitle, diffSlider, diffLabel, startBtn, backBtn);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(20, 50, 50, 50));
         menu.setPrefWidth(PANEL_WIDTH);

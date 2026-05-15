@@ -138,10 +138,15 @@ public class GameplayScreenController {
         backgroundImageView.fitWidthProperty().bind(mainLayout.widthProperty());
         backgroundImageView.fitHeightProperty().bind(mainLayout.heightProperty());
 
-        genderBtn.setStyle("-fx-background-radius: 50em; -fx-min-width: 20px; -fx-min-height: 20px; -fx-max-width: 20px; -fx-max-height: 20px; -fx-background-color: linear-gradient(to bottom right, #3b82f6 50%, #ec4899 50%); -fx-cursor: hand;");
-        genderBtn.setOnAction(e -> {
-            isFemale = !isFemale;
-            updateHeroAvatarImage();
+        this.isFemale = !GameplayScreen.isMale;
+        updateGenderButton();
+        genderBtn.setOnAction(e -> toggleGender());
+
+        // Right-click avatar to toggle gender
+        heroAvatarImage.setOnMouseClicked(e -> {
+            if (e.getButton() == MouseButton.SECONDARY) {
+                toggleGender();
+            }
         });
 
         if (enemyScrollContainer != null && enemyScrollPane != null) {
@@ -164,6 +169,21 @@ public class GameplayScreenController {
         }
     }
 
+    private void toggleGender() {
+        isFemale = !isFemale;
+        updateGenderButton();
+        updateHeroAvatarImage();
+    }
+
+    private void updateGenderButton() {
+        if (genderBtn == null) return;
+        genderBtn.setText(isFemale ? "♀" : "♂");
+        String color = isFemale ? "#ec4899" : "#3b82f6";
+        genderBtn.setStyle("-fx-background-radius: 50em; -fx-min-width: 30px; -fx-min-height: 30px; -fx-max-width: 30px; -fx-max-height: 30px; " +
+                "-fx-background-color: " + color + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 16px; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);");
+    }
+
     @FXML
     void handleSettings(ActionEvent event) {
         if (pauseMenu != null) {
@@ -171,7 +191,7 @@ public class GameplayScreenController {
         }
 
         Label pauseLabel = new Label("PAUSED");
-        pauseLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        pauseLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white; -fx-font-family: 'Luckiest Guy';");
 
         Button continueBtn = new Button("Continue");
         continueBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20;");
@@ -202,7 +222,7 @@ public class GameplayScreenController {
             pauseMenu.getChildren().clear();
 
             Label confirmLabel = new Label("Are you sure you want to withdraw?");
-            confirmLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+            confirmLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
             Button yesBtn = new Button("Yes, Withdraw");
             yesBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-text-fill: red;");
@@ -227,7 +247,7 @@ public class GameplayScreenController {
 
         pauseMenu = new VBox(20, pauseLabel, continueBtn, saveBtn, withdrawBtn);
         pauseMenu.setAlignment(Pos.CENTER);
-        pauseMenu.setStyle("-fx-border-color: black; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: white;");
+        pauseMenu.setStyle("-fx-border-color: white; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: rgba(13, 43, 62, 0.95); -fx-background-radius: 20; -fx-border-radius: 20;");
         
         mainLayout.getChildren().add(pauseMenu);
         AnchorPane.setTopAnchor(pauseMenu, 200.0);
@@ -242,6 +262,13 @@ public class GameplayScreenController {
         roundGemLabel.setText("Round: " + gameSession.currentRound());
 
         battlefieldArea.getChildren().clear();
+
+        if (gameSession.crabPeakActive()) {
+            Label peakAlert = new Label("CRAB PEAK - FINAL ROUND");
+            peakAlert.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 32px; -fx-font-weight: bold; -fx-font-family: 'Luckiest Guy';");
+            peakAlert.setEffect(new javafx.scene.effect.DropShadow(15, Color.BLACK));
+            battlefieldArea.getChildren().add(peakAlert);
+        }
         
         int totalEnemies = aiPlayers.size();
         int topCount = (int) Math.ceil(totalEnemies / 2.0);
@@ -278,14 +305,7 @@ public class GameplayScreenController {
         endTurnBtn.setOnAction(null);
 
         switch (gameSession.phase()) {
-            case DEVELOPMENT -> {
-                appendLog("--- Round " + gameSession.currentRound() + " ---", "#fbbf24");
-                Map<String, Integer> selections = gameSession.players().stream()
-                        .collect(Collectors.toMap(PlayerState::id, p -> 0));
-                gameSession.resolveDevelopment(selections, java.util.Set.of());
-                appendLog("Income granted. Draw phase complete.", "#34d399");
-                updateUI();
-            }
+            case DEVELOPMENT -> showDevelopmentUI();
             case DRAWING -> showDrawingUI();
             case ACTION -> showActionUI();
             case RESOLUTION -> showResolutionUI();
@@ -420,41 +440,150 @@ public class GameplayScreenController {
 
     private void submitAiActions() {
         List<PlayerState> allPlayers = gameSession.players();
-        for (PlayerState ai : aiPlayers) {
-            List<ActionCard> availableHand = new java.util.ArrayList<>(ai.hand());
-            ActionCard keptCard = availableHand.isEmpty() ? null
-                    : availableHand.get(random.nextInt(availableHand.size()));
+        String difficulty = GameplayScreen.difficulty;
 
-            // Remove kept card from candidates so AI doesn't also play it
-            if (keptCard != null) {
-                availableHand = availableHand.stream()
-                        .filter(c -> c != keptCard)
-                        .collect(java.util.stream.Collectors.toList());
+        for (PlayerState ai : aiPlayers) {
+            List<ActionCard> hand = new java.util.ArrayList<>(ai.hand());
+            if (hand.isEmpty()) continue;
+
+            ActionCard chosenCard;
+            PlayerState target;
+
+            // 1. Decide card to play based on difficulty and class
+            List<ActionCard> idealCards = hand.stream()
+                .filter(c -> isIdealForClass(c, ai.playerClass()))
+                .collect(Collectors.toList());
+
+            boolean playIdeal = false;
+            if (difficulty.equals("Hard")) {
+                playIdeal = !idealCards.isEmpty() && random.nextDouble() < 0.9;
+            } else if (difficulty.equals("Medium")) {
+                playIdeal = !idealCards.isEmpty() && random.nextDouble() < 0.6;
+            }
+            // Easy is always playIdeal = false (completely random)
+
+            if (playIdeal) {
+                chosenCard = idealCards.get(random.nextInt(idealCards.size()));
+            } else {
+                chosenCard = hand.get(random.nextInt(hand.size()));
             }
 
-            if (availableHand.isEmpty()) {
-                // No card to play — submit a pass
-                lastAiCardPlayed = new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON);
-                gameSession.submitAction(new PlayerAction(ai.id(), lastAiCardPlayed, humanPlayer.id(), keptCard));
-            } else {
-                if (random.nextInt(10) == 0) {
-                    // Random 10% chance to pass
-                    gameSession.submitAction(new PlayerAction(ai.id(),
-                            new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON),
-                            humanPlayer.id(), keptCard));
-                    continue;
-                }
-                ActionCard aiCard = availableHand.get(random.nextInt(availableHand.size()));
-                lastAiCardPlayed = aiCard;
-                // Pick a random target that is NOT self
-                List<PlayerState> validTargets = allPlayers.stream()
-                        .filter(p -> !p.id().equals(ai.id()))
-                        .collect(java.util.stream.Collectors.toList());
-                PlayerState target = validTargets.isEmpty() ? humanPlayer
-                        : validTargets.get(random.nextInt(validTargets.size()));
-                gameSession.submitAction(new PlayerAction(ai.id(), aiCard, target.id(), keptCard));
+            // 2. Decide target based on card type and difficulty
+            target = decideTarget(ai, chosenCard, allPlayers, difficulty);
+
+            // 3. Hand management: keep 1 card
+            ActionCard keptCard = null;
+            hand.remove(chosenCard);
+            if (!hand.isEmpty()) {
+                keptCard = hand.get(random.nextInt(hand.size()));
+            }
+
+            gameSession.submitAction(new PlayerAction(ai.id(), chosenCard, target.id(), keptCard));
+        }
+    }
+
+    private boolean isIdealForClass(ActionCard card, PlayerClass playerClass) {
+        return switch (playerClass) {
+            case OPPORTUNIST -> card.type() == CardType.STEAL || card.type() == CardType.SIGNATURE_OPPORTUNIST;
+            case ALTRUIST -> card.type() == CardType.HELP || card.type() == CardType.SIGNATURE_ALTRUIST;
+            case SABOTEUR -> card.type() == CardType.SABOTAGE || card.type() == CardType.SIGNATURE_SABOTEUR;
+        };
+    }
+
+    private PlayerState decideTarget(PlayerState actor, ActionCard card, List<PlayerState> allPlayers, String difficulty) {
+        List<PlayerState> enemies = allPlayers.stream()
+                .filter(p -> !p.id().equals(actor.id()))
+                .collect(Collectors.toList());
+
+        if (enemies.isEmpty()) return actor;
+
+        if (difficulty.equals("Easy")) return enemies.get(random.nextInt(enemies.size()));
+
+        // Medium/Hard logic: Target selection based on card type
+        return switch (card.type()) {
+            case HELP, SIGNATURE_ALTRUIST -> 
+                enemies.stream()
+                        .min(java.util.Comparator.comparingInt(PlayerState::reputation))
+                        .orElse(enemies.get(0));
+            case STEAL, SIGNATURE_OPPORTUNIST -> 
+                enemies.stream()
+                        .max(java.util.Comparator.comparingInt(PlayerState::wealth))
+                        .orElse(enemies.get(0));
+            case SABOTAGE, SIGNATURE_SABOTEUR -> 
+                enemies.stream()
+                        .max(java.util.Comparator.comparingInt(p -> switch(p.playerClass()) {
+                            case OPPORTUNIST -> p.wealth();
+                            case ALTRUIST -> p.reputation();
+                            case SABOTEUR -> p.infamy();
+                        }))
+                        .orElse(enemies.get(0));
+        };
+    }
+
+    private void showDevelopmentUI() {
+        phasePromptLabel.setText("DEVELOPMENT PHASE");
+        
+        StackPane overlay = new StackPane();
+        overlay.setPrefSize(400, 300);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.85); -fx-background-radius: 15; -fx-border-color: #3b82f6; -fx-border-width: 3; -fx-border-radius: 15;");
+        
+        VBox content = new VBox(15);
+        content.setAlignment(Pos.CENTER);
+        
+        Label title = new Label("Development Phase");
+        title.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 24px; -fx-font-weight: bold;");
+        
+        Label levelLbl = new Label("Current Build Level: " + humanPlayer.buildLevel() + " (Max: 5)");
+        levelLbl.setStyle("-fx-text-fill: white; -fx-font-size: 16px;");
+        
+        Label incomeLbl = new Label("Passive Income: " + humanPlayer.income() + " Clams/round");
+        incomeLbl.setStyle("-fx-text-fill: #34d399; -fx-font-size: 14px;");
+
+        Button upgradeBtn = new Button("Upgrade Build (" + humanPlayer.upgradeCost() + " Clams)");
+        upgradeBtn.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
+        
+        if (!humanPlayer.canUpgradeBuild()) {
+            upgradeBtn.setDisable(true);
+            if (humanPlayer.buildLevel() >= 5) {
+                upgradeBtn.setText("MAX LEVEL REACHED");
             }
         }
+        
+        Button continueBtn = new Button("Continue");
+        continueBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30; -fx-background-radius: 8; -fx-cursor: hand;");
+        
+        java.util.Set<String> upgradeRequests = new java.util.HashSet<>();
+        
+        upgradeBtn.setOnAction(e -> {
+            upgradeRequests.add(humanPlayer.id());
+            upgradeBtn.setDisable(true);
+            upgradeBtn.setText("Upgrading...");
+            appendLog("Requested Build Upgrade to Level " + (humanPlayer.buildLevel() + 1), "#f59e0b");
+        });
+        
+        continueBtn.setOnAction(e -> {
+            // AI logic: 50% chance to upgrade if they have enough clams
+            for (PlayerState ai : aiPlayers) {
+                if (ai.canUpgradeBuild() && random.nextBoolean()) {
+                    upgradeRequests.add(ai.id());
+                }
+            }
+            
+            appendLog("--- Round " + gameSession.currentRound() + " ---", "#fbbf24");
+            Map<String, Integer> selections = gameSession.players().stream()
+                    .collect(Collectors.toMap(PlayerState::id, p -> 0));
+            gameSession.resolveDevelopment(selections, upgradeRequests);
+            appendLog("Income granted. Draw phase complete.", "#34d399");
+            mainLayout.getChildren().remove(overlay);
+            updateUI();
+        });
+        
+        content.getChildren().addAll(title, levelLbl, incomeLbl, upgradeBtn, continueBtn);
+        overlay.getChildren().add(content);
+        
+        mainLayout.getChildren().add(overlay);
+        AnchorPane.setTopAnchor(overlay, 150.0);
+        AnchorPane.setLeftAnchor(overlay, 340.0);
     }
 
     private void showDrawingUI() {
@@ -779,22 +908,53 @@ public class GameplayScreenController {
 
     private void showGameOverUI() {
         phasePromptLabel.setText("GAME OVER");
+
+        WinnerResult result = gameSession.winner().orElse(null);
         
-        Label winnerLabel = new Label(gameSession.winner()
-            .map(w -> "Winner: " + w.playerId() + "!")
-            .orElse("It's a tie!"));
-        winnerLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        VBox overBox = new VBox(15);
+        overBox.setAlignment(Pos.CENTER);
+        overBox.setStyle("-fx-border-color: #fbbf24; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: rgba(0,0,0,0.9); -fx-background-radius: 15; -fx-border-radius: 15;");
+
+        if (result == null) {
+            Label tieLabel = new Label("It's a tie!");
+            tieLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+            overBox.getChildren().add(tieLabel);
+        } else {
+            String victoryTitle = switch (result.winningClass()) {
+                case OPPORTUNIST -> "Opportunist Victory!";
+                case ALTRUIST -> "Altruist Victory!";
+                case SABOTEUR -> "Saboteur Victory!";
+            };
+            
+            Label titleLbl = new Label(victoryTitle);
+            titleLbl.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
+            
+            String winnerName = gameSession.players().stream()
+                    .filter(p -> p.id().equals(result.playerId()))
+                    .map(PlayerState::displayName)
+                    .findFirst().orElse(result.playerId());
+            
+            Label nameLbl = new Label("Winner: " + winnerName);
+            nameLbl.setStyle("-fx-font-size: 20px; -fx-text-fill: white;");
+            
+            Label scoreLbl = new Label("Winning Score: " + result.winningValue());
+            scoreLbl.setStyle("-fx-font-size: 16px; -fx-text-fill: #9ca3af;");
+            
+            ImageView artView = new ImageView(getCrabImage(result.winningClass()));
+            artView.setFitWidth(150);
+            artView.setPreserveRatio(true);
+            
+            overBox.getChildren().addAll(titleLbl, nameLbl, scoreLbl, artView);
+        }
 
         Button returnBtn = new Button("Return to Menu");
-        returnBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20;");
+        returnBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
         returnBtn.setOnAction(e -> screens.show("menu_main"));
 
-        VBox overBox = new VBox(20, winnerLabel, returnBtn);
-        overBox.setAlignment(Pos.CENTER);
-        overBox.setStyle("-fx-border-color: black; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: white;");
+        overBox.getChildren().add(returnBtn);
         
         mainLayout.getChildren().add(overBox);
-        AnchorPane.setTopAnchor(overBox, 200.0);
+        AnchorPane.setTopAnchor(overBox, 100.0);
         AnchorPane.setLeftAnchor(overBox, 300.0);
         AnchorPane.setRightAnchor(overBox, 300.0);
     }

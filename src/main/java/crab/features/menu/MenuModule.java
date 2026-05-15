@@ -24,6 +24,7 @@ public final class MenuModule implements GameModule {
         screens.register(new SignupScreen(screens));
         screens.register(new MainMenuScreen(screens));
         screens.register(new crab.features.menu.presentation.screens.SetupScreen(screens));
+        screens.register(new crab.features.menu.presentation.screens.CharacterSelectionScreen(screens));
         screens.register(new crab.features.gameplay.presentation.GameplayScreen(screens));
     }
 

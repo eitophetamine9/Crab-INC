@@ -26,6 +26,9 @@ public final class GameplayScreen implements GameScreen {
     private boolean visible;
 
     public static int requestedEnemyCount = 3;
+    public static PlayerClass selectedClass = PlayerClass.OPPORTUNIST;
+    public static String difficulty = "Medium";
+    public static boolean isMale = true;
     public static GameSession loadedSession = null;
     private GameSession gameSession;
     private PlayerState humanPlayer;
@@ -88,8 +91,7 @@ public final class GameplayScreen implements GameScreen {
         java.util.Random random = new java.util.Random();
         PlayerClass[] classes = PlayerClass.values();
         
-        PlayerClass humanClass = classes[random.nextInt(classes.length)];
-        humanPlayer = PlayerState.create("human", "Player", humanClass);
+        humanPlayer = PlayerState.create("human", "Player", selectedClass);
 
         aiPlayers = new ArrayList<>();
         List<PlayerState> allPlayers = new ArrayList<>();
@@ -108,23 +110,22 @@ public final class GameplayScreen implements GameScreen {
     private List<ActionCard> createStandardDeck() {
         List<ActionCard> deck = new ArrayList<>();
 
-        // Help cards (Altruist art) – all rarities
-        deck.add(new ActionCard("give_common",    "Give",          CardType.HELP,    CardRarity.COMMON));
-        deck.add(new ActionCard("give_uncommon",  "Generous Give", CardType.HELP,    CardRarity.UNCOMMON));
-        deck.add(new ActionCard("give_rare",      "Gracious Give", CardType.HELP,    CardRarity.RARE));
+        // One of each card type/rarity combo for the rarity-based pull system
+        deck.add(new ActionCard("give_common", "Give", CardType.HELP, CardRarity.COMMON));
+        deck.add(new ActionCard("take_common", "Take", CardType.STEAL, CardRarity.COMMON));
+        deck.add(new ActionCard("sabotage_common", "Sabotage", CardType.SABOTAGE, CardRarity.COMMON));
+
+        deck.add(new ActionCard("give_uncommon", "Generous Give", CardType.HELP, CardRarity.UNCOMMON));
+        deck.add(new ActionCard("take_uncommon", "Snatch", CardType.STEAL, CardRarity.UNCOMMON));
+        deck.add(new ActionCard("sabotage_uncommon", "Scheme", CardType.SABOTAGE, CardRarity.UNCOMMON));
+
+        deck.add(new ActionCard("give_rare", "Gracious Give", CardType.HELP, CardRarity.RARE));
+        deck.add(new ActionCard("take_rare", "Heist", CardType.STEAL, CardRarity.RARE));
+        deck.add(new ActionCard("sabotage_rare", "Conspiracy", CardType.SABOTAGE, CardRarity.RARE));
+        
         deck.add(new ActionCard("give_signature", "Grand Gesture", CardType.SIGNATURE_ALTRUIST, CardRarity.SIGNATURE));
-
-        // Steal cards (Opportunist art) – all rarities
-        deck.add(new ActionCard("take_common",    "Take",          CardType.STEAL,              CardRarity.COMMON));
-        deck.add(new ActionCard("take_uncommon",  "Snatch",        CardType.STEAL,              CardRarity.UNCOMMON));
-        deck.add(new ActionCard("take_rare",      "Heist",         CardType.STEAL,              CardRarity.RARE));
-        deck.add(new ActionCard("take_signature", "Grand Heist",   CardType.SIGNATURE_OPPORTUNIST, CardRarity.SIGNATURE));
-
-        // Sabotage cards (Saboteur art) – all rarities
-        deck.add(new ActionCard("sabotage_common",    "Sabotage",       CardType.SABOTAGE,           CardRarity.COMMON));
-        deck.add(new ActionCard("sabotage_uncommon",  "Scheme",         CardType.SABOTAGE,           CardRarity.UNCOMMON));
-        deck.add(new ActionCard("sabotage_rare",      "Conspiracy",     CardType.SABOTAGE,           CardRarity.RARE));
-        deck.add(new ActionCard("sabotage_signature", "Master Sabotage",CardType.SIGNATURE_SABOTEUR, CardRarity.SIGNATURE));
+        deck.add(new ActionCard("take_signature", "Grand Heist", CardType.SIGNATURE_OPPORTUNIST, CardRarity.SIGNATURE));
+        deck.add(new ActionCard("sabotage_signature", "Master Sabotage", CardType.SIGNATURE_SABOTEUR, CardRarity.SIGNATURE));
 
         return deck;
     }
