@@ -33,6 +33,7 @@ import com.almasb.fxgl.core.math.FXGLMath;
 public final class LoginScreen implements GameScreen {
     public static final String ID = "menu_login";
     private static String pendingStatusMessage = "";
+    private static boolean isPendingStatusSuccess = false;
 
     private final ScreenManager screens;
     private Parent root;
@@ -45,8 +46,9 @@ public final class LoginScreen implements GameScreen {
         this.screens = screens;
     }
 
-    public static void setPendingStatusMessage(String message) {
+    public static void setPendingStatusMessage(String message, boolean isSuccess) {
         pendingStatusMessage = message == null ? "" : message;
+        isPendingStatusSuccess = isSuccess;
     }
 
     @Override
@@ -141,8 +143,9 @@ public final class LoginScreen implements GameScreen {
             LoginScreenController controller = loader.getController();
             controller.setLoginSuccessAction(() -> screens.show(MainMenuScreen.ID));
             controller.setCreateAccountAction(() -> screens.show(SignupScreen.ID));
-            controller.setStatusMessage(pendingStatusMessage);
+            controller.setStatusMessage(pendingStatusMessage, isPendingStatusSuccess);
             pendingStatusMessage = "";
+            isPendingStatusSuccess = false;
             return loadedRoot;
         } catch (IOException exception) {
             return fallbackLabel("Login screen load failed: " + exception.getMessage());

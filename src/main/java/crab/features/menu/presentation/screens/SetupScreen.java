@@ -8,12 +8,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.scene.media.MediaView;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
@@ -22,6 +19,9 @@ import com.almasb.fxgl.particle.ParticleEmitters;
 import com.almasb.fxgl.particle.ParticleSystem;
 import javafx.geometry.Point2D;
 import com.almasb.fxgl.core.math.FXGLMath;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class SetupScreen implements GameScreen {
     public static final String ID = "setup";
@@ -32,6 +32,9 @@ public final class SetupScreen implements GameScreen {
     private final ScreenManager screens;
     private Parent root;
     private boolean visible;
+
+    private int selectedEnemyCount = 3;
+    private String selectedDifficulty = "Medium";
 
     private javafx.scene.image.ImageView backgroundImageView;
     private ParticleSystem particleSystem;
@@ -123,64 +126,69 @@ public final class SetupScreen implements GameScreen {
         Label title = new Label("Game Setup");
         title.getStyleClass().add("title-text");
         
-        Label subtitle = new Label("Select Number of Enemies:");
+        // --- Enemy Count ---
+        Label subtitle = new Label("No. of Enemies");
         subtitle.getStyleClass().add("subtitle-text");
 
-        Slider enemySlider = new Slider(3, 7, 3);
-        enemySlider.setShowTickLabels(true);
-        enemySlider.setShowTickMarks(true);
-        enemySlider.setMajorTickUnit(1);
-        enemySlider.setMinorTickCount(0);
-        enemySlider.setSnapToTicks(true);
-        enemySlider.setPrefWidth(300);
-        
-        Label enemyCountLabel = new Label("3 Enemies");
-        enemyCountLabel.getStyleClass().add("subtitle-text");
-        enemySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            enemyCountLabel.setText(newVal.intValue() + " Enemies");
-        });
+        HBox enemyButtons = new HBox(10);
+        enemyButtons.setAlignment(Pos.CENTER);
+        List<Button> enemyBtnList = new ArrayList<>();
+        for (int i = 3; i <= 7; i++) {
+            int val = i;
+            Button b = new Button(String.valueOf(i));
+            b.getStyleClass().add("menu-button");
+            b.setPrefSize(60, 60);
+            if (val == selectedEnemyCount) b.getStyleClass().add("btn-active");
+            
+            b.setOnAction(e -> {
+                selectedEnemyCount = val;
+                enemyBtnList.forEach(btn -> btn.getStyleClass().remove("btn-active"));
+                b.getStyleClass().add("btn-active");
+            });
+            enemyBtnList.add(b);
+            enemyButtons.getChildren().add(b);
+        }
 
-        Label diffSubtitle = new Label("Select Difficulty:");
+        // --- Difficulty ---
+        Label diffSubtitle = new Label("Difficulty");
         diffSubtitle.getStyleClass().add("subtitle-text");
 
-        Slider diffSlider = new Slider(0, 2, 1);
-        diffSlider.setShowTickLabels(true);
-        diffSlider.setShowTickMarks(true);
-        diffSlider.setMajorTickUnit(1);
-        diffSlider.setMinorTickCount(0);
-        diffSlider.setSnapToTicks(true);
-        diffSlider.setPrefWidth(300);
-        
-        // Custom labels for difficulty slider
-        Label diffLabel = new Label("Medium");
-        diffLabel.getStyleClass().add("subtitle-text");
-        diffSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            String d = switch (newVal.intValue()) {
-                case 0 -> "Easy";
-                case 1 -> "Medium";
-                case 2 -> "Hard";
-                default -> "Medium";
-            };
-            diffLabel.setText(d);
-        });
+        HBox diffButtons = new HBox(10);
+        diffButtons.setAlignment(Pos.CENTER);
+        List<Button> diffBtnList = new ArrayList<>();
+        String[] difficulties = {"Easy", "Medium", "Hard"};
+        for (String d : difficulties) {
+            Button b = new Button(d);
+            b.getStyleClass().add("menu-button");
+            b.setPrefSize(140, 60);
+            if (d.equals(selectedDifficulty)) b.getStyleClass().add("btn-active");
+            
+            b.setOnAction(e -> {
+                selectedDifficulty = d;
+                diffBtnList.forEach(btn -> btn.getStyleClass().remove("btn-active"));
+                b.getStyleClass().add("btn-active");
+            });
+            diffBtnList.add(b);
+            diffButtons.getChildren().add(b);
+        }
 
-        Button startBtn = new Button("Continue to Character Selection");
+        Button startBtn = new Button("Continue");
         startBtn.getStyleClass().addAll("menu-button", "btn-play");
-        startBtn.setPrefWidth(400);
+        startBtn.setPrefWidth(450);
         startBtn.setPrefHeight(60);
         startBtn.setOnAction(e -> {
-            GameplayScreen.requestedEnemyCount = (int) enemySlider.getValue();
-            GameplayScreen.difficulty = diffLabel.getText();
+            GameplayScreen.requestedEnemyCount = selectedEnemyCount;
+            GameplayScreen.difficulty = selectedDifficulty;
             screens.show(CharacterSelectionScreen.ID);
         });
 
         Button backBtn = new Button("Back");
         backBtn.getStyleClass().addAll("menu-button", "btn-secondary");
-        backBtn.setPrefWidth(400);
+        backBtn.setPrefWidth(450);
         backBtn.setPrefHeight(60);
         backBtn.setOnAction(e -> screens.show(MainMenuScreen.ID));
 
-        VBox menu = new VBox(20, title, subtitle, enemySlider, enemyCountLabel, diffSubtitle, diffSlider, diffLabel, startBtn, backBtn);
+        VBox menu = new VBox(25, title, subtitle, enemyButtons, diffSubtitle, diffButtons, startBtn, backBtn);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(20, 50, 50, 50));
         menu.setPrefWidth(PANEL_WIDTH);

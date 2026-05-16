@@ -135,10 +135,6 @@ public final class MainMenuScreen implements GameScreen {
         title.getStyleClass().add("title-text");
         title.setMouseTransparent(true);
 
-        Label subtitle = new Label("Choose where to begin.");
-        subtitle.getStyleClass().add("subtitle-text");
-        subtitle.setMouseTransparent(true);
-
         Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "btn-secondary", 0.0);
         logout.setPrefWidth(190);
         logout.setPrefHeight(60);
@@ -153,6 +149,12 @@ public final class MainMenuScreen implements GameScreen {
 
         String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
         String saveFileStr = crab.appcore.db.DatabaseManager.getSaveForUser(username);
+        
+        // Fallback: Check for default local save file name if database is unreachable or empty
+        if (saveFileStr == null && username != null && !username.isEmpty()) {
+            saveFileStr = "savegame_" + username + ".dat";
+        }
+        
         java.io.File saveFile = saveFileStr != null ? new java.io.File(saveFileStr) : null;
         
         Button continueBtn = menuButton("Continue", () -> {
@@ -175,7 +177,7 @@ public final class MainMenuScreen implements GameScreen {
         HBox secondaryActions = new HBox(15, logout, exit);
         secondaryActions.setAlignment(Pos.CENTER);
 
-        VBox menu = new VBox(30, title, subtitle, continueBtn, play, secondaryActions);
+        VBox menu = new VBox(30, title, play, continueBtn, secondaryActions);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(20, 50, 50, 50));
 

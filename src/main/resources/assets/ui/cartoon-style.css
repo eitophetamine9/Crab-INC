@@ -31,10 +31,12 @@
 }
 
 .subtitle-text {
-    -fx-font-family: "Arial Rounded MT Bold", sans-serif;
+    -fx-font-family: "Luckiest Guy", "Arial Rounded MT Bold", sans-serif;
     -fx-font-weight: bold;
+    -fx-font-size: 32px;
     -fx-text-fill: white;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 2, 0, 0, 1);
+    /* Black outline for punchy look */
+    -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);
 }
 
 /* 4. The Wood Plank Buttons (Hover Rotation Fix) */
@@ -105,4 +107,12 @@
 
 .scroll-pane .viewport {
     -fx-background-color: transparent;
+}
+
+/* 7. Active/Selected Button State */
+.btn-active {
+    -fx-background-color: linear-gradient(to bottom, #d35400, #a04000);
+    -fx-border-color: #f1c40f;
+    -fx-border-width: 3;
+    -fx-text-fill: #f1c40f;
 }

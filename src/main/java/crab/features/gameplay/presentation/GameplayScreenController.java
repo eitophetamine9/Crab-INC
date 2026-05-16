@@ -90,9 +90,9 @@ public class GameplayScreenController {
 
     private String getGoalString(PlayerClass playerClass) {
         return switch (playerClass) {
-            case OPPORTUNIST -> "Goal: Wealth";
-            case ALTRUIST -> "Goal: Reputation";
-            case SABOTEUR -> "Goal: Infamy";
+            case OPPORTUNIST -> "Wealth";
+            case ALTRUIST -> "Reputation";
+            case SABOTEUR -> "Infamy";
         };
     }
 
@@ -207,8 +207,16 @@ public class GameplayScreenController {
             String saveFileName = "savegame_" + username + ".dat";
             try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(saveFileName))) {
                 oos.writeObject(gameSession);
-                crab.appcore.db.DatabaseManager.registerSave(username, saveFileName);
+                oos.flush();
+                System.out.println("Successfully saved game session to " + saveFileName);
+                // Attempt to register in DB, but don't fail if DB is down
+                try {
+                    crab.appcore.db.DatabaseManager.registerSave(username, saveFileName);
+                } catch (Exception dbEx) {
+                    System.err.println("Note: Could not register save in database, using local file only.");
+                }
             } catch (Exception ex) {
+                System.err.println("CRITICAL ERROR: Failed to serialize game session!");
                 ex.printStackTrace();
             }
             mainLayout.getChildren().remove(pauseMenu);
@@ -227,6 +235,20 @@ public class GameplayScreenController {
             Button yesBtn = new Button("Yes, Withdraw");
             yesBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-text-fill: red;");
             yesBtn.setOnAction(yesEvent -> {
+                String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
+                String saveFileName = "savegame_" + username + ".dat";
+                
+                // 1. Delete local save file
+                java.io.File file = new java.io.File(saveFileName);
+                if (file.exists()) {
+                    file.delete();
+                }
+
+                // 2. Clear DB record
+                try {
+                    crab.appcore.db.DatabaseManager.registerSave(username, null);
+                } catch (Exception dbEx) {}
+
                 mainLayout.getChildren().remove(pauseMenu);
                 pauseMenu = null;
                 screens.show("menu_main");
@@ -292,7 +314,7 @@ public class GameplayScreenController {
         }
         
         heroClassLabel.setText(humanPlayer.playerClass().name() + "\n(" + getGoalString(humanPlayer.playerClass()) + ")");
-        heroNameLabel.setText(humanPlayer.displayName() + " (You)");
+        heroNameLabel.setText(humanPlayer.displayName());
         heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
         heroReputationLabel.setText("Reputation: " + humanPlayer.reputation());
         heroInfamyLabel.setText("Infamy: " + humanPlayer.infamy());
@@ -354,12 +376,12 @@ public class GameplayScreenController {
         // 2. Stats Box (Has background)
         VBox statsBox = new VBox(2);
         statsBox.setAlignment(Pos.CENTER);
-        statsBox.setPrefWidth(120);
+        statsBox.setPrefWidth(150);
         statsBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: " + (isHuman ? "#10b981" : "white") + "; -fx-border-width: 2; -fx-padding: 5;");
         
-        Label pClass = new Label(player.playerClass().name());
-        pClass.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
-        Label pName = new Label(player.displayName() + (isHuman ? " (You)" : ""));
+        Label pClass = new Label(player.playerClass().name() + " (" + getGoalString(player.playerClass()) + ")");
+        pClass.setStyle("-fx-text-fill: #fbbf24; -fx-font-size: 11px; -fx-font-weight: bold;");
+        Label pName = new Label(player.displayName());
         pName.setStyle("-fx-text-fill: " + (isHuman ? "#10b981" : "gold") + "; -fx-font-weight: bold;");
         Label pWealth = new Label("Wealth: " + player.wealth());
         pWealth.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
@@ -368,7 +390,7 @@ public class GameplayScreenController {
         Label pInfamy = new Label("Infamy: " + player.infamy());
         pInfamy.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
         
-        statsBox.getChildren().addAll(pClass, pName, pWealth, pRep, pInfamy);
+        statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy);
         
         container.getChildren().addAll(crabAvatar, statsBox);
 

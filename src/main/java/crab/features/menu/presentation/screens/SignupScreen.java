@@ -127,7 +127,7 @@ public final class SignupScreen implements GameScreen {
             SignupScreenController controller = loader.getController();
             controller.setBackToLoginAction(() -> screens.show(LoginScreen.ID));
             controller.setSignupSuccessHandler(message -> {
-                LoginScreen.setPendingStatusMessage(message);
+                LoginScreen.setPendingStatusMessage(message, true);
                 screens.show(LoginScreen.ID);
             });
             return loadedRoot;

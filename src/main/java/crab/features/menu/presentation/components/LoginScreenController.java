@@ -32,6 +32,11 @@ public final class LoginScreenController {
     @FXML
     private Label errorLabel;
 
+    @FXML
+    private void initialize() {
+        errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+    }
+
     private Runnable createAccountAction = () -> {
     };
     private Runnable loginSuccessAction = () -> {
@@ -46,8 +51,10 @@ public final class LoginScreenController {
         createAccountAction = Objects.requireNonNull(action, "action");
     }
 
-    public void setStatusMessage(String message) {
+    public void setStatusMessage(String message, boolean isSuccess) {
         errorLabel.setText(message == null ? "" : message);
+        String color = isSuccess ? "#34d399" : "#f87171";
+        errorLabel.setStyle("-fx-text-fill: " + color + "; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
     }
 
     public void setAuthService(AuthService authService) {
@@ -64,6 +71,7 @@ public final class LoginScreenController {
 
     @FXML
     private void handleCreateAccount() {
+        errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
         errorLabel.setText("");
         createAccountAction.run();
     }
@@ -71,6 +79,7 @@ public final class LoginScreenController {
     @FXML
     private void handleLogin() {
         if (usernameField.getText().isBlank() || passwordField.getText().isBlank()) {
+            errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
             errorLabel.setText("Please enter a username and password.");
             return;
         }
@@ -89,6 +98,7 @@ public final class LoginScreenController {
 
         java.util.Optional<CrabUser> signedInUser = authService.signInUser(username, password);
         if (signedInUser.isEmpty()) {
+            errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
             errorLabel.setText("Invalid username or password.");
             return;
         }

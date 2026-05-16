@@ -22,6 +22,11 @@ public final class SignupScreenController {
     @FXML
     private Label errorLabel;
 
+    @FXML
+    private void initialize() {
+        errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+    }
+
     private Runnable backToLoginAction = () -> {
     };
     private SignupSuccessHandler signupSuccessHandler = message -> {
@@ -57,16 +62,32 @@ public final class SignupScreenController {
         );
 
         switch (result) {
-            case CREATED -> signupSuccessHandler.onSignupSuccess("Account created. Please log in.");
-            case BLANK_INPUT -> errorLabel.setText("Please enter a username and password.");
-            case PASSWORD_MISMATCH -> errorLabel.setText("Passwords do not match.");
-            case USERNAME_TAKEN -> errorLabel.setText("Username already exists.");
-            case DATABASE_ERROR -> errorLabel.setText("Database error. Check connection.");
+            case CREATED -> {
+                errorLabel.setStyle("-fx-text-fill: #34d399; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+                signupSuccessHandler.onSignupSuccess("Account created. Please log in.");
+            }
+            case BLANK_INPUT -> {
+                errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+                errorLabel.setText("Please enter a username and password.");
+            }
+            case PASSWORD_MISMATCH -> {
+                errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+                errorLabel.setText("Passwords do not match.");
+            }
+            case USERNAME_TAKEN -> {
+                errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+                errorLabel.setText("Username already exists.");
+            }
+            case DATABASE_ERROR -> {
+                errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
+                errorLabel.setText("Database error. Check connection.");
+            }
         }
     }
 
     @FXML
     private void handleBackToLogin() {
+        errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
         errorLabel.setText("");
         backToLoginAction.run();
     }

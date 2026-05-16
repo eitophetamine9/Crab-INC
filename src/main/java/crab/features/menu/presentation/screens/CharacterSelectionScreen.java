@@ -130,7 +130,7 @@ public final class CharacterSelectionScreen implements GameScreen {
             refreshCards();
         });
 
-        HBox classBox = new HBox(40);
+        HBox classBox = new HBox(20);
         classBox.setAlignment(Pos.CENTER);
         classBox.setPadding(new Insets(20));
         this.cardsContainer = classBox;
@@ -175,11 +175,13 @@ public final class CharacterSelectionScreen implements GameScreen {
         VBox card = new VBox(10);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(10));
-        card.setPrefWidth(240);
+        card.setPrefWidth(280);
         card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 20;");
 
         Label nameLbl = new Label(pClass.name());
-        nameLbl.setStyle("-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
+        nameLbl.setWrapText(true);
+        nameLbl.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        nameLbl.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
 
         String baseName = switch (pClass) {
             case SABOTEUR -> "saboteur";
@@ -198,13 +200,15 @@ public final class CharacterSelectionScreen implements GameScreen {
         imgView.setFitWidth(135);
         imgView.setPreserveRatio(true);
 
-        Label goalLbl = new Label("Archetype: " + goal);
+        Label goalLbl = new Label(goal);
+        goalLbl.setWrapText(true);
         goalLbl.setStyle("-fx-text-fill: #fbbf24; -fx-font-weight: bold; -fx-font-size: 16px;");
 
         Label descLbl = new Label(desc);
         descLbl.setWrapText(true);
-        descLbl.setStyle("-fx-text-fill: white; -fx-text-alignment: center; -fx-font-size: 11px; -fx-font-weight: normal;");
-        descLbl.setMaxWidth(200);
+        descLbl.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+        descLbl.setStyle("-fx-text-fill: white; -fx-text-alignment: center; -fx-font-size: 14px; -fx-font-weight: normal;");
+        descLbl.setMaxWidth(260);
 
         Button selectBtn = new Button("Select");
         selectBtn.getStyleClass().addAll("menu-button", "btn-play");

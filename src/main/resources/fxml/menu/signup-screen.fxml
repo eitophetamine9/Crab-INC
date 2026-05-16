@@ -23,7 +23,7 @@
             <PasswordField fx:id="confirmPasswordField" promptText="Confirm password" styleClass="text-field" prefWidth="400" />
         </VBox>
 
-        <Label fx:id="errorLabel" minHeight="24" style="-fx-font-size: 13px; -fx-text-fill: #f87171;" />
+        <Label fx:id="errorLabel" minHeight="24" style="-fx-font-size: 13px;" />
 
         <Button onAction="#handleSignup" prefWidth="400" prefHeight="60" styleClass="menu-button, btn-auth" text="Sign Up" />
         <Button onAction="#handleBackToLogin" prefWidth="400" prefHeight="60" styleClass="menu-button, btn-auth" text="Back to Login" />

@@ -75,10 +75,10 @@
         </VBox>
 
         <!-- Stats box -->
-        <VBox alignment="CENTER_LEFT" spacing="5.0" prefWidth="140.0"
+        <VBox alignment="CENTER_LEFT" spacing="5.0" prefWidth="165.0"
               style="-fx-background-color: rgba(0,0,0,0.65); -fx-border-color: white; -fx-border-width: 2; -fx-padding: 10; -fx-border-radius: 6; -fx-background-radius: 6;">
-            <Label fx:id="heroClassLabel"  style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" text="CLASS" />
             <Label fx:id="heroNameLabel"   style="-fx-text-fill: gold;  -fx-font-weight: bold; -fx-font-size: 14px;" text="Player" />
+            <Label fx:id="heroClassLabel"  style="-fx-text-fill: #fbbf24; -fx-font-size: 14px; -fx-font-weight: bold;" text="CLASS" />
             <Label fx:id="heroWealthLabel"     style="-fx-text-fill: #34d399; -fx-font-size: 12px;" text="Wealth: 0" />
             <Label fx:id="heroReputationLabel" style="-fx-text-fill: #60a5fa; -fx-font-size: 12px;" text="Reputation: 0" />
             <Label fx:id="heroInfamyLabel"     style="-fx-text-fill: #f87171; -fx-font-size: 12px;" text="Infamy: 0" />
