@@ -12,7 +12,7 @@
     <VBox alignment="CENTER" maxWidth="550" prefWidth="550" maxHeight="620" prefHeight="620" spacing="30" styleClass="menu-panel">
 
         <!-- The Top Anchor Icon -->
-        <Label text="⚓" style="-fx-font-size: 70px; -fx-text-fill: #d35400; -fx-padding: -40 0 0 0;" />
+        <Label text="⚓" style="-fx-font-size: 70px; -fx-text-fill: #d35400; -fx-padding: 0;" />
 
         <VBox alignment="CENTER" spacing="5">
             <Label styleClass="title-text" text="Crab Inc." />

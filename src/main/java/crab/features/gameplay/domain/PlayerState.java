@@ -143,6 +143,9 @@ public final class PlayerState implements java.io.Serializable {
         Objects.requireNonNull(card, "card");
         if (hand.size() < MAX_HAND_SIZE) {
             hand.add(card);
+        } else {
+            hand.remove(0); // Replace oldest card (FIFO)
+            hand.add(card);
         }
     }
 

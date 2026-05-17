@@ -50,7 +50,7 @@ public final class GameplayScreen implements GameScreen {
         }
 
         visible = true;
-        getGameScene().setBackgroundColor(Color.WHITE); // Plain white background
+        getGameScene().setBackgroundColor(javafx.scene.paint.Color.web("#0e58d4")); // Ocean blue background
 
         if (loadedSession != null) {
             gameSession = loadedSession;

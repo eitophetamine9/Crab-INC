@@ -52,7 +52,7 @@ public final class SignupScreen implements GameScreen {
         try {
             var resource = getClass().getResource("/assets/textures/bg_underwater.gif");
             if (resource != null) {
-                backgroundImageView = new javafx.scene.image.ImageView(new javafx.scene.image.Image(resource.toExternalForm()));
+                backgroundImageView = new javafx.scene.image.ImageView(new javafx.scene.image.Image(resource.toExternalForm(), true));
                 backgroundImageView.setFitWidth(getAppWidth());
                 backgroundImageView.setFitHeight(getAppHeight());
                 backgroundImageView.setPreserveRatio(false);

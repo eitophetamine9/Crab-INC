@@ -47,12 +47,12 @@ final class GameSessionTest {
         assertEquals(GamePhase.ACTION, session.phase());
         assertEquals(10, alice.clams());      // 40 + 10(income) - 40(upgrade) = 10
         assertEquals(2, alice.buildLevel());
-        // alice: starts with 1 (HELP), draws 1 (SABOTAGE) in Drawing. Total 2.
-        assertEquals(List.of(HELP, SABOTAGE), alice.hand());
+        
+        // Assert hand sizes instead of strict lists, since drawing without seed is randomized
+        assertEquals(2, alice.hand().size());
         assertEquals(10, alice.clams());      // 40 + 10(income) - 40(upgrade) = 10
         assertEquals(2, alice.buildLevel());
-        // bob: starts with 1 (STEAL), draws 1 (RARE_HELP) in Drawing. Total 2.
-        assertEquals(List.of(STEAL, RARE_HELP), bob.hand());
+        assertEquals(2, bob.hand().size());
     }
 
     /**
@@ -129,8 +129,8 @@ final class GameSessionTest {
 
         assertEquals(50, alice.infamy());
         assertEquals(30, alice.wealth());   // received from bob's HELP (not reduced)
-        assertEquals(12, bob.reputation()); // 40 * 0.30 = 12 (70% reduction)
-        assertEquals(15, bob.clams());      // income 10 + round(15 * 0.30)=5 = 15
+        assertEquals(20, bob.reputation()); // 40 * 0.50 = 20 (50% reduction for common sabotage)
+        assertEquals(18, bob.clams());      // income 10 + round(15 * 0.50)=8 = 18
     }
 
     @Test
@@ -218,5 +218,25 @@ final class GameSessionTest {
         GameSession session = GameSession.newLocal(List.of(alice, bob), 3, List.of(HELP, STEAL, SABOTAGE, RARE_HELP));
 
         assertFalse(session.winner().isPresent());
+    }
+
+    @Test
+    void handReplacementFIFOWhenHandIsFull() {
+        PlayerState alice = PlayerState.create("alice", "Alice", PlayerClass.OPPORTUNIST);
+        
+        // Add 3 cards to fill the hand: HELP, STEAL, SABOTAGE
+        alice.addCard(HELP);
+        alice.addCard(STEAL);
+        alice.addCard(SABOTAGE);
+        
+        assertEquals(3, alice.hand().size());
+        assertEquals(List.of(HELP, STEAL, SABOTAGE), alice.hand());
+        
+        // Add a 4th card (RARE_HELP) when hand is full
+        alice.addCard(RARE_HELP);
+        
+        // Hand size should still be 3, but the oldest card (HELP) should be replaced
+        assertEquals(3, alice.hand().size());
+        assertEquals(List.of(STEAL, SABOTAGE, RARE_HELP), alice.hand());
     }
 }

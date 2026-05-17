@@ -130,7 +130,8 @@ public final class GameSession implements java.io.Serializable {
         }
 
         if (candidates.isEmpty()) return drawCard(player);
-        return candidates.get(rng.nextInt(candidates.size()));
+        ActionCard template = candidates.get(rng.nextInt(candidates.size()));
+        return new ActionCard(template.id(), template.name(), template.type(), template.rarity());
     }
 
     private boolean isStrictlyCompatible(ActionCard card, PlayerClass playerClass) {
@@ -174,7 +175,7 @@ public final class GameSession implements java.io.Serializable {
         }
 
         pendingActions.put(actor.id(), action);
-        actor.removeCard(action.card());
+        // actor.removeCard(action.card()); // Played cards are kept in hand instead of being removed
         if (pendingActions.size() == players.size()) {
             phase = GamePhase.RESOLUTION;
         }
@@ -199,15 +200,7 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerAction action : pendingActions.values()) {
             PlayerState actor = requirePlayer(action.playerId());
             
-            // Hand management rule:
-            // Calculate starting hand size correctly (Pass card is not from hand)
-            int startHandSize = actor.hand().size() + (action.card().id().equals("dummy") ? 0 : 1);
-            if (startHandSize >= 3) {
-                actor.clearHand();
-                if (action.keptCard() != null) {
-                    actor.addCard(action.keptCard());
-                }
-            }
+            // Hand management rule: legacy size-3 reset has been replaced by persistent hands with FIFO replacement.
             // else: keep existing hand (already done as we don't clear it)
 
             switch (action.card().type()) {
@@ -546,7 +539,8 @@ public final class GameSession implements java.io.Serializable {
                     .collect(java.util.stream.Collectors.toList());
         }
 
-        return candidates.get(rng.nextInt(candidates.size()));
+        ActionCard template = candidates.get(rng.nextInt(candidates.size()));
+        return new ActionCard(template.id(), template.name(), template.type(), template.rarity());
     }
 
     private boolean isCompatible(ActionCard card, PlayerClass playerClass) {

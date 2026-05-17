@@ -9,7 +9,7 @@
 
 <StackPane prefHeight="720" prefWidth="1024" stylesheets="@../../assets/ui/cartoon-style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="crab.features.menu.presentation.components.SignupScreenController">
     <VBox alignment="CENTER" maxWidth="550" prefWidth="550" maxHeight="620" prefHeight="620" spacing="30" styleClass="menu-panel">
-        <Label text="⚓" style="-fx-font-size: 64px; -fx-text-fill: #d35400; -fx-padding: -35 0 0 0;" />
+        <Label text="⚓" style="-fx-font-size: 64px; -fx-text-fill: #d35400; -fx-padding: 0;" />
 
         <VBox alignment="CENTER" spacing="5">
             <Label styleClass="title-text" text="Join" />

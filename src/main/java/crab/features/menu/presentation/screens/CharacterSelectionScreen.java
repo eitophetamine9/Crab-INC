@@ -56,7 +56,7 @@ public final class CharacterSelectionScreen implements GameScreen {
         try {
             var resource = getClass().getResource("/assets/textures/bg_underwater.gif");
             if (resource != null) {
-                backgroundImageView = new javafx.scene.image.ImageView(new javafx.scene.image.Image(resource.toExternalForm()));
+                backgroundImageView = new javafx.scene.image.ImageView(new javafx.scene.image.Image(resource.toExternalForm(), true));
                 backgroundImageView.setFitWidth(getAppWidth());
                 backgroundImageView.setFitHeight(getAppHeight());
                 backgroundImageView.setPreserveRatio(false);
@@ -194,7 +194,7 @@ public final class CharacterSelectionScreen implements GameScreen {
             String suffix = currentIsMale ? "m" : "fm";
             var res = getClass().getResource("/assets/humanoid-art/" + baseName + suffix + ".gif");
             if (res != null) {
-                imgView.setImage(new Image(res.toExternalForm()));
+                imgView.setImage(new Image(res.toExternalForm(), true));
             }
         } catch (Exception e) {}
         imgView.setFitWidth(135);

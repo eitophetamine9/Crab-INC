@@ -43,6 +43,7 @@ public final class Bootstrap {
         if (!modulesInitialized) {
             context.register(ScreenManager.class, screens);
             modules.register(new MenuModule());
+            modules.register(new crab.features.gameplay.GameplayModule());
 
             modules.initialize(context);
             modulesInitialized = true;
@@ -55,6 +56,7 @@ public final class Bootstrap {
         AppTypography.applyTo(getGameScene().getRoot());
         modules.initializeUi();
         getGameScene().setCursor(Cursor.DEFAULT);
+        getGameScene().setBackgroundColor(javafx.scene.paint.Color.web("#0e58d4"));
         if (screens.currentId().isEmpty()) {
             screens.show(LoginScreen.ID);
         }

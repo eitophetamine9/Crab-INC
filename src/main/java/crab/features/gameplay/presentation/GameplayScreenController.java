@@ -125,6 +125,20 @@ public class GameplayScreenController {
         return null;
     }
 
+    private Image getEndingImage(PlayerClass playerClass) {
+        String fileName = switch (playerClass) {
+            case SABOTEUR -> "saboteur_end_screen.gif";
+            case ALTRUIST -> "altruist_end_screen.gif";
+            case OPPORTUNIST -> "opportunist_end_screen.png";
+        };
+        String path = "/assets/endings/" + fileName;
+        var res = getClass().getResource(path);
+        if (res != null) {
+            return new Image(res.toExternalForm());
+        }
+        return null;
+    }
+
     public void initData(GameSession gameSession, ScreenManager screens, PlayerState humanPlayer, List<PlayerState> aiPlayers) {
         this.gameSession = gameSession;
         this.screens = screens;
@@ -158,6 +172,11 @@ public class GameplayScreenController {
 
         updateHeroAvatarImage();
         updateUI();
+
+        String user = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
+        if ("dev".equalsIgnoreCase(user) || "admin".equalsIgnoreCase(user)) {
+            createDevPanel();
+        }
     }
 
     private void updateHeroAvatarImage() {
@@ -182,6 +201,51 @@ public class GameplayScreenController {
         genderBtn.setStyle("-fx-background-radius: 50em; -fx-min-width: 30px; -fx-min-height: 30px; -fx-max-width: 30px; -fx-max-height: 30px; " +
                 "-fx-background-color: " + color + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 16px; " +
                 "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);");
+    }
+
+    private void createDevPanel() {
+        VBox devBox = new VBox(5);
+        devBox.setAlignment(Pos.CENTER);
+        devBox.setStyle("-fx-padding: 8; -fx-background-color: rgba(255, 0, 0, 0.4); -fx-background-radius: 6; -fx-border-color: red; -fx-border-width: 1; -fx-border-radius: 6;");
+        
+        Label title = new Label("DEV MODE");
+        title.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-font-family: 'Luckiest Guy';");
+
+        Button addClamsBtn = new Button("+1000 Clams");
+        addClamsBtn.setOnAction(e -> {
+            humanPlayer.addClams(1000);
+            updateUI();
+        });
+
+        Button addWealthBtn = new Button("+1000 Wealth");
+        addWealthBtn.setOnAction(e -> {
+            humanPlayer.addWealth(1000);
+            updateUI();
+        });
+
+        Button addRepBtn = new Button("+50 Rep");
+        addRepBtn.setOnAction(e -> {
+            humanPlayer.addReputation(50);
+            updateUI();
+        });
+
+        Button addInfamyBtn = new Button("+50 Infamy");
+        addInfamyBtn.setOnAction(e -> {
+            humanPlayer.addInfamy(50);
+            updateUI();
+        });
+
+        String btnStyle = "-fx-font-size: 10px; -fx-padding: 3 8; -fx-cursor: hand;";
+        addClamsBtn.setStyle(btnStyle);
+        addWealthBtn.setStyle(btnStyle);
+        addRepBtn.setStyle(btnStyle);
+        addInfamyBtn.setStyle(btnStyle);
+
+        devBox.getChildren().addAll(title, addClamsBtn, addWealthBtn, addRepBtn, addInfamyBtn);
+
+        mainLayout.getChildren().add(devBox);
+        AnchorPane.setTopAnchor(devBox, 60.0);
+        AnchorPane.setLeftAnchor(devBox, 10.0);
     }
 
     @FXML
@@ -932,52 +996,137 @@ public class GameplayScreenController {
         phasePromptLabel.setText("GAME OVER");
 
         WinnerResult result = gameSession.winner().orElse(null);
+        crab.features.gameplay.presentation.GameOverScreen.loadedResult = result;
+        crab.features.gameplay.presentation.GameOverScreen.loadedSession = gameSession;
+        screens.show(crab.features.gameplay.presentation.GameOverScreen.ID);
         
-        VBox overBox = new VBox(15);
-        overBox.setAlignment(Pos.CENTER);
-        overBox.setStyle("-fx-border-color: #fbbf24; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: rgba(0,0,0,0.9); -fx-background-radius: 15; -fx-border-radius: 15;");
+        /*
+        // Full screen ending container
+        StackPane endContainer = new StackPane();
+        endContainer.prefWidthProperty().bind(mainLayout.widthProperty());
+        endContainer.prefHeightProperty().bind(mainLayout.heightProperty());
+        endContainer.setStyle("-fx-background-color: black;");
 
-        if (result == null) {
-            Label tieLabel = new Label("It's a tie!");
-            tieLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
-            overBox.getChildren().add(tieLabel);
-        } else {
-            String victoryTitle = switch (result.winningClass()) {
+        String accentColor = "#fbbf24"; // Default gold
+        String victoryTitle = "It's a Tie!";
+        String winnerText = "No player met their class goal.";
+
+        if (result != null) {
+            victoryTitle = switch (result.winningClass()) {
                 case OPPORTUNIST -> "Opportunist Victory!";
                 case ALTRUIST -> "Altruist Victory!";
                 case SABOTEUR -> "Saboteur Victory!";
             };
-            
-            Label titleLbl = new Label(victoryTitle);
-            titleLbl.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
+            accentColor = switch (result.winningClass()) {
+                case OPPORTUNIST -> "#10b981"; // Emerald
+                case ALTRUIST -> "#60a5fa"; // Sky Blue
+                case SABOTEUR -> "#ec4899"; // Ruby/Rose
+            };
             
             String winnerName = gameSession.players().stream()
                     .filter(p -> p.id().equals(result.playerId()))
                     .map(PlayerState::displayName)
                     .findFirst().orElse(result.playerId());
-            
-            Label nameLbl = new Label("Winner: " + winnerName);
-            nameLbl.setStyle("-fx-font-size: 20px; -fx-text-fill: white;");
-            
-            Label scoreLbl = new Label("Winning Score: " + result.winningValue());
-            scoreLbl.setStyle("-fx-font-size: 16px; -fx-text-fill: #9ca3af;");
-            
-            ImageView artView = new ImageView(getCrabImage(result.winningClass()));
-            artView.setFitWidth(150);
-            artView.setPreserveRatio(true);
-            
-            overBox.getChildren().addAll(titleLbl, nameLbl, scoreLbl, artView);
+
+            winnerText = "Winner: " + winnerName + " - Score: " + result.winningValue();
         }
 
-        Button returnBtn = new Button("Return to Menu");
-        returnBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        returnBtn.setOnAction(e -> screens.show("menu_main"));
-
-        overBox.getChildren().add(returnBtn);
+        // Epic full-screen ending image
+        ImageView bgView = new ImageView();
+        Image endImg = (result != null) ? getEndingImage(result.winningClass()) : getCrabImage(PlayerClass.ALTRUIST);
+        if (endImg != null) {
+            bgView.setImage(endImg);
+            bgView.fitWidthProperty().bind(endContainer.widthProperty());
+            bgView.fitHeightProperty().bind(endContainer.heightProperty());
+            // Preserve ratio to true might leave black bars, but false will stretch. Let's use false to fill screen completely!
+            bgView.setPreserveRatio(false); 
+        }
         
-        mainLayout.getChildren().add(overBox);
-        AnchorPane.setTopAnchor(overBox, 100.0);
-        AnchorPane.setLeftAnchor(overBox, 300.0);
-        AnchorPane.setRightAnchor(overBox, 300.0);
+        // Dimming overlay so text remains perfectly readable against the bright animations
+        Rectangle dimmingOverlay = new Rectangle();
+        dimmingOverlay.widthProperty().bind(endContainer.widthProperty());
+        dimmingOverlay.heightProperty().bind(endContainer.heightProperty());
+        dimmingOverlay.setFill(Color.color(0, 0, 0, 0.45)); // 45% dark
+
+        // Center UI Layer (Text & Button)
+        VBox uiLayer = new VBox(25);
+        uiLayer.setAlignment(Pos.CENTER);
+        
+        Label titleLbl = new Label(victoryTitle);
+        titleLbl.setStyle("-fx-font-family: 'Luckiest Guy'; -fx-font-size: 65px; -fx-font-weight: bold; -fx-text-fill: " + accentColor + "; -fx-effect: dropshadow(three-pass-box, black, 15, 0.8, 0, 0);");
+
+        Label nameLbl = new Label(winnerText);
+        nameLbl.setStyle("-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: white; -fx-effect: dropshadow(three-pass-box, black, 10, 0.8, 0, 0);");
+        
+        Button returnBtn = new Button("RETURN TO MAIN MENU");
+        returnBtn.setStyle("-fx-font-family: 'Luckiest Guy'; " +
+                           "-fx-font-size: 24px; " +
+                           "-fx-padding: 15 45; " +
+                           "-fx-background-color: " + accentColor + "; " +
+                           "-fx-text-fill: white; " +
+                           "-fx-background-radius: 12; " +
+                           "-fx-cursor: hand; " +
+                           "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 4);");
+
+        String finalAccentColor = accentColor;
+        returnBtn.setOnMouseEntered(e -> {
+            returnBtn.setStyle("-fx-font-family: 'Luckiest Guy'; " +
+                               "-fx-font-size: 24px; " +
+                               "-fx-padding: 15 45; " +
+                               "-fx-background-color: white; " +
+                               "-fx-text-fill: " + finalAccentColor + "; " +
+                               "-fx-background-radius: 12; " +
+                               "-fx-cursor: hand; " +
+                               "-fx-effect: dropshadow(three-pass-box, " + finalAccentColor + ", 20, 0.6, 0, 0);");
+            
+            TranslateTransition hoverUp = new TranslateTransition(Duration.millis(120), returnBtn);
+            hoverUp.setToY(-5);
+            hoverUp.play();
+        });
+
+        returnBtn.setOnMouseExited(e -> {
+            returnBtn.setStyle("-fx-font-family: 'Luckiest Guy'; " +
+                               "-fx-font-size: 24px; " +
+                               "-fx-padding: 15 45; " +
+                               "-fx-background-color: " + finalAccentColor + "; " +
+                               "-fx-text-fill: white; " +
+                               "-fx-background-radius: 12; " +
+                               "-fx-cursor: hand; " +
+                               "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 4);");
+            
+            TranslateTransition hoverDown = new TranslateTransition(Duration.millis(120), returnBtn);
+            hoverDown.setToY(0);
+            hoverDown.play();
+        });
+
+        returnBtn.setOnAction(e -> {
+            // Clean up active savegame files so that completed game sessions cannot be resumed
+            String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
+            if (username != null) {
+                String saveFileName = "savegame_" + username + ".dat";
+                java.io.File file = new java.io.File(saveFileName);
+                if (file.exists()) {
+                    file.delete();
+                }
+                try {
+                    crab.appcore.db.DatabaseManager.registerSave(username, null);
+                } catch (Exception dbEx) {
+                    System.err.println("Could not clear database save: " + dbEx.getMessage());
+                }
+            }
+            screens.show("menu_main");
+        });
+
+        uiLayer.getChildren().addAll(titleLbl, nameLbl, returnBtn);
+        
+        endContainer.getChildren().addAll(bgView, dimmingOverlay, uiLayer);
+        mainLayout.getChildren().add(endContainer);
+
+        // Majestic fade-in animation for the full-screen ending
+        endContainer.setOpacity(0.0);
+        javafx.animation.FadeTransition fadeTransition = new javafx.animation.FadeTransition(Duration.millis(800), endContainer);
+        fadeTransition.setToValue(1.0);
+        fadeTransition.play();
+        */
     }
 }
