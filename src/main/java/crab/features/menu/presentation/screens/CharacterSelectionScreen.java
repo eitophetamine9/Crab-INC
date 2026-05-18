@@ -165,9 +165,9 @@ public final class CharacterSelectionScreen implements GameScreen {
         if (cardsContainer == null) return;
         cardsContainer.getChildren().clear();
         cardsContainer.getChildren().addAll(
-            createClassCard(PlayerClass.OPPORTUNIST, "Wealth", "Gain wealth from every interaction."),
-            createClassCard(PlayerClass.ALTRUIST, "Reputation", "Help others and grow your fame."),
-            createClassCard(PlayerClass.SABOTEUR, "Reputation", "Disrupt opponents to win.")
+            createClassCard(PlayerClass.OPPORTUNIST, "Goal: 1000 Wealth", "Gain wealth from every interaction."),
+            createClassCard(PlayerClass.ALTRUIST, "Goal: 1000 Reputation", "Help others and grow your fame."),
+            createClassCard(PlayerClass.SABOTEUR, "Goal: -1000 Reputation", "Disrupt opponents to win.")
         );
     }
 

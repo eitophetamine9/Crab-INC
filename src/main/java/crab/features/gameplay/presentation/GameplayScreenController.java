@@ -98,9 +98,9 @@ public class GameplayScreenController {
 
     private String getGoalString(PlayerClass playerClass) {
         return switch (playerClass) {
-            case OPPORTUNIST -> "Wealth";
-            case ALTRUIST -> "Reputation";
-            case SABOTEUR -> "Reputation";
+            case OPPORTUNIST -> "Goal: 1000 Wealth";
+            case ALTRUIST -> "Goal: 1000 Reputation";
+            case SABOTEUR -> "Goal: -1000 Reputation";
         };
     }
 
