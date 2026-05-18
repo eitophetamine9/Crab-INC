@@ -179,12 +179,13 @@ public final class GameSession implements java.io.Serializable {
         Objects.requireNonNull(selectedCardIndexes, "selectedCardIndexes");
         Objects.requireNonNull(upgradeRequests, "upgradeRequests");
 
-        for (PlayerState player : players.values()) {
-            player.addClams(player.income()); // Income based on build level
-        }
-
         for (String playerId : upgradeRequests) {
             requirePlayer(playerId).upgradeBuild();
+        }
+
+        for (PlayerState player : players.values()) {
+            // Only gain base income based on build level — no stat bonus increase is applied
+            player.addClams(player.income());
         }
 
         phase = GamePhase.DRAWING;

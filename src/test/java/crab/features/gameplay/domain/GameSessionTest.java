@@ -45,12 +45,12 @@ final class GameSessionTest {
         session.resolveDrawing();
 
         assertEquals(GamePhase.ACTION, session.phase());
-        assertEquals(25, alice.clams());      // 40 + 15(income) - 30(upgrade) = 25
+        assertEquals(50, alice.clams());      // 40 - 30(upgrade) + 40(income level 2) = 50
         assertEquals(2, alice.buildLevel());
         
         // Assert hand sizes instead of strict lists, since drawing without seed is randomized
         assertEquals(2, alice.hand().size());
-        assertEquals(25, alice.clams());      // 40 + 15(income) - 30(upgrade) = 25
+        assertEquals(50, alice.clams());      // 40 - 30(upgrade) + 40(income level 2) = 50
         assertEquals(2, alice.buildLevel());
         assertEquals(2, bob.hand().size());
     }
