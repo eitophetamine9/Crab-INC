@@ -90,9 +90,10 @@
 /* 5. Chunky Inputs (PvZ Style) */
 .text-field {
     -fx-background-color: white;
+    -fx-background-insets: 3;
+    -fx-background-radius: 12;
     -fx-border-color: #1a5276; /* Ocean Blue */
     -fx-border-width: 4;
-    -fx-background-radius: 15;
     -fx-border-radius: 15;
     -fx-padding: 12 15;
     -fx-font-size: 16px;
