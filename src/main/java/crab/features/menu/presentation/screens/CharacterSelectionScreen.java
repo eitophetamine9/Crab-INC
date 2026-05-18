@@ -176,12 +176,12 @@ public final class CharacterSelectionScreen implements GameScreen {
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(10));
         card.setPrefWidth(280);
-        card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 20;");
+        card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
 
         Label nameLbl = new Label(pClass.name());
         nameLbl.setWrapText(true);
         nameLbl.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        nameLbl.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        nameLbl.setStyle("-fx-font-family: 'Luckiest Guy'; -fx-text-fill: white; -fx-font-size: 22px; -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);");
 
         String baseName = switch (pClass) {
             case SABOTEUR -> "saboteur";
@@ -205,12 +205,12 @@ public final class CharacterSelectionScreen implements GameScreen {
 
         Label goalLbl = new Label(goal);
         goalLbl.setWrapText(true);
-        goalLbl.setStyle("-fx-text-fill: #fbbf24; -fx-font-weight: bold; -fx-font-size: 16px;");
+        goalLbl.setStyle("-fx-font-family: 'Luckiest Guy'; -fx-text-fill: #fbbf24; -fx-font-size: 16px; -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);");
 
         Label descLbl = new Label(desc);
         descLbl.setWrapText(true);
         descLbl.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        descLbl.setStyle("-fx-text-fill: white; -fx-text-alignment: center; -fx-font-size: 14px; -fx-font-weight: normal;");
+        descLbl.setStyle("-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-weight: bold; -fx-text-fill: white; -fx-text-alignment: center; -fx-font-size: 14px; -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);");
         descLbl.setMaxWidth(260);
 
         Button selectBtn = new Button("Select");
@@ -224,12 +224,12 @@ public final class CharacterSelectionScreen implements GameScreen {
         card.getChildren().addAll(nameLbl, imgView, goalLbl, descLbl, selectBtn);
 
         card.setOnMouseEntered(e -> {
-            card.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20; -fx-border-color: #fbbf24; -fx-border-width: 3; -fx-border-radius: 20;");
+            card.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 17; -fx-background-insets: 3; -fx-border-color: #fbbf24; -fx-border-width: 3; -fx-border-insets: 1.5; -fx-border-radius: 20;");
             card.setScaleX(1.05);
             card.setScaleY(1.05);
         });
         card.setOnMouseExited(e -> {
-            card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 20;");
+            card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
             card.setScaleX(1.0);
             card.setScaleY(1.0);
         });
