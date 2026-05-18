@@ -783,13 +783,15 @@ public class GameplayScreenController {
                 }
                 double roll = random.nextDouble() * totalWeight;
                 double running = 0.0;
+                PlayerState selected = enemies.get(0);
                 for (int idx = 0; idx < candidates.size(); idx++) {
                     running += weights[idx];
                     if (roll <= running) {
-                        return candidates.get(idx);
+                        selected = candidates.get(idx);
+                        break;
                     }
                 }
-                return enemies.get(0);
+                yield selected;
             }
             case STEAL, SIGNATURE_OPPORTUNIST -> 
                 enemies.stream()
