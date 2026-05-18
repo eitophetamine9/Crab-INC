@@ -226,19 +226,22 @@ public final class CharacterSelectionScreen implements GameScreen {
         descLbl.setCache(true);
         descLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
 
-        Button selectBtn = new Button("Select");
-        selectBtn.getStyleClass().addAll("menu-button", "btn-play");
-        selectBtn.setPrefWidth(150);
-        selectBtn.setOnAction(e -> {
+        card.getChildren().addAll(nameLbl, imgView, goalLbl, descLbl);
+        card.setCursor(javafx.scene.Cursor.HAND);
+        card.setCache(true);
+        card.setCacheHint(javafx.scene.CacheHint.SPEED);
+
+        card.setOnMouseClicked(e -> {
             GameplayScreen.selectedClass = pClass;
             screens.show(GameplayScreen.ID);
         });
 
-        card.getChildren().addAll(nameLbl, imgView, goalLbl, descLbl, selectBtn);
-        card.setCache(true);
-        card.setCacheHint(javafx.scene.CacheHint.SPEED);
-
-        // Hover effects removed to prevent card items scaling/overlapping
+        card.setOnMouseEntered(e -> {
+            card.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 17; -fx-background-insets: 3; -fx-border-color: #fbbf24; -fx-border-width: 3; -fx-border-insets: 1.5; -fx-border-radius: 20;");
+        });
+        card.setOnMouseExited(e -> {
+            card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
+        });
 
         return card;
     }
