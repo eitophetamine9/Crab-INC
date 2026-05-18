@@ -194,6 +194,9 @@ public final class CharacterSelectionScreen implements GameScreen {
         };
         
         ImageView imgView = new ImageView();
+        imgView.setFitWidth(135);
+        imgView.setFitHeight(170); // Strictly reserve height in layout before async image populates
+        imgView.setPreserveRatio(true);
         try {
             String suffix = currentIsMale ? "m" : "fm";
             String path = "/assets/humanoid-art/" + baseName + suffix + ".gif";
@@ -204,8 +207,6 @@ public final class CharacterSelectionScreen implements GameScreen {
                 imgView.setImage(img);
             }
         } catch (Exception e) {}
-        imgView.setFitWidth(135);
-        imgView.setPreserveRatio(true);
 
         javafx.scene.text.Text goalLbl = new javafx.scene.text.Text(goal);
         goalLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 13)); // Sized down to save space
