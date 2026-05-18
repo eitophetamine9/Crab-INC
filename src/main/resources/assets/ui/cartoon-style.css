@@ -41,9 +41,11 @@
 
 /* 4. The Wood Plank Buttons (Hover Rotation Fix) */
 .menu-button {
-    -fx-background-radius: 12;
+    -fx-background-radius: 10;
+    -fx-background-insets: 2;
     -fx-border-color: rgba(255, 255, 255, 0.4); /* Pearl inner-stroke */
     -fx-border-width: 2;
+    -fx-border-insets: 1;
     -fx-border-radius: 12;
     -fx-text-fill: white;
     -fx-font-family: "Luckiest Guy", "Arial Rounded MT Bold", sans-serif;
@@ -81,10 +83,13 @@
     -fx-rotate: -2;
 }
 
-/* Default state for focused/unhovered buttons to match flat look */
 .menu-button:focused {
+    -fx-background-radius: 9;
+    -fx-background-insets: 3;
     -fx-border-color: #fbbf24;
     -fx-border-width: 3;
+    -fx-border-insets: 1.5;
+    -fx-border-radius: 12;
 }
 
 /* 5. Chunky Inputs (PvZ Style) */
@@ -118,7 +123,11 @@
 /* 7. Active/Selected Button State */
 .btn-active {
     -fx-background-color: linear-gradient(to bottom, #d35400, #a04000);
+    -fx-background-radius: 9;
+    -fx-background-insets: 3;
     -fx-border-color: #f1c40f;
     -fx-border-width: 3;
+    -fx-border-insets: 1.5;
+    -fx-border-radius: 12;
     -fx-text-fill: #f1c40f;
 }
