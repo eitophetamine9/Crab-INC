@@ -57,19 +57,17 @@ public final class Bootstrap {
     public void initializeUi() {
         AppTypography.applyTo(getGameScene().getRoot());
         
-        // Prevent stretching/scaling: force ContentRoot and UiRoot to remain exactly 1.0 scale
-        getGameScene().getContentRoot().scaleXProperty().addListener((obs, old, val) -> {
-            if (val.doubleValue() != 1.0) getGameScene().getContentRoot().setScaleX(1.0);
-        });
-        getGameScene().getContentRoot().scaleYProperty().addListener((obs, old, val) -> {
-            if (val.doubleValue() != 1.0) getGameScene().getContentRoot().setScaleY(1.0);
-        });
-        getGameScene().getUIRoot().scaleXProperty().addListener((obs, old, val) -> {
-            if (val.doubleValue() != 1.0) getGameScene().getUIRoot().setScaleX(1.0);
-        });
-        getGameScene().getUIRoot().scaleYProperty().addListener((obs, old, val) -> {
-            if (val.doubleValue() != 1.0) getGameScene().getUIRoot().setScaleY(1.0);
-        });
+        // Prevent stretching/scaling: force all layers (Content, UI, etc.) in GameScene to remain exactly 1.0 scale
+        for (javafx.scene.Node child : getGameScene().getRoot().getChildren()) {
+            child.scaleXProperty().addListener((obs, old, val) -> {
+                if (val.doubleValue() != 1.0) child.setScaleX(1.0);
+            });
+            child.scaleYProperty().addListener((obs, old, val) -> {
+                if (val.doubleValue() != 1.0) child.setScaleY(1.0);
+            });
+            child.setScaleX(1.0);
+            child.setScaleY(1.0);
+        }
 
         modules.initializeUi();
         getGameScene().setCursor(Cursor.DEFAULT);
