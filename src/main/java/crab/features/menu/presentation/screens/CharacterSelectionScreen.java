@@ -142,9 +142,9 @@ public final class CharacterSelectionScreen implements GameScreen {
         backBtn.setOnAction(e -> screens.show(SetupScreen.ID));
 
         VBox menu = new VBox(15, title, genderSwapBtn, classBox, backBtn); // Tighter spacing to guarantee Back button fits
-        menu.setAlignment(Pos.CENTER);
+        menu.setAlignment(Pos.TOP_CENTER); // Align elements to top to pull layout up and use top space perfectly
         menu.getStyleClass().add("menu-panel-wide"); // Use wide panel to ensure Back button centers perfectly without clipping
-        menu.setPadding(new Insets(15, 30, 15, 30));
+        menu.setPadding(new Insets(30, 30, 20, 30)); // Perfect, balanced padding
         menu.setMaxWidth(950);
         menu.setPrefHeight(680); // Adjusted height to ensure everything fits
 
