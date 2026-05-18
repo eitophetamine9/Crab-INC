@@ -412,7 +412,7 @@ public final class GameSession implements java.io.Serializable {
         boolean isSignature = action.card().type() == CardType.SIGNATURE_SABOTEUR;
         int baseRep = isSignature ? 100 : 50;
         int actorReputationGain = calculateNegativeEffect(baseRep, action.card().rarity());
-        actor.addReputation(actorReputationGain);
+        actor.addReputation(-actorReputationGain);
     }
 
     /**
@@ -675,7 +675,8 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState player : players.values()) {
             int score = switch (player.playerClass()) {
                 case OPPORTUNIST -> player.wealth();
-                case ALTRUIST, SABOTEUR -> player.reputation();
+                case ALTRUIST -> player.reputation();
+                case SABOTEUR -> -player.reputation();
             };
             highest = Math.max(highest, score);
         }
@@ -686,7 +687,8 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState p : players.values()) {
             int score = switch (p.playerClass()) {
                 case OPPORTUNIST -> p.wealth();
-                case ALTRUIST, SABOTEUR -> p.reputation();
+                case ALTRUIST -> p.reputation();
+                case SABOTEUR -> -p.reputation();
             };
             if (score >= winThreshold) {
                 return new WinnerResult(p.id(), p.playerClass(), score);
@@ -699,7 +701,8 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState p : players.values()) {
             int score = switch (p.playerClass()) {
                 case OPPORTUNIST -> p.wealth();
-                case ALTRUIST, SABOTEUR -> p.reputation();
+                case ALTRUIST -> p.reputation();
+                case SABOTEUR -> -p.reputation();
             };
             double progress = (double) score / winThreshold;
             if (progress > bestProgress) {
@@ -710,7 +713,8 @@ public final class GameSession implements java.io.Serializable {
         
         int finalScore = switch (best.playerClass()) {
             case OPPORTUNIST -> best.wealth();
-            case ALTRUIST, SABOTEUR -> best.reputation();
+            case ALTRUIST -> best.reputation();
+            case SABOTEUR -> -best.reputation();
         };
         return new WinnerResult(best.id(), best.playerClass(), finalScore);
     }
