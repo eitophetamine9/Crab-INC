@@ -460,7 +460,15 @@ public class GameplayScreenController {
         heroBuildLabel.setWrapText(true);
         // Build info below reputation — mirrors the bot stat-box layout
         heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
-        heroReputationLabel.setText("Reputation: " + humanPlayer.reputation());
+        int rep = humanPlayer.reputation();
+        heroReputationLabel.setText("Reputation: " + rep);
+        if (rep < 0) {
+            heroReputationLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px;");
+        } else if (rep == 0) {
+            heroReputationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+        } else {
+            heroReputationLabel.setStyle("-fx-text-fill: #60a5fa; -fx-font-size: 12px;");
+        }
         heroBuildLabel.setText(
                 "\u25b2 Build Lv." + humanPlayer.buildLevel() +
                 "\n   Income: +" + humanPlayer.income() + "/rd" +
@@ -593,7 +601,13 @@ public class GameplayScreenController {
         Label pWealth = new Label("Wealth: " + player.wealth());
         pWealth.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
         Label pRep = new Label("Reputation: " + player.reputation());
-        pRep.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
+        if (player.reputation() < 0) {
+            pRep.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 10px;");
+        } else if (player.reputation() == 0) {
+            pRep.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
+        } else {
+            pRep.setStyle("-fx-text-fill: #60a5fa; -fx-font-size: 10px;");
+        }
 
 
         // Build level — bots show level only; only the player sees income/buff
