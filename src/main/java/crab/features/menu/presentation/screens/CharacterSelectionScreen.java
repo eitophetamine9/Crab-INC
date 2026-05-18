@@ -118,7 +118,7 @@ public final class CharacterSelectionScreen implements GameScreen {
     private Parent createView() {
         Label title = new Label("Choose Your Class");
         title.getStyleClass().add("title-text");
-        title.setStyle("-fx-font-size: 48px;"); // Slightly smaller to save space and center Back button
+        title.setStyle("-fx-font-size: 56px;"); // Original gorgeous title font size
         
         Button genderSwapBtn = new Button("Gender: Male ♂");
         genderSwapBtn.getStyleClass().addAll("menu-button", "btn-secondary");
@@ -130,9 +130,9 @@ public final class CharacterSelectionScreen implements GameScreen {
             refreshCards();
         });
 
-        HBox classBox = new HBox(15); // Tighter card layout spacing
+        HBox classBox = new HBox(20); // Original layout spacing
         classBox.setAlignment(Pos.CENTER);
-        classBox.setPadding(new Insets(10));
+        classBox.setPadding(new Insets(20)); // Original layout padding
         this.cardsContainer = classBox;
         refreshCards();
 
@@ -141,12 +141,12 @@ public final class CharacterSelectionScreen implements GameScreen {
         backBtn.setPrefWidth(200);
         backBtn.setOnAction(e -> screens.show(SetupScreen.ID));
 
-        VBox menu = new VBox(15, title, genderSwapBtn, classBox, backBtn); // Tighter spacing to guarantee Back button fits
-        menu.setAlignment(Pos.TOP_CENTER); // Align elements to top to pull layout up and use top space perfectly
-        menu.getStyleClass().add("menu-panel-wide"); // Use wide panel to ensure Back button centers perfectly without clipping
-        menu.setPadding(new Insets(30, 30, 20, 30)); // Perfect, balanced padding
+        VBox menu = new VBox(20, title, genderSwapBtn, classBox, backBtn); // Original centered spacing
+        menu.setAlignment(Pos.CENTER); // Reverted back to perfectly centered layout as preferred by user
+        menu.getStyleClass().add("menu-panel-wide"); // Use wide panel with expanded height to host centered cards perfectly
+        menu.setPadding(new Insets(20, 30, 20, 30)); // Original layout padding
         menu.setMaxWidth(950);
-        menu.setPrefHeight(680); // Adjusted height to ensure everything fits
+        menu.setPrefHeight(700); // 700px height provides plenty of vertical space for large cards and separate Back button
 
         StackPane rootWrapper = new StackPane(menu);
         rootWrapper.setPrefSize(APP_WIDTH, APP_HEIGHT);
@@ -172,14 +172,14 @@ public final class CharacterSelectionScreen implements GameScreen {
     }
 
     private VBox createClassCard(PlayerClass pClass, String goal, String desc) {
-        VBox card = new VBox(6); // Tighter spacing inside cards
+        VBox card = new VBox(10); // Original comfortable spacing inside cards
         card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(8)); // Tighter padding inside cards
+        card.setPadding(new Insets(10)); // Original comfortable padding inside cards
         card.setPrefWidth(280);
         card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
 
         javafx.scene.text.Text nameLbl = new javafx.scene.text.Text(pClass.name());
-        nameLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16)); // Compact size to fit OPPORTUNIST on single line
+        nameLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 22)); // Original beautiful large title font size
         nameLbl.setWrappingWidth(260);
         nameLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         nameLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
@@ -195,7 +195,7 @@ public final class CharacterSelectionScreen implements GameScreen {
         
         ImageView imgView = new ImageView();
         imgView.setFitWidth(135);
-        imgView.setFitHeight(170); // Strictly reserve height in layout before async image populates
+        imgView.setFitHeight(170); // Strictly reserve height in layout before async image populates to prevent any overlap
         imgView.setPreserveRatio(true);
         try {
             String suffix = currentIsMale ? "m" : "fm";
@@ -209,7 +209,7 @@ public final class CharacterSelectionScreen implements GameScreen {
         } catch (Exception e) {}
 
         javafx.scene.text.Text goalLbl = new javafx.scene.text.Text(goal);
-        goalLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 13)); // Sized down to save space
+        goalLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16)); // Original beautiful large goal font size
         goalLbl.setWrappingWidth(260);
         goalLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         goalLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
@@ -218,8 +218,8 @@ public final class CharacterSelectionScreen implements GameScreen {
         goalLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
 
         javafx.scene.text.Text descLbl = new javafx.scene.text.Text(desc);
-        descLbl.setFont(javafx.scene.text.Font.font("Arial Rounded MT Bold", javafx.scene.text.FontWeight.BOLD, 11)); // Sized down to save space
-        descLbl.setWrappingWidth(240);
+        descLbl.setFont(javafx.scene.text.Font.font("Arial Rounded MT Bold", javafx.scene.text.FontWeight.BOLD, 14)); // Original beautiful large description font size
+        descLbl.setWrappingWidth(260); // Original wrap width
         descLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         descLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
         descLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 0.8px;");
