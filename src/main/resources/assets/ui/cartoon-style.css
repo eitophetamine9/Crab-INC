@@ -53,6 +53,11 @@
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 3);
 }
 
+.menu-button .text {
+    -fx-stroke: #0d2b3e;
+    -fx-stroke-width: 1.5px;
+}
+
 /* Play/Start Buttons: Seafoam Green to Deep Emerald */
 .btn-play {
     -fx-background-color: linear-gradient(to bottom, #a3e635, #065f46);
