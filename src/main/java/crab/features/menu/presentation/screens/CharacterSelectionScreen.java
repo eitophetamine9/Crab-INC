@@ -184,6 +184,8 @@ public final class CharacterSelectionScreen implements GameScreen {
         nameLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         nameLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
         nameLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
+        nameLbl.setCache(true);
+        nameLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
 
         String baseName = switch (pClass) {
             case SABOTEUR -> "saboteur";
@@ -211,6 +213,8 @@ public final class CharacterSelectionScreen implements GameScreen {
         goalLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         goalLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
         goalLbl.setStyle("-fx-fill: #fbbf24; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
+        goalLbl.setCache(true);
+        goalLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
 
         javafx.scene.text.Text descLbl = new javafx.scene.text.Text(desc);
         descLbl.setFont(javafx.scene.text.Font.font("Arial Rounded MT Bold", javafx.scene.text.FontWeight.BOLD, 11)); // Sized down to save space
@@ -218,6 +222,8 @@ public final class CharacterSelectionScreen implements GameScreen {
         descLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         descLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
         descLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 0.8px;");
+        descLbl.setCache(true);
+        descLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
 
         Button selectBtn = new Button("Select");
         selectBtn.getStyleClass().addAll("menu-button", "btn-play");
@@ -228,6 +234,8 @@ public final class CharacterSelectionScreen implements GameScreen {
         });
 
         card.getChildren().addAll(nameLbl, imgView, goalLbl, descLbl, selectBtn);
+        card.setCache(true);
+        card.setCacheHint(javafx.scene.CacheHint.SPEED);
 
         card.setOnMouseEntered(e -> {
             card.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 17; -fx-background-insets: 3; -fx-border-color: #fbbf24; -fx-border-width: 3; -fx-border-insets: 1.5; -fx-border-radius: 20;");
