@@ -197,15 +197,15 @@ public final class CharacterSelectionScreen implements GameScreen {
         };
         
         ImageView imgView = new ImageView();
-        imgView.setFitWidth(135);
-        imgView.setFitHeight(170); // Strictly reserve height in layout before async image populates to prevent any overlap
+        imgView.setFitWidth(145);
+        imgView.setFitHeight(190); // Heightened bounds to make characters visually larger and taller
         imgView.setPreserveRatio(true);
         try {
             String suffix = currentIsMale ? "m" : "fm";
             String path = "/assets/humanoid-art/" + baseName + suffix + ".gif";
             String slotId = "select_card_" + baseName + "_" + suffix;
-            // Retrieve via Flyweight Factory asynchronously, downsampled to 135x170
-            Image img = crab.appcore.concurrent.AssetFlyweightFactory.getSharedImageAsync(slotId, path, 135, 170);
+            // Retrieve via Flyweight Factory asynchronously, downsampled to 145x190
+            Image img = crab.appcore.concurrent.AssetFlyweightFactory.getSharedImageAsync(slotId, path, 145, 190);
             if (img != null) {
                 imgView.setImage(img);
             }
