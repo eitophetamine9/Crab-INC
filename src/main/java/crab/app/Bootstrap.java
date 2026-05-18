@@ -56,6 +56,21 @@ public final class Bootstrap {
 
     public void initializeUi() {
         AppTypography.applyTo(getGameScene().getRoot());
+        
+        // Prevent stretching/scaling: force ContentRoot and UiRoot to remain exactly 1.0 scale
+        getGameScene().getContentRoot().scaleXProperty().addListener((obs, old, val) -> {
+            if (val.doubleValue() != 1.0) getGameScene().getContentRoot().setScaleX(1.0);
+        });
+        getGameScene().getContentRoot().scaleYProperty().addListener((obs, old, val) -> {
+            if (val.doubleValue() != 1.0) getGameScene().getContentRoot().setScaleY(1.0);
+        });
+        getGameScene().getUiRoot().scaleXProperty().addListener((obs, old, val) -> {
+            if (val.doubleValue() != 1.0) getGameScene().getUiRoot().setScaleX(1.0);
+        });
+        getGameScene().getUiRoot().scaleYProperty().addListener((obs, old, val) -> {
+            if (val.doubleValue() != 1.0) getGameScene().getUiRoot().setScaleY(1.0);
+        });
+
         modules.initializeUi();
         getGameScene().setCursor(Cursor.DEFAULT);
         getGameScene().setBackgroundColor(javafx.scene.paint.Color.web("#0e58d4"));
