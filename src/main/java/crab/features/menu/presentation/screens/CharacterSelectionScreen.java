@@ -182,7 +182,8 @@ public final class CharacterSelectionScreen implements GameScreen {
         nameLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16)); // Compact size to fit OPPORTUNIST on single line
         nameLbl.setWrappingWidth(260);
         nameLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        nameLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.5px;");
+        nameLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
+        nameLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
 
         String baseName = switch (pClass) {
             case SABOTEUR -> "saboteur";
@@ -208,13 +209,15 @@ public final class CharacterSelectionScreen implements GameScreen {
         goalLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 13)); // Sized down to save space
         goalLbl.setWrappingWidth(260);
         goalLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        goalLbl.setStyle("-fx-fill: #fbbf24; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.5px;");
+        goalLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
+        goalLbl.setStyle("-fx-fill: #fbbf24; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
 
         javafx.scene.text.Text descLbl = new javafx.scene.text.Text(desc);
         descLbl.setFont(javafx.scene.text.Font.font("Arial Rounded MT Bold", javafx.scene.text.FontWeight.BOLD, 11)); // Sized down to save space
         descLbl.setWrappingWidth(240);
         descLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        descLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.2px;");
+        descLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
+        descLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 0.8px;");
 
         Button selectBtn = new Button("Select");
         selectBtn.getStyleClass().addAll("menu-button", "btn-play");
