@@ -67,6 +67,8 @@ public class GameplayScreenController {
     private javafx.scene.shape.Rectangle crabPeakBorderNode = null;
     
     private boolean isFemale = false;
+    private boolean botsDisabled = false;
+    private boolean eventsDisabled = false;
     private VBox pauseMenu;
     private int logRound = 0; // tracks last logged round to avoid duplicate log entries
 
@@ -256,6 +258,40 @@ public class GameplayScreenController {
         skipEndingBtn.setStyle(btnStyle + " -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold;");
         forceEnemyWinBtn.setStyle(btnStyle + " -fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;");
 
+        Button toggleBotsBtn = new Button("Toggle Bots: Active");
+        toggleBotsBtn.setStyle(btnStyle);
+        toggleBotsBtn.setOnAction(e -> {
+            botsDisabled = !botsDisabled;
+            if (botsDisabled) {
+                toggleBotsBtn.setText("Toggle Bots: Disabled");
+                toggleBotsBtn.setStyle(btnStyle + " -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold;");
+                appendLog("Dev: Bots are now DISABLED! (They will Pass their turns)", "#ef4444");
+            } else {
+                toggleBotsBtn.setText("Toggle Bots: Active");
+                toggleBotsBtn.setStyle(btnStyle);
+                appendLog("Dev: Bots are now ENABLED!", "#10b981");
+            }
+        });
+
+        Button toggleEventsBtn = new Button("Toggle Events: Active");
+        toggleEventsBtn.setStyle(btnStyle);
+        toggleEventsBtn.setOnAction(e -> {
+            eventsDisabled = !eventsDisabled;
+            if (eventsDisabled) {
+                toggleEventsBtn.setText("Toggle Events: Disabled");
+                toggleEventsBtn.setStyle(btnStyle + " -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold;");
+                appendLog("Dev: World Events are now DISABLED!", "#ef4444");
+            } else {
+                toggleEventsBtn.setText("Toggle Events: Active");
+                toggleEventsBtn.setStyle(btnStyle);
+                appendLog("Dev: World Events are now ENABLED!", "#10b981");
+            }
+        });
+
+        Button devAddCardBtn = new Button("Add Card...");
+        devAddCardBtn.setStyle(btnStyle + " -fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold;");
+        devAddCardBtn.setOnAction(e -> showDevAddCardPicker());
+
         devBox.getChildren().addAll(
             title, 
             addClamsBtn, 
@@ -263,6 +299,9 @@ public class GameplayScreenController {
             addRepBtn, 
             addInfamyBtn, 
             addEnemyWealthBtn,
+            toggleBotsBtn,
+            toggleEventsBtn,
+            devAddCardBtn,
             skipEndingBtn,
             forceEnemyWinBtn
         );
@@ -443,8 +482,14 @@ public class GameplayScreenController {
             case ACTION -> showActionUI();
             case RESOLUTION -> showResolutionUI();
             case EVENT -> {
-                GameEvent event = gameSession.selectWeightedEvent();
-                showEventUI(event);
+                if (eventsDisabled) {
+                    appendLog("Dev: Event skipped (Events are disabled)", "#ef4444");
+                    gameSession.applyEvent(GameEvent.none());
+                    updateUI();
+                } else {
+                    GameEvent event = gameSession.selectWeightedEvent();
+                    showEventUI(event);
+                }
             }
             case ROUND_COMPLETE -> {
                 appendLog("Round " + gameSession.currentRound() + " complete.", "#fbbf24");
@@ -645,6 +690,13 @@ public class GameplayScreenController {
     }
 
     private void submitAiActions() {
+        if (botsDisabled) {
+            for (PlayerState ai : aiPlayers) {
+                gameSession.submitAction(new PlayerAction(ai.id(), new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON), ai.id(), null));
+            }
+            return;
+        }
+
         List<PlayerState> allPlayers = gameSession.players();
         String difficulty = GameplayScreen.difficulty;
 
@@ -1003,7 +1055,7 @@ public class GameplayScreenController {
                 String.format("Help a target:\n+%d Rep (you)  +%d Clams (you)\n+%d Wealth (target)",
                         Math.round(40 * mult), Math.round(15 * mult), Math.round(30 * mult));
             case STEAL, SIGNATURE_OPPORTUNIST ->
-                String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Clams (target)",
+                String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Wealth (target)",
                         Math.round(45 * mult), Math.round(10 * mult), Math.round(35 * mult));
             case SABOTAGE, SIGNATURE_SABOTEUR ->
                 String.format("Sabotage a target:\n+%d Infamy (you)\nReduces target's gains by 50%%",
@@ -1325,6 +1377,73 @@ public class GameplayScreenController {
             mainLayout.getChildren().remove(popup);
             isDiscardPopupOpen = false;
         });
+    }
+
+    private void showDevAddCardPicker() {
+        VBox picker = new VBox(8);
+        picker.setAlignment(Pos.CENTER);
+        picker.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #10b981; " +
+                "-fx-border-width: 3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-padding: 15;");
+
+        Label title = new Label("Select Card to Add to Hand");
+        title.setStyle("-fx-text-fill: #10b981; -fx-font-size: 16px; -fx-font-weight: bold;");
+        picker.getChildren().add(title);
+
+        List<ActionCard> templates = List.of(
+            new ActionCard("give_common", "Give [Common]", CardType.HELP, CardRarity.COMMON),
+            new ActionCard("take_common", "Take [Common]", CardType.STEAL, CardRarity.COMMON),
+            new ActionCard("sabotage_common", "Sabotage [Common]", CardType.SABOTAGE, CardRarity.COMMON),
+            new ActionCard("give_uncommon", "Generous Give [Uncommon]", CardType.HELP, CardRarity.UNCOMMON),
+            new ActionCard("take_uncommon", "Snatch [Uncommon]", CardType.STEAL, CardRarity.UNCOMMON),
+            new ActionCard("sabotage_uncommon", "Scheme [Uncommon]", CardType.SABOTAGE, CardRarity.UNCOMMON),
+            new ActionCard("give_rare", "Gracious Give [Rare]", CardType.HELP, CardRarity.RARE),
+            new ActionCard("take_rare", "Heist [Rare]", CardType.STEAL, CardRarity.RARE),
+            new ActionCard("sabotage_rare", "Conspiracy [Rare]", CardType.SABOTAGE, CardRarity.RARE),
+            new ActionCard("give_signature", "Grand Gesture [Signature]", CardType.SIGNATURE_ALTRUIST, CardRarity.SIGNATURE),
+            new ActionCard("take_signature", "Grand Heist [Signature]", CardType.SIGNATURE_OPPORTUNIST, CardRarity.SIGNATURE),
+            new ActionCard("sabotage_signature", "Master Sabotage [Signature]", CardType.SIGNATURE_SABOTEUR, CardRarity.SIGNATURE)
+        );
+
+        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane();
+        scrollPane.setPrefViewportHeight(300);
+        scrollPane.setPrefViewportWidth(320);
+        scrollPane.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        VBox list = new VBox(5);
+        list.setAlignment(Pos.CENTER);
+
+        for (ActionCard template : templates) {
+            Button btn = new Button(template.name());
+            btn.setStyle("-fx-background-color: #1e3a52; -fx-text-fill: white; -fx-font-size: 11px; " +
+                    "-fx-padding: 5 15; -fx-background-radius: 6; -fx-cursor: hand; -fx-min-width: 280;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-size: 11px; " +
+                    "-fx-padding: 5 15; -fx-background-radius: 6; -fx-cursor: hand; -fx-min-width: 280;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: #1e3a52; -fx-text-fill: white; -fx-font-size: 11px; " +
+                    "-fx-padding: 5 15; -fx-background-radius: 6; -fx-cursor: hand; -fx-min-width: 280;"));
+            
+            btn.setOnAction(e -> {
+                mainLayout.getChildren().remove(picker);
+                String realName = template.name().replaceAll(" \\[.*\\]", "");
+                ActionCard newCard = new ActionCard(template.id(), realName, template.type(), template.rarity());
+                humanPlayer.addCard(newCard);
+                appendLog("Dev: Added \"" + realName + "\" to hand!", "#10b981");
+                updateUI();
+            });
+            list.getChildren().add(btn);
+        }
+        scrollPane.setContent(list);
+        picker.getChildren().add(scrollPane);
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("-fx-background-color: #374151; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 6 20; -fx-background-radius: 8; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> mainLayout.getChildren().remove(picker));
+        picker.getChildren().add(cancelBtn);
+
+        mainLayout.getChildren().add(picker);
+        AnchorPane.setTopAnchor(picker, 120.0);
+        AnchorPane.setLeftAnchor(picker, 370.0);
     }
 
     /** Shows a card picker overlay so the player can choose which card to discard (for merchant). */

@@ -45,12 +45,12 @@ final class GameSessionTest {
         session.resolveDrawing();
 
         assertEquals(GamePhase.ACTION, session.phase());
-        assertEquals(10, alice.clams());      // 40 + 10(income) - 40(upgrade) = 10
+        assertEquals(25, alice.clams());      // 40 + 15(income) - 30(upgrade) = 25
         assertEquals(2, alice.buildLevel());
         
         // Assert hand sizes instead of strict lists, since drawing without seed is randomized
         assertEquals(2, alice.hand().size());
-        assertEquals(10, alice.clams());      // 40 + 10(income) - 40(upgrade) = 10
+        assertEquals(25, alice.clams());      // 40 + 15(income) - 30(upgrade) = 25
         assertEquals(2, alice.buildLevel());
         assertEquals(2, bob.hand().size());
     }
@@ -78,7 +78,7 @@ final class GameSessionTest {
         session.submitAction(new PlayerAction("alice", STEAL, "bob", null));
 
         assertEquals(GamePhase.ACTION, session.phase());
-        assertEquals(50, bob.clams());
+        assertEquals(55, bob.clams());
         assertEquals(20, bob.wealth());
 
         session.submitAction(new PlayerAction("bob", HELP, "alice", null));
@@ -92,9 +92,9 @@ final class GameSessionTest {
         // alice: +45 (steal) + 30 (bob's HELP targets alice) = 75 wealth
         assertEquals(75, alice.wealth());
         assertEquals(-10, alice.reputation());
-        // bob: 50 - 35 (stolen clams) + 15 (help clams gain) = 30 clams; wealth untouched (steal takes clams not wealth)
-        assertEquals(30, bob.clams());
-        assertEquals(20, bob.wealth());
+        // bob: 55 - 0 (stolen wealth instead of clams) + 15 (help clams gain) = 70 clams; target wealth is reduced by 35 (clamped to 0)
+        assertEquals(70, bob.clams());
+        assertEquals(0, bob.wealth());
         // bob: +40 rep from playing HELP
         assertEquals(40, bob.reputation());
     }
@@ -130,7 +130,7 @@ final class GameSessionTest {
         assertEquals(50, alice.infamy());
         assertEquals(30, alice.wealth());   // received from bob's HELP (not reduced)
         assertEquals(20, bob.reputation()); // 40 * 0.50 = 20 (50% reduction for common sabotage)
-        assertEquals(18, bob.clams());      // income 10 + round(15 * 0.50)=8 = 18
+        assertEquals(23, bob.clams());      // income 15 + round(15 * 0.50)=8 = 23
     }
 
     @Test
