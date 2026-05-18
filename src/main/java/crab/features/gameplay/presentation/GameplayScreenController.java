@@ -689,7 +689,7 @@ public class GameplayScreenController {
             updateUI();
         });
 
-        phasePromptLabel.setText("Phase: Select Card → Target Enemy  |  RMB to Trade");
+        phasePromptLabel.setText("Phase: Select Card → Target Enemy  |  RMB to Discard");
 
         List<ActionCard> hand = new java.util.ArrayList<>(humanPlayer.hand());
         hand.sort(java.util.Comparator.comparingInt(c -> java.util.List.of("Take", "Give", "Share").indexOf(c.name())));
@@ -1198,13 +1198,13 @@ public class GameplayScreenController {
         stack.setEffect(initGlow);
 
         // ---- Tooltip: effect description + RMB hint ----
-        String tooltipText = getCardEffectDescription(card) + "\n\n[Right Click (RMB) to Trade]";
+        String tooltipText = getCardEffectDescription(card) + "\n\n[Right Click (RMB) to Discard]";
         Tooltip tip = new Tooltip(tooltipText);
         tip.setStyle("-fx-font-size: 12px;");
         Tooltip.install(stack, tip);
 
         // ---- RMB discard hint overlay (shows on hover) ----
-        Label rmbHint = new Label("RMB to Trade");
+        Label rmbHint = new Label("RMB to Discard");
         rmbHint.setStyle("-fx-background-color: rgba(220,38,38,0.85); -fx-text-fill: white; " +
                 "-fx-font-size: 9px; -fx-font-weight: bold; -fx-padding: 2 5; " +
                 "-fx-background-radius: 0 0 7 7;");
@@ -1240,7 +1240,7 @@ public class GameplayScreenController {
                     // Left-click: select / deselect
                     if (selectedCard == card) {
                         selectedCard = null;
-                        phasePromptLabel.setText("Phase: Select Card → Target Enemy  |  RMB to Trade");
+                        phasePromptLabel.setText("Phase: Select Card → Target Enemy  |  RMB to Discard");
                     } else {
                         selectedCard = card;
                         phasePromptLabel.setText("Target an Enemy!");
@@ -1275,7 +1275,7 @@ public class GameplayScreenController {
         popup.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #ef4444; " +
                 "-fx-border-width: 3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-padding: 30;");
 
-        Label title = new Label("Trade Card?");
+        Label title = new Label("Discard Card?");
         title.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 20px; -fx-font-weight: bold;");
 
         Label cardName = new Label("\"" + card.name() + "\" (" + card.rarity().name() + ")");
@@ -1290,7 +1290,7 @@ public class GameplayScreenController {
         warn.setMaxWidth(320);
         warn.setAlignment(Pos.CENTER);
 
-        Button yesBtn = new Button("Yes, Trade (+" + clamsReward + " Clams)");
+        Button yesBtn = new Button("Yes, Discard (+" + clamsReward + " Clams)");
         yesBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; " +
                 "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
 
@@ -1313,7 +1313,7 @@ public class GameplayScreenController {
             gameSession.discardCard(humanPlayer.id(), card);
             humanPlayer.addClams(clamsReward);
             if (selectedCard == card) selectedCard = null;
-            appendLog("Traded: " + card.name() + " (" + card.rarity().name() + ") — +" + clamsReward + " Clams", "#34d399");
+            appendLog("Discarded: " + card.name() + " (" + card.rarity().name() + ") — +" + clamsReward + " Clams", "#ef4444");
             topClamsLabel.setText("Clams: " + humanPlayer.clams());
             // Refresh hand display only
             handArea.getChildren().clear();
