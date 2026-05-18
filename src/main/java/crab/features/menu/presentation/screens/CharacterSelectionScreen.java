@@ -118,7 +118,7 @@ public final class CharacterSelectionScreen implements GameScreen {
     private Parent createView() {
         Label title = new Label("Choose Your Class");
         title.getStyleClass().add("title-text");
-        title.setStyle("-fx-font-size: 56px;"); // Slightly smaller to save space
+        title.setStyle("-fx-font-size: 48px;"); // Slightly smaller to save space and center Back button
         
         Button genderSwapBtn = new Button("Gender: Male ♂");
         genderSwapBtn.getStyleClass().addAll("menu-button", "btn-secondary");
@@ -130,9 +130,9 @@ public final class CharacterSelectionScreen implements GameScreen {
             refreshCards();
         });
 
-        HBox classBox = new HBox(20);
+        HBox classBox = new HBox(15); // Tighter card layout spacing
         classBox.setAlignment(Pos.CENTER);
-        classBox.setPadding(new Insets(20));
+        classBox.setPadding(new Insets(10));
         this.cardsContainer = classBox;
         refreshCards();
 
@@ -141,10 +141,10 @@ public final class CharacterSelectionScreen implements GameScreen {
         backBtn.setPrefWidth(200);
         backBtn.setOnAction(e -> screens.show(SetupScreen.ID));
 
-        VBox menu = new VBox(20, title, genderSwapBtn, classBox, backBtn);
+        VBox menu = new VBox(15, title, genderSwapBtn, classBox, backBtn); // Tighter spacing to guarantee Back button fits
         menu.setAlignment(Pos.CENTER);
         menu.getStyleClass().add("menu-panel");
-        menu.setPadding(new Insets(20, 30, 20, 30));
+        menu.setPadding(new Insets(15, 30, 15, 30));
         menu.setMaxWidth(950);
         menu.setPrefHeight(680); // Adjusted height to ensure everything fits
 
@@ -172,16 +172,17 @@ public final class CharacterSelectionScreen implements GameScreen {
     }
 
     private VBox createClassCard(PlayerClass pClass, String goal, String desc) {
-        VBox card = new VBox(10);
+        VBox card = new VBox(6); // Tighter spacing inside cards
         card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(10));
+        card.setPadding(new Insets(8)); // Tighter padding inside cards
         card.setPrefWidth(280);
         card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
 
-        Label nameLbl = new Label(pClass.name());
-        nameLbl.setWrapText(true);
-        nameLbl.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        nameLbl.setStyle("-fx-font-family: 'Luckiest Guy'; -fx-text-fill: white; -fx-font-size: 22px; -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);");
+        javafx.scene.text.Text nameLbl = new javafx.scene.text.Text(pClass.name());
+        nameLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16)); // Compact size to fit OPPORTUNIST on single line
+        nameLbl.setWrappingWidth(260);
+        nameLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        nameLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.5px;");
 
         String baseName = switch (pClass) {
             case SABOTEUR -> "saboteur";
@@ -203,15 +204,17 @@ public final class CharacterSelectionScreen implements GameScreen {
         imgView.setFitWidth(135);
         imgView.setPreserveRatio(true);
 
-        Label goalLbl = new Label(goal);
-        goalLbl.setWrapText(true);
-        goalLbl.setStyle("-fx-font-family: 'Luckiest Guy'; -fx-text-fill: #fbbf24; -fx-font-size: 16px; -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);");
+        javafx.scene.text.Text goalLbl = new javafx.scene.text.Text(goal);
+        goalLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 13)); // Sized down to save space
+        goalLbl.setWrappingWidth(260);
+        goalLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        goalLbl.setStyle("-fx-fill: #fbbf24; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.5px;");
 
-        Label descLbl = new Label(desc);
-        descLbl.setWrapText(true);
-        descLbl.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-        descLbl.setStyle("-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-weight: bold; -fx-text-fill: white; -fx-text-alignment: center; -fx-font-size: 14px; -fx-effect: dropshadow(one-pass-box, #0d2b3e, 0, 0, 2, 2);");
-        descLbl.setMaxWidth(260);
+        javafx.scene.text.Text descLbl = new javafx.scene.text.Text(desc);
+        descLbl.setFont(javafx.scene.text.Font.font("Arial Rounded MT Bold", javafx.scene.text.FontWeight.BOLD, 11)); // Sized down to save space
+        descLbl.setWrappingWidth(240);
+        descLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        descLbl.setStyle("-fx-fill: white; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.2px;");
 
         Button selectBtn = new Button("Select");
         selectBtn.getStyleClass().addAll("menu-button", "btn-play");
