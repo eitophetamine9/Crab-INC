@@ -761,10 +761,36 @@ public class GameplayScreenController {
 
         // Medium/Hard logic: Target selection based on card type
         return switch (card.type()) {
-            case HELP, SIGNATURE_ALTRUIST -> 
-                enemies.stream()
-                        .min(java.util.Comparator.comparingInt(PlayerState::reputation))
-                        .orElse(enemies.get(0));
+            case HELP, SIGNATURE_ALTRUIST -> {
+                // Funny mechanic: Crabs with positive/good reputation are significantly more likely 
+                // to be selected as HELP targets than those with negative reputation.
+                // We'll use weighted random selection based on reputation status.
+                java.util.List<PlayerState> candidates = new java.util.ArrayList<>(enemies);
+                double totalWeight = 0;
+                double[] weights = new double[candidates.size()];
+                for (int idx = 0; idx < candidates.size(); idx++) {
+                    PlayerState p = candidates.get(idx);
+                    double w;
+                    if (p.reputation() < 0) {
+                        w = 1.0; // Very low chance for crabs with bad reputation
+                    } else if (p.reputation() == 0) {
+                        w = 10.0; // Average chance for neutral reputation
+                    } else {
+                        w = 20.0 + p.reputation(); // Highly favored! More good reputation = even more likely to get help!
+                    }
+                    weights[idx] = w;
+                    totalWeight += w;
+                }
+                double roll = random.nextDouble() * totalWeight;
+                double running = 0.0;
+                for (int idx = 0; idx < candidates.size(); idx++) {
+                    running += weights[idx];
+                    if (roll <= running) {
+                        return candidates.get(idx);
+                    }
+                }
+                return enemies.get(0);
+            }
             case STEAL, SIGNATURE_OPPORTUNIST -> 
                 enemies.stream()
                         .max(java.util.Comparator.comparingInt(PlayerState::wealth))
