@@ -64,11 +64,11 @@ public final class Bootstrap {
         getGameScene().getContentRoot().scaleYProperty().addListener((obs, old, val) -> {
             if (val.doubleValue() != 1.0) getGameScene().getContentRoot().setScaleY(1.0);
         });
-        getGameScene().getUiRoot().scaleXProperty().addListener((obs, old, val) -> {
-            if (val.doubleValue() != 1.0) getGameScene().getUiRoot().setScaleX(1.0);
+        getGameScene().getUIRoot().scaleXProperty().addListener((obs, old, val) -> {
+            if (val.doubleValue() != 1.0) getGameScene().getUIRoot().setScaleX(1.0);
         });
-        getGameScene().getUiRoot().scaleYProperty().addListener((obs, old, val) -> {
-            if (val.doubleValue() != 1.0) getGameScene().getUiRoot().setScaleY(1.0);
+        getGameScene().getUIRoot().scaleYProperty().addListener((obs, old, val) -> {
+            if (val.doubleValue() != 1.0) getGameScene().getUIRoot().setScaleY(1.0);
         });
 
         modules.initializeUi();
