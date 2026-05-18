@@ -1,5 +1,6 @@
 package crab.features.gameplay.presentation;
 
+import crab.appcore.concurrent.AssetCache;
 import crab.appcore.screen.ScreenManager;
 import crab.features.gameplay.domain.*;
 import javafx.animation.TranslateTransition;
@@ -59,8 +60,10 @@ public class GameplayScreenController {
     private List<PlayerState> aiPlayers;
     
     private ActionCard selectedCard;
-    private ActionCard keptCardToSave;
     private ActionCard lastAiCardPlayed;
+    private boolean isDiscardPopupOpen = false; // prevents stacking multiple discard popups
+    private boolean crabPeakBorderActive = false; // ensures only one peak border overlay exists
+    private javafx.scene.shape.Rectangle crabPeakBorderNode = null;
     
     private boolean isFemale = false;
     private VBox pauseMenu;
@@ -104,11 +107,10 @@ public class GameplayScreenController {
         };
         String suffix = female ? "fm.gif" : "m.gif";
         String path = "/assets/humanoid-art/" + baseName + suffix;
-        var res = getClass().getResource(path);
-        if (res != null) {
-            return new Image(res.toExternalForm());
-        }
-        return null;
+        // Use THIS class's classloader so the resource is always found
+        var url = getClass().getResource(path);
+        if (url == null) return null;
+        return AssetCache.getInstance().getOrLoad(url.toExternalForm());
     }
 
     private Image getCrabImage(PlayerClass playerClass) {
@@ -145,10 +147,9 @@ public class GameplayScreenController {
         this.humanPlayer = humanPlayer;
         this.aiPlayers = aiPlayers;
 
-        var bgRes = getClass().getResource("/assets/textures/bg_beach.gif");
-        if (bgRes != null) {
-            backgroundImageView.setImage(new Image(bgRes.toExternalForm()));
-        }
+        // Load background — synchronous but fast; AssetCache ensures it's only loaded once
+        var bgUrl = getClass().getResource("/assets/textures/bg_beach.gif");
+        if (bgUrl != null) backgroundImageView.setImage(AssetCache.getInstance().getOrLoad(bgUrl.toExternalForm()));
         backgroundImageView.fitWidthProperty().bind(mainLayout.widthProperty());
         backgroundImageView.fitHeightProperty().bind(mainLayout.heightProperty());
 
@@ -350,8 +351,16 @@ public class GameplayScreenController {
         battlefieldArea.getChildren().clear();
 
         if (gameSession.crabPeakActive()) {
-            Label peakAlert = new Label("CRAB PEAK - FINAL ROUND");
-            peakAlert.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 32px; -fx-font-weight: bold; -fx-font-family: 'Luckiest Guy';");
+            String triggerer = "";
+            String triggeredById = gameSession.crabPeakTriggeredById();
+            if (triggeredById != null) {
+                triggerer = gameSession.players().stream()
+                        .filter(p -> p.id().equals(triggeredById))
+                        .map(PlayerState::displayName)
+                        .findFirst().map(n -> " — Triggered by " + n).orElse("");
+            }
+            Label peakAlert = new Label("⚠ CRAB PEAK — FINAL ROUND" + triggerer);
+            peakAlert.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 26px; -fx-font-weight: bold; -fx-font-family: 'Luckiest Guy';");
             peakAlert.setEffect(new javafx.scene.effect.DropShadow(15, Color.BLACK));
             battlefieldArea.getChildren().add(peakAlert);
         }
@@ -379,13 +388,18 @@ public class GameplayScreenController {
         
         heroClassLabel.setText(humanPlayer.playerClass().name() + "\n(" + getGoalString(humanPlayer.playerClass()) + ")");
         heroNameLabel.setText(humanPlayer.displayName());
+        heroInfamyLabel.setWrapText(true);
+        // Build info below infamy — mirrors the bot stat-box layout
         heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
         heroReputationLabel.setText("Reputation: " + humanPlayer.reputation());
-        heroInfamyLabel.setText("Infamy: " + humanPlayer.infamy());
+        heroInfamyLabel.setText(
+                "Infamy: " + humanPlayer.infamy() +
+                "\n\u25b2 Build Lv." + humanPlayer.buildLevel() +
+                "\n   Income: +" + humanPlayer.income() + "/rd" +
+                "\n   Stat Buff: +" + (int)(humanPlayer.statBonus() * 100) + "%");
 
         handArea.getChildren().clear();
         selectedCard = null;
-        keptCardToSave = null;
 
         endTurnBtn.setDisable(true);
         endTurnBtn.setOnAction(null);
@@ -424,9 +438,12 @@ public class GameplayScreenController {
             case ALTRUIST -> "altruist";
             case OPPORTUNIST -> "oppurtunist";
         };
-        
-        Image idleImg = new Image(getClass().getResourceAsStream("/assets/crab-art/" + crabArtBase + "_idle.gif"));
-        Image damageImg = new Image(getClass().getResourceAsStream("/assets/crab-art/" + crabArtBase + "_damage.gif"));
+
+        // Resolve via this class's classloader so assets are always found
+        var idleUrl   = getClass().getResource("/assets/crab-art/" + crabArtBase + "_idle.gif");
+        var damageUrl = getClass().getResource("/assets/crab-art/" + crabArtBase + "_damage.gif");
+        final Image idleImg   = idleUrl   != null ? AssetCache.getInstance().getOrLoad(idleUrl.toExternalForm())   : null;
+        final Image damageImg = damageUrl != null ? AssetCache.getInstance().getOrLoad(damageUrl.toExternalForm()) : null;
         
         // Show damage art if targeted in resolution phase
         if (gameSession.phase() == GamePhase.RESOLUTION) {
@@ -437,13 +454,16 @@ public class GameplayScreenController {
             crabAvatar.setImage(idleImg);
         }
         
-        // 2. Stats Box (Has background)
+        // 2. Stats Box (Has background) — wider to accommodate build level details
         VBox statsBox = new VBox(2);
-        statsBox.setAlignment(Pos.CENTER);
-        statsBox.setPrefWidth(150);
+        statsBox.setAlignment(Pos.CENTER_LEFT);
+        statsBox.setPrefWidth(185);
         statsBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: " + (isHuman ? "#10b981" : "white") + "; -fx-border-width: 2; -fx-padding: 5;");
         
-        Label pClass = new Label(player.playerClass().name() + " (" + getGoalString(player.playerClass()) + ")");
+        // Bot class label shows only class name; player also sees their goal
+        Label pClass = new Label(isHuman
+                ? player.playerClass().name() + " (" + getGoalString(player.playerClass()) + ")"
+                : player.playerClass().name());
         pClass.setStyle("-fx-text-fill: #fbbf24; -fx-font-size: 11px; -fx-font-weight: bold;");
         Label pName = new Label(player.displayName());
         pName.setStyle("-fx-text-fill: " + (isHuman ? "#10b981" : "gold") + "; -fx-font-weight: bold;");
@@ -453,10 +473,36 @@ public class GameplayScreenController {
         pRep.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
         Label pInfamy = new Label("Infamy: " + player.infamy());
         pInfamy.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
-        
-        statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy);
-        
+
+        // Build level — bots show level only; only the player sees income/buff
+        Label pBuildLv = new Label("\u25b2 Build Lv." + player.buildLevel());
+        pBuildLv.setStyle("-fx-text-fill: #60a5fa; -fx-font-size: 9px; -fx-font-weight: bold;");
+
+        if (isHuman) {
+            Label pIncome   = new Label("  Income: +" + player.income() + " /rd");
+            pIncome.setStyle("-fx-text-fill: #a3e635; -fx-font-size: 9px;");
+            Label pStatBuff = new Label("  Stat Buff: +" + (int)(player.statBonus() * 100) + "%");
+            pStatBuff.setStyle("-fx-text-fill: #f472b6; -fx-font-size: 9px;");
+            statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy, pBuildLv, pIncome, pStatBuff);
+        } else {
+            // Bot: only show build level, keep it clean
+            statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy, pBuildLv);
+        }
         container.getChildren().addAll(crabAvatar, statsBox);
+
+        // Crab Peak: show damage GIF for the trigger player's crab unit
+        boolean isTriggerer = gameSession.crabPeakActive()
+                && player.id().equals(gameSession.crabPeakTriggeredById());
+        if (isTriggerer) {
+            crabAvatar.setImage(damageImg);
+            // If the HUMAN triggered peak: show a faint pulsing gold border ring around the entire layout
+            if (isHuman) {
+                applyOrUpdateCrabPeakBorder();
+            } else {
+                // AI triggerer: static red highlight on their stat box only
+                statsBox.setStyle("-fx-background-color: rgba(100,0,0,0.7); -fx-border-color: #ef4444; -fx-border-width: 3; -fx-padding: 5;");
+            }
+        }
 
         if (gameSession.phase() == GamePhase.RESOLUTION) {
             PlayerAction action = gameSession.pendingActions().get(player.id());
@@ -477,7 +523,7 @@ public class GameplayScreenController {
         // Targeting logic
         container.setOnMouseClicked(e -> {
             if (gameSession.phase() == GamePhase.ACTION && selectedCard != null) {
-                gameSession.submitAction(new PlayerAction(humanPlayer.id(), selectedCard, player.id(), keptCardToSave));
+                gameSession.submitAction(new PlayerAction(humanPlayer.id(), selectedCard, player.id(), null));
                 submitAiActions();
                 updateUI();
             }
@@ -504,20 +550,16 @@ public class GameplayScreenController {
         endTurnBtn.setDisable(false);
         endTurnBtn.setText("PASS");
         endTurnBtn.setOnAction(e -> {
-            gameSession.submitAction(new PlayerAction(humanPlayer.id(), new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON), aiPlayers.get(0).id(), keptCardToSave));
+            gameSession.submitAction(new PlayerAction(humanPlayer.id(), new ActionCard("dummy", "Pass", CardType.HELP, CardRarity.COMMON), aiPlayers.get(0).id(), null));
             submitAiActions();
             updateUI();
         });
-        
-        if (humanPlayer.hand().size() >= 3) {
-            phasePromptLabel.setText("Phase: Select Card, RIGHT-CLICK TO KEEP 1, then Target");
-        } else {
-            phasePromptLabel.setText("Phase: Select Card, Target an Enemy (Keep 1 Optional)");
-        }
+
+        phasePromptLabel.setText("Phase: Select Card → Target Enemy  |  RMB to Discard");
 
         List<ActionCard> hand = new java.util.ArrayList<>(humanPlayer.hand());
         hand.sort(java.util.Comparator.comparingInt(c -> java.util.List.of("Take", "Give", "Share").indexOf(c.name())));
-        
+
         for (ActionCard card : hand) {
             StackPane cardView = createHandCardView(card);
             handArea.getChildren().add(cardView);
@@ -557,14 +599,7 @@ public class GameplayScreenController {
             // 2. Decide target based on card type and difficulty
             target = decideTarget(ai, chosenCard, allPlayers, difficulty);
 
-            // 3. Hand management: keep 1 card
-            ActionCard keptCard = null;
-            hand.remove(chosenCard);
-            if (!hand.isEmpty()) {
-                keptCard = hand.get(random.nextInt(hand.size()));
-            }
-
-            gameSession.submitAction(new PlayerAction(ai.id(), chosenCard, target.id(), keptCard));
+            gameSession.submitAction(new PlayerAction(ai.id(), chosenCard, target.id(), null));
         }
     }
 
@@ -739,23 +774,83 @@ public class GameplayScreenController {
         okBtn.setStyle("-fx-background-color: #f87171; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30; -fx-background-radius: 8; -fx-cursor: hand;");
         
         if ("Travelling Shop".equals(event.name())) {
-            Button shopBtn = new Button("BUY RARE CARD (50 Clams)");
-            shopBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
-            shopBtn.setOnAction(e -> {
-                if (humanPlayer.clams() >= 50 && humanPlayer.hand().size() < PlayerState.MAX_HAND_SIZE) {
-                    gameSession.buyRareCard(humanPlayer.id());
+            // --- Stock display label ---
+            int rareStock = gameSession.merchantRareStock();
+            boolean hasSig = gameSession.merchantHasSignatureStock();
+
+            Label stockLabel = new Label("Stock: " + rareStock + "x Rare" + (hasSig ? "  |  1x Signature" : ""));
+            stockLabel.setStyle("-fx-text-fill: #fbbf24; -fx-font-size: 13px; -fx-font-weight: bold;");
+
+            // --- Rare buy button ---
+            Button rareBtn = new Button("Buy RARE Card  —  50 Clams  (Stock: " + rareStock + ")");
+            rareBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
+            if (rareStock <= 0) rareBtn.setDisable(true);
+
+            // --- Signature buy button (only if stock exists) ---
+            Button sigBtn = new Button("Buy SIGNATURE Card  —  120 Clams");
+            sigBtn.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
+            sigBtn.setVisible(hasSig);
+            sigBtn.setManaged(hasSig);
+
+            // --- Discard button (always shown, lets player make room) ---
+            Button discardBtn = new Button("🗑  Discard a Card from Hand");
+            discardBtn.setStyle("-fx-background-color: #374151; -fx-text-fill: #f87171; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8; -fx-cursor: hand;");
+            discardBtn.setDisable(humanPlayer.hand().isEmpty());
+
+            // Shared helper to update button states after any purchase/discard
+            Runnable refreshBtns = () -> {
+                int curRare = gameSession.merchantRareStock();
+                boolean handFull = humanPlayer.hand().size() >= PlayerState.MAX_HAND_SIZE;
+                rareBtn.setText("Buy RARE Card  —  50 Clams  (Stock: " + curRare + ")");
+                rareBtn.setDisable(curRare <= 0 || humanPlayer.clams() < 50);
+                sigBtn.setDisable(!gameSession.merchantHasSignatureStock() || humanPlayer.clams() < 120);
+                discardBtn.setDisable(humanPlayer.hand().isEmpty());
+                topClamsLabel.setText("Clams: " + humanPlayer.clams());
+                stockLabel.setText("Stock: " + curRare + "x Rare" +
+                        (gameSession.merchantHasSignatureStock() ? "  |  1x Signature" : ""));
+            };
+
+            rareBtn.setOnAction(e -> {
+                if (humanPlayer.hand().size() >= PlayerState.MAX_HAND_SIZE) {
+                    appendLog("Hand is full! Discard a card first.", "#ef4444");
+                    return;
+                }
+                if (gameSession.buyRareCard(humanPlayer.id())) {
                     appendLog("Travelling Shop: Purchased a Rare card!", "#3b82f6");
-                    shopBtn.setDisable(true);
-                    // Update stats directly to avoid stacking overlays via updateUI()
-                    topClamsLabel.setText("Clams: " + humanPlayer.clams());
-                    heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
-                } else if (humanPlayer.hand().size() >= PlayerState.MAX_HAND_SIZE) {
-                    appendLog("Hand is full! Cannot buy more cards.", "#ef4444");
+                    refreshBtns.run();
                 } else {
-                    appendLog("Not enough Clams!", "#ef4444");
+                    appendLog("Not enough Clams for Rare card! (50 needed)", "#ef4444");
                 }
             });
-            content.getChildren().addAll(title, eventImg, name, desc, shopBtn, okBtn);
+
+            sigBtn.setOnAction(e -> {
+                if (humanPlayer.hand().size() >= PlayerState.MAX_HAND_SIZE) {
+                    appendLog("Hand is full! Discard a card first.", "#ef4444");
+                    return;
+                }
+                if (gameSession.buySignatureCard(humanPlayer.id())) {
+                    appendLog("Travelling Shop: Purchased a Signature card!", "#fbbf24");
+                    sigBtn.setVisible(false);
+                    sigBtn.setManaged(false);
+                    refreshBtns.run();
+                } else {
+                    appendLog("Not enough Clams for Signature card! (120 needed)", "#ef4444");
+                }
+            });
+
+            discardBtn.setOnAction(e -> {
+                // Show a mini discard picker if there are cards in hand
+                if (humanPlayer.hand().isEmpty()) return;
+                // Re-use showDiscardConfirmation if only 1 card, else show picker
+                List<ActionCard> currentHand = new java.util.ArrayList<>(humanPlayer.hand());
+                if (currentHand.size() == 1) {
+                    showDiscardConfirmationWithCallback(currentHand.get(0), refreshBtns);
+                } else {
+                    showMerchantDiscardPicker(currentHand, refreshBtns);
+                }
+            });
+
+            content.getChildren().addAll(title, eventImg, name, desc, stockLabel, rareBtn, sigBtn, discardBtn, okBtn);
         } else {
             content.getChildren().addAll(title, eventImg, name, desc, okBtn);
         }
@@ -852,11 +947,8 @@ public class GameplayScreenController {
         for (javafx.scene.Node node : handArea.getChildren()) {
             StackPane stack = (StackPane) node;
             ActionCard c = (ActionCard) stack.getUserData();
-            ImageView artView = (ImageView) stack.lookup("#cardArt_" + c.id());
-            Label keepLabel  = (Label)     stack.lookup("#keepLabel_" + c.id());
 
             boolean isSelected = (c == selectedCard);
-            boolean isKept     = (c == keptCardToSave);
 
             // Glow / drop-shadow
             DropShadow glow = new DropShadow();
@@ -874,10 +966,6 @@ public class GameplayScreenController {
                 stack.setScaleY(1.0);
             }
             stack.setEffect(glow);
-
-            if (keepLabel != null) {
-                keepLabel.setVisible(isKept);
-            }
         }
     }
 
@@ -895,13 +983,13 @@ public class GameplayScreenController {
         artView.setPreserveRatio(false);
         artView.setSmooth(true);
         String artPath = getCardArtPath(card);
-        var res = getClass().getResource(artPath);
-        if (res != null) {
-            artView.setImage(new Image(res.toExternalForm()));
+        var artUrl = getClass().getResource(artPath);
+        if (artUrl != null) {
+            artView.setImage(AssetCache.getInstance().getOrLoad(artUrl.toExternalForm()));
         } else {
             // Fallback to placeholder
-            var ph = getClass().getResource("/assets/card-art/placeholdercard.png");
-            if (ph != null) artView.setImage(new Image(ph.toExternalForm()));
+            var phUrl = getClass().getResource("/assets/card-art/placeholdercard.png");
+            if (phUrl != null) artView.setImage(AssetCache.getInstance().getOrLoad(phUrl.toExternalForm()));
         }
 
         // Clip corners
@@ -932,15 +1020,7 @@ public class GameplayScreenController {
         nameBadge.setMaxWidth(Double.MAX_VALUE);
         StackPane.setAlignment(nameBadge, Pos.TOP_CENTER);
 
-        // ---- Keep badge ----
-        Label keepLabel = new Label("Ⓚ");
-        keepLabel.setId("keepLabel_" + card.id());
-        keepLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #10b981; -fx-font-weight: bold; " +
-                "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10; -fx-padding: 1 4;");
-        keepLabel.setVisible(false);
-        StackPane.setAlignment(keepLabel, Pos.TOP_RIGHT);
-
-        stack.getChildren().addAll(artView, nameBadge, rarityBadge, keepLabel);
+        stack.getChildren().addAll(artView, nameBadge, rarityBadge);
 
         // Initial rarity glow
         DropShadow initGlow = new DropShadow();
@@ -949,37 +1029,50 @@ public class GameplayScreenController {
         initGlow.setSpread(0.1);
         stack.setEffect(initGlow);
 
-        // ---- Tooltip with effect description ----
-        Tooltip tip = new Tooltip(getCardEffectDescription(card));
+        // ---- Tooltip: effect description + RMB hint ----
+        String tooltipText = getCardEffectDescription(card) + "\n\n[Right Click (RMB) to Discard]";
+        Tooltip tip = new Tooltip(tooltipText);
         tip.setStyle("-fx-font-size: 12px;");
         Tooltip.install(stack, tip);
 
-        // ---- Hover: lift the card ----
+        // ---- RMB discard hint overlay (shows on hover) ----
+        Label rmbHint = new Label("RMB to Discard");
+        rmbHint.setStyle("-fx-background-color: rgba(220,38,38,0.85); -fx-text-fill: white; " +
+                "-fx-font-size: 9px; -fx-font-weight: bold; -fx-padding: 2 5; " +
+                "-fx-background-radius: 0 0 7 7;");
+        rmbHint.setMaxWidth(Double.MAX_VALUE);
+        rmbHint.setAlignment(Pos.CENTER);
+        rmbHint.setVisible(false);
+        StackPane.setAlignment(rmbHint, Pos.BOTTOM_CENTER);
+        stack.getChildren().add(rmbHint);
+
+        // ---- Hover: lift the card + show RMB hint ----
         TranslateTransition hoverUp   = new TranslateTransition(Duration.millis(120), stack);
         TranslateTransition hoverDown = new TranslateTransition(Duration.millis(120), stack);
         stack.setOnMouseEntered(e -> {
             hoverDown.stop();
             hoverUp.setToY(-12);
             hoverUp.play();
+            rmbHint.setVisible(true);
         });
         stack.setOnMouseExited(e -> {
             hoverUp.stop();
             hoverDown.setToY(0);
             hoverDown.play();
+            rmbHint.setVisible(false);
         });
 
         // ---- Click handler ----
         stack.setOnMouseClicked(e -> {
             if (gameSession.phase() == GamePhase.ACTION) {
                 if (e.getButton() == MouseButton.SECONDARY) {
-                    // Right-click: toggle keep
-                    keptCardToSave = (keptCardToSave == card) ? null : card;
-                    updateHandVisuals();
+                    // Right-click: show discard confirmation
+                    showDiscardConfirmation(card);
                 } else {
                     // Left-click: select / deselect
                     if (selectedCard == card) {
                         selectedCard = null;
-                        phasePromptLabel.setText("Phase: Select Card, Right-Click to Keep 1, then Target");
+                        phasePromptLabel.setText("Phase: Select Card → Target Enemy  |  RMB to Discard");
                     } else {
                         selectedCard = card;
                         phasePromptLabel.setText("Target an Enemy!");
@@ -990,6 +1083,216 @@ public class GameplayScreenController {
         });
 
         return stack;
+    }
+
+    /** Returns how many Clams the player receives for discarding a card of the given rarity. */
+    private int getDiscardClamsReward(CardRarity rarity) {
+        return switch (rarity) {
+            case COMMON    -> 10;
+            case UNCOMMON  -> 20;
+            case RARE      -> 35;
+            case SIGNATURE -> 75;
+        };
+    }
+
+    /** Shows a confirmation popup before discarding a card. Only one popup allowed at a time. */
+    private void showDiscardConfirmation(ActionCard card) {
+        if (isDiscardPopupOpen) return; // block stacking
+        isDiscardPopupOpen = true;
+
+        int clamsReward = getDiscardClamsReward(card.rarity());
+
+        VBox popup = new VBox(15);
+        popup.setAlignment(Pos.CENTER);
+        popup.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #ef4444; " +
+                "-fx-border-width: 3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-padding: 30;");
+
+        Label title = new Label("Discard Card?");
+        title.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 20px; -fx-font-weight: bold;");
+
+        Label cardName = new Label("\"" + card.name() + "\" (" + card.rarity().name() + ")");
+        cardName.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+
+        Label rewardLbl = new Label("You will receive " + clamsReward + " Clams");
+        rewardLbl.setStyle("-fx-text-fill: #34d399; -fx-font-size: 12px; -fx-font-weight: bold;");
+
+        Label warn = new Label("This card will be permanently removed from your hand.");
+        warn.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 12px;");
+        warn.setWrapText(true);
+        warn.setMaxWidth(320);
+        warn.setAlignment(Pos.CENTER);
+
+        Button yesBtn = new Button("Yes, Discard (+" + clamsReward + " Clams)");
+        yesBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
+
+        Button noBtn = new Button("Cancel");
+        noBtn.setStyle("-fx-background-color: #374151; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
+
+        HBox btnRow = new HBox(15, yesBtn, noBtn);
+        btnRow.setAlignment(Pos.CENTER);
+
+        popup.getChildren().addAll(title, cardName, rewardLbl, warn, btnRow);
+        mainLayout.getChildren().add(popup);
+        AnchorPane.setTopAnchor(popup, 220.0);
+        AnchorPane.setLeftAnchor(popup, 350.0);
+        AnchorPane.setRightAnchor(popup, 350.0);
+
+        yesBtn.setOnAction(ev -> {
+            mainLayout.getChildren().remove(popup);
+            isDiscardPopupOpen = false;
+            gameSession.discardCard(humanPlayer.id(), card);
+            humanPlayer.addClams(clamsReward);
+            if (selectedCard == card) selectedCard = null;
+            appendLog("Discarded: " + card.name() + " (" + card.rarity().name() + ") — +" + clamsReward + " Clams", "#ef4444");
+            topClamsLabel.setText("Clams: " + humanPlayer.clams());
+            // Refresh hand display only
+            handArea.getChildren().clear();
+            List<ActionCard> hand = new java.util.ArrayList<>(humanPlayer.hand());
+            hand.sort(java.util.Comparator.comparingInt(c -> java.util.List.of("Take", "Give", "Share").indexOf(c.name())));
+            for (ActionCard c : hand) handArea.getChildren().add(createHandCardView(c));
+        });
+        noBtn.setOnAction(ev -> {
+            mainLayout.getChildren().remove(popup);
+            isDiscardPopupOpen = false;
+        });
+    }
+
+    /**
+     * Adds a faint pulsing gold border rectangle around the entire game view when the
+     * human player triggers Crab Peak. Non-intrusive but clearly noticeable.
+     * Safe to call multiple times — only one overlay is ever added.
+     */
+    private void applyOrUpdateCrabPeakBorder() {
+        if (crabPeakBorderActive && crabPeakBorderNode != null) return; // already applied
+        crabPeakBorderActive = true;
+
+        javafx.scene.shape.Rectangle border = new javafx.scene.shape.Rectangle();
+        // Bind size to mainLayout so it always covers the full screen
+        border.widthProperty().bind(mainLayout.widthProperty());
+        border.heightProperty().bind(mainLayout.heightProperty());
+        border.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        border.setStroke(javafx.scene.paint.Color.web("#fbbf24")); // gold
+        border.setStrokeWidth(6);
+        border.setOpacity(0.55);
+        border.setMouseTransparent(true); // never intercepts clicks
+        border.setManaged(false);
+        border.setLayoutX(0);
+        border.setLayoutY(0);
+
+        mainLayout.getChildren().add(border);
+        crabPeakBorderNode = border;
+
+        // Gentle pulse: opacity 0.55 <-> 0.15 over 1.2 s
+        javafx.animation.Timeline pulse = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
+                new javafx.animation.KeyValue(border.opacityProperty(), 0.55)),
+            new javafx.animation.KeyFrame(javafx.util.Duration.millis(1200),
+                new javafx.animation.KeyValue(border.opacityProperty(), 0.15))
+        );
+        pulse.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        pulse.setAutoReverse(true);
+        pulse.play();
+    }
+
+    /** Discard confirmation that also runs a callback after the discard (e.g., to refresh merchant UI). */
+    private void showDiscardConfirmationWithCallback(ActionCard card, Runnable callback) {
+        if (isDiscardPopupOpen) return; // block stacking
+        isDiscardPopupOpen = true;
+
+        int clamsReward = getDiscardClamsReward(card.rarity());
+
+        VBox popup = new VBox(15);
+        popup.setAlignment(Pos.CENTER);
+        popup.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #ef4444; " +
+                "-fx-border-width: 3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-padding: 30;");
+
+        Label title = new Label("Discard Card?");
+        title.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 20px; -fx-font-weight: bold;");
+        Label cardName = new Label("\"" + card.name() + "\" (" + card.rarity().name() + ")");
+        cardName.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+        Label rewardLbl = new Label("You will receive " + clamsReward + " Clams");
+        rewardLbl.setStyle("-fx-text-fill: #34d399; -fx-font-size: 12px; -fx-font-weight: bold;");
+        Label warn = new Label("This card will be permanently removed from your hand.");
+        warn.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 12px;");
+        warn.setWrapText(true); warn.setMaxWidth(320); warn.setAlignment(Pos.CENTER);
+
+        Button yesBtn = new Button("Yes, Discard (+" + clamsReward + " Clams)");
+        yesBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
+        Button noBtn = new Button("Cancel");
+        noBtn.setStyle("-fx-background-color: #374151; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
+
+        HBox btnRow = new HBox(15, yesBtn, noBtn);
+        btnRow.setAlignment(Pos.CENTER);
+        popup.getChildren().addAll(title, cardName, rewardLbl, warn, btnRow);
+        mainLayout.getChildren().add(popup);
+        AnchorPane.setTopAnchor(popup, 220.0);
+        AnchorPane.setLeftAnchor(popup, 350.0);
+        AnchorPane.setRightAnchor(popup, 350.0);
+
+        yesBtn.setOnAction(ev -> {
+            mainLayout.getChildren().remove(popup);
+            isDiscardPopupOpen = false;
+            gameSession.discardCard(humanPlayer.id(), card);
+            humanPlayer.addClams(clamsReward);
+            if (selectedCard == card) selectedCard = null;
+            appendLog("Discarded: " + card.name() + " (" + card.rarity().name() + ") — +" + clamsReward + " Clams", "#ef4444");
+            topClamsLabel.setText("Clams: " + humanPlayer.clams());
+            if (callback != null) callback.run();
+        });
+        noBtn.setOnAction(ev -> {
+            mainLayout.getChildren().remove(popup);
+            isDiscardPopupOpen = false;
+        });
+    }
+
+    /** Shows a card picker overlay so the player can choose which card to discard (for merchant). */
+    private void showMerchantDiscardPicker(List<ActionCard> hand, Runnable callback) {
+        if (isDiscardPopupOpen) return; // block stacking
+        isDiscardPopupOpen = true;
+
+        VBox picker = new VBox(12);
+        picker.setAlignment(Pos.CENTER);
+        picker.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #ef4444; " +
+                "-fx-border-width: 3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-padding: 24;");
+
+        Label title = new Label("Choose a Card to Discard");
+        title.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 18px; -fx-font-weight: bold;");
+        picker.getChildren().add(title);
+
+        for (ActionCard c : hand) {
+            int reward = getDiscardClamsReward(c.rarity());
+            Button cardBtn = new Button(c.name() + "  [" + c.rarity().name() + "]  +" + reward + " Clams");
+            cardBtn.setStyle("-fx-background-color: #1e3a52; -fx-text-fill: white; -fx-font-size: 13px; " +
+                    "-fx-padding: 8 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-min-width: 300;");
+            cardBtn.setOnMouseEntered(e -> cardBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-size: 13px; " +
+                    "-fx-padding: 8 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-min-width: 300;"));
+            cardBtn.setOnMouseExited(e -> cardBtn.setStyle("-fx-background-color: #1e3a52; -fx-text-fill: white; -fx-font-size: 13px; " +
+                    "-fx-padding: 8 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-min-width: 300;"));
+            cardBtn.setOnAction(e -> {
+                mainLayout.getChildren().remove(picker);
+                isDiscardPopupOpen = false; // picker closed, confirmation will re-set
+                showDiscardConfirmationWithCallback(c, callback);
+            });
+            picker.getChildren().add(cardBtn);
+        }
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("-fx-background-color: #374151; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> {
+            mainLayout.getChildren().remove(picker);
+            isDiscardPopupOpen = false;
+        });
+        picker.getChildren().add(cancelBtn);
+
+        mainLayout.getChildren().add(picker);
+        AnchorPane.setTopAnchor(picker, 160.0);
+        AnchorPane.setLeftAnchor(picker, 380.0);
+        AnchorPane.setRightAnchor(picker, 380.0);
     }
 
     private void showGameOverUI() {

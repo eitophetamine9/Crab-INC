@@ -26,6 +26,7 @@ public final class GameSession implements java.io.Serializable {
     private int currentRound = 1;
     private int crabPeakFinalRound = -1;
     private boolean crabPeakActive;
+    private String crabPeakTriggeredById = null; // id of the player whose score triggered crab peak
     private GamePhase phase = GamePhase.DEVELOPMENT;
     private WinnerResult winner;
     private final Random rng = new Random();
@@ -35,6 +36,10 @@ public final class GameSession implements java.io.Serializable {
     private boolean charityWaveActive = false;
     private boolean nextRoundCharityWave = false;
     private boolean travellingShopActive = false;
+
+    // Travelling merchant stock (regenerated each visit)
+    private int merchantRareStock = 0;
+    private boolean merchantSignatureStock = false;
 
     private GameSession(List<PlayerState> players, int maxRounds, List<ActionCard> deck, int winThreshold) {
         if (players.size() < 2) {
@@ -87,6 +92,11 @@ public final class GameSession implements java.io.Serializable {
         return crabPeakActive;
     }
 
+    /** Returns the player id who triggered Crab Peak, or null if not yet triggered. */
+    public String crabPeakTriggeredById() {
+        return crabPeakTriggeredById;
+    }
+
     public Optional<WinnerResult> winner() {
         return Optional.ofNullable(winner);
     }
@@ -103,35 +113,57 @@ public final class GameSession implements java.io.Serializable {
         return travellingShopActive;
     }
 
-    public void buyRareCard(String playerId) {
-        // Shop is active during EVENT phase if it was rolled
-        if (!travellingShopActive) return;
-        PlayerState p = requirePlayer(playerId);
-        if (p.clams() >= 50) {
-            p.addClams(-50); // Direct deduct
-            p.addCard(drawRareCard(p));
-        }
+    public int merchantRareStock() {
+        return merchantRareStock;
     }
 
-    private ActionCard drawRareCard(PlayerState player) {
-        // 10% chance for a Signature card for the player's class
-        int roll = rng.nextInt(100);
-        CardRarity targetRarity = (roll < 10) ? CardRarity.SIGNATURE : CardRarity.RARE;
+    public boolean merchantHasSignatureStock() {
+        return merchantSignatureStock;
+    }
 
+    /** Buys one Rare card from the merchant (costs 50 Clams). Consumes 1 rare stock. */
+    public boolean buyRareCard(String playerId) {
+        if (!travellingShopActive || merchantRareStock <= 0) return false;
+        PlayerState p = requirePlayer(playerId);
+        if (p.clams() < 50) return false;
+        p.addClams(-50);
+        merchantRareStock--;
+        p.addCard(drawClassCard(p, CardRarity.RARE));
+        return true;
+    }
+
+    /** Buys the Signature card from the merchant (costs 120 Clams). Consumes the sig stock. */
+    public boolean buySignatureCard(String playerId) {
+        if (!travellingShopActive || !merchantSignatureStock) return false;
+        PlayerState p = requirePlayer(playerId);
+        if (p.clams() < 120) return false;
+        p.addClams(-120);
+        merchantSignatureStock = false;
+        p.addCard(drawClassCard(p, CardRarity.SIGNATURE));
+        return true;
+    }
+
+    /** Draws a class-compatible card of the given rarity. */
+    private ActionCard drawClassCard(PlayerState player, CardRarity rarity) {
         List<ActionCard> candidates = deckTemplate.stream()
-                .filter(c -> c.rarity() == targetRarity && isStrictlyCompatible(c, player.playerClass()))
+                .filter(c -> c.rarity() == rarity && isStrictlyCompatible(c, player.playerClass()))
                 .collect(java.util.stream.Collectors.toList());
 
         if (candidates.isEmpty()) {
-            // Fallback to RARE if no signatures available, still strictly compatible
+            // Fallback: any compatible card
             candidates = deckTemplate.stream()
-                    .filter(c -> c.rarity() == CardRarity.RARE && isStrictlyCompatible(c, player.playerClass()))
+                    .filter(c -> isStrictlyCompatible(c, player.playerClass()))
                     .collect(java.util.stream.Collectors.toList());
         }
 
         if (candidates.isEmpty()) return drawCard(player);
         ActionCard template = candidates.get(rng.nextInt(candidates.size()));
         return new ActionCard(template.id(), template.name(), template.type(), template.rarity());
+    }
+
+    /** Discards a card from the specified player's hand. Returns true if the card was found and removed. */
+    public boolean discardCard(String playerId, ActionCard card) {
+        return requirePlayer(playerId).discardCard(card);
     }
 
     private boolean isStrictlyCompatible(ActionCard card, PlayerClass playerClass) {
@@ -175,7 +207,7 @@ public final class GameSession implements java.io.Serializable {
         }
 
         pendingActions.put(actor.id(), action);
-        // actor.removeCard(action.card()); // Played cards are kept in hand instead of being removed
+        actor.removeCard(action.card()); // Card is consumed when played — removed from hand for this round
         if (pendingActions.size() == players.size()) {
             phase = GamePhase.RESOLUTION;
         }
@@ -275,6 +307,15 @@ public final class GameSession implements java.io.Serializable {
         if (!crabPeakActive && highestScore() >= winThreshold * CRAB_PEAK_TRIGGER_PERCENT) {
             crabPeakActive = true;
             crabPeakFinalRound = currentRound + 1;
+            // Record who triggered it (the player with the highest relevant score)
+            crabPeakTriggeredById = players.values().stream()
+                    .max(java.util.Comparator.comparingInt(p -> switch (p.playerClass()) {
+                        case OPPORTUNIST -> p.wealth();
+                        case ALTRUIST    -> p.reputation();
+                        case SABOTEUR    -> p.infamy();
+                    }))
+                    .map(PlayerState::id)
+                    .orElse(null);
         }
 
         currentRound++;
@@ -452,8 +493,11 @@ public final class GameSession implements java.io.Serializable {
                     .orElse(players.keySet().iterator().next());
             return GameEvent.crabHunt(targetId, 40 + rng.nextInt(21)); // 40-60 clams
         } else {
-            // Travelling Shop: Buy Rare card
+            // Travelling Shop: roll stocks for this visit
             travellingShopActive = true;
+            merchantRareStock = 1 + rng.nextInt(2); // 1-2 Rare stock
+            // 50% chance for a Signature card to also appear
+            merchantSignatureStock = rng.nextInt(100) < 50;
             return GameEvent.travellingShop();
         }
     }
@@ -521,19 +565,56 @@ public final class GameSession implements java.io.Serializable {
     }
 
     private ActionCard drawCard(PlayerState player) {
-        int roll = rng.nextInt(100);
+        // Step 1: decide own-class (60%) vs cross-class (40%)
+        boolean ownClass = rng.nextInt(100) < 60;
+
         CardRarity rarity;
-        if (roll < 60) rarity = CardRarity.COMMON;
-        else if (roll < 85) rarity = CardRarity.UNCOMMON;
-        else if (roll < 95) rarity = CardRarity.RARE;
-        else rarity = CardRarity.SIGNATURE;
+        if (ownClass) {
+            // Within own-class draws: Common 35%, Uncommon 30%, Rare 20%, Signature 15%
+            int roll = rng.nextInt(100);
+            if (roll < 35)      rarity = CardRarity.COMMON;
+            else if (roll < 65) rarity = CardRarity.UNCOMMON;
+            else if (roll < 85) rarity = CardRarity.RARE;
+            else                rarity = CardRarity.SIGNATURE;
+        } else {
+            // Cross-class draws use original distribution; signatures stay class-locked so treat as RARE fallback
+            int roll = rng.nextInt(100);
+            if (roll < 60)      rarity = CardRarity.COMMON;
+            else if (roll < 85) rarity = CardRarity.UNCOMMON;
+            else                rarity = CardRarity.RARE; // no cross-class signatures
+        }
 
-        List<ActionCard> candidates = deckTemplate.stream()
-                .filter(c -> c.rarity() == rarity && isCompatible(c, player.playerClass()))
-                .collect(java.util.stream.Collectors.toList());
+        List<ActionCard> candidates;
 
+        if (ownClass) {
+            // Strictly own-class cards (includes own-class signatures)
+            candidates = deckTemplate.stream()
+                    .filter(c -> c.rarity() == rarity && isStrictlyCompatible(c, player.playerClass()))
+                    .collect(java.util.stream.Collectors.toList());
+            // Fallback within own-class if rarity bucket empty
+            if (candidates.isEmpty()) {
+                candidates = deckTemplate.stream()
+                        .filter(c -> isStrictlyCompatible(c, player.playerClass()))
+                        .collect(java.util.stream.Collectors.toList());
+            }
+        } else {
+            // Cross-class: exclude own-class types and all signatures
+            candidates = deckTemplate.stream()
+                    .filter(c -> c.rarity() == rarity
+                            && c.rarity() != CardRarity.SIGNATURE
+                            && !isStrictlyCompatible(c, player.playerClass()))
+                    .collect(java.util.stream.Collectors.toList());
+            // Fallback: any non-signature non-own-class card
+            if (candidates.isEmpty()) {
+                candidates = deckTemplate.stream()
+                        .filter(c -> c.rarity() != CardRarity.SIGNATURE
+                                && !isStrictlyCompatible(c, player.playerClass()))
+                        .collect(java.util.stream.Collectors.toList());
+            }
+        }
+
+        // Final safety fallback
         if (candidates.isEmpty()) {
-            // Fallback: draw any compatible card if specific rarity is empty (shouldn't happen with standard deck)
             candidates = deckTemplate.stream()
                     .filter(c -> isCompatible(c, player.playerClass()))
                     .collect(java.util.stream.Collectors.toList());

@@ -153,6 +153,11 @@ public final class PlayerState implements java.io.Serializable {
         hand.remove(card);
     }
 
+    /** Discards (removes) a specific card from the hand. Alias for removeCard for clarity. */
+    public boolean discardCard(ActionCard card) {
+        return hand.remove(card);
+    }
+
     public void clearHand() {
         hand.clear();
     }
