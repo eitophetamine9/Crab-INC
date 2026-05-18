@@ -32,7 +32,7 @@ final class GameSessionTest {
     void developmentGrantsIncomeDrawsChosenCardsAndUpgradesRequestedBuilds() {
         PlayerState alice = PlayerState.create("alice", "Alice", PlayerClass.OPPORTUNIST);
         PlayerState bob   = PlayerState.create("bob",   "Bob",   PlayerClass.ALTRUIST);
-        alice.addClams(40);
+        alice.addClams(70);
 
         GameSession session = GameSession.newLocal(
                 List.of(alice, bob),

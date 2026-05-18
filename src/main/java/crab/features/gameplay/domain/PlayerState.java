@@ -84,10 +84,10 @@ public final class PlayerState implements java.io.Serializable {
 
     public int upgradeCost() {
         return switch (buildLevel) {
-            case 1 -> 30;
-            case 2 -> 60;
-            case 3 -> 110;
-            case 4 -> 180;
+            case 1 -> 60;  // Balanced progression: requires ~4 turns of Level 1 income
+            case 2 -> 160; // Balanced progression: requires ~4 turns of Level 2 income
+            case 3 -> 340; // Balanced progression: requires ~4 turns of Level 3 income
+            case 4 -> 600; // Balanced progression: requires ~4 turns of Level 4 income
             case 5 -> -1; // Max level reached
             default -> -1;
         };
