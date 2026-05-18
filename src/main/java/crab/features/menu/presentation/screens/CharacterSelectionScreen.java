@@ -143,7 +143,7 @@ public final class CharacterSelectionScreen implements GameScreen {
 
         VBox menu = new VBox(15, title, genderSwapBtn, classBox, backBtn); // Tighter spacing to guarantee Back button fits
         menu.setAlignment(Pos.CENTER);
-        menu.getStyleClass().add("menu-panel");
+        menu.getStyleClass().add("menu-panel-wide"); // Use wide panel to ensure Back button centers perfectly without clipping
         menu.setPadding(new Insets(15, 30, 15, 30));
         menu.setMaxWidth(950);
         menu.setPrefHeight(680); // Adjusted height to ensure everything fits
@@ -237,16 +237,7 @@ public final class CharacterSelectionScreen implements GameScreen {
         card.setCache(true);
         card.setCacheHint(javafx.scene.CacheHint.SPEED);
 
-        card.setOnMouseEntered(e -> {
-            card.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 17; -fx-background-insets: 3; -fx-border-color: #fbbf24; -fx-border-width: 3; -fx-border-insets: 1.5; -fx-border-radius: 20;");
-            card.setScaleX(1.05);
-            card.setScaleY(1.05);
-        });
-        card.setOnMouseExited(e -> {
-            card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
-            card.setScaleX(1.0);
-            card.setScaleY(1.0);
-        });
+        // Hover effects removed to prevent card items scaling/overlapping
 
         return card;
     }

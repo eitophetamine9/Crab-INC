@@ -21,6 +21,21 @@
     -fx-max-height: 620;
 }
 
+.menu-panel-wide {
+    -fx-background-color: rgba(173, 216, 230, 0.7);
+    -fx-background-radius: 25;
+    -fx-border-color: white;
+    -fx-border-width: 4;
+    -fx-border-radius: 25;
+    /* Deep Sea Glow */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 150, 255, 0.5), 20, 0, 0, 0);
+    -fx-padding: 15 30 15 30;
+    -fx-pref-width: 950;
+    -fx-max-width: 950;
+    -fx-pref-height: 680;
+    -fx-max-height: 680;
+}
+
 /* 3. The Titles */
 .title-text {
     -fx-font-family: "Luckiest Guy";
