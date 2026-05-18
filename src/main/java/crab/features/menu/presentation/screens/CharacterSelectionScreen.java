@@ -141,7 +141,10 @@ public final class CharacterSelectionScreen implements GameScreen {
         backBtn.setPrefWidth(200);
         backBtn.setOnAction(e -> screens.show(SetupScreen.ID));
 
-        VBox menu = new VBox(20, title, genderSwapBtn, classBox, backBtn); // Original centered spacing
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        javafx.scene.layout.VBox.setVgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+        VBox menu = new VBox(20, title, genderSwapBtn, classBox, spacer, backBtn); // Put spacer to push Back button to bottom
         menu.setAlignment(Pos.CENTER); // Reverted back to perfectly centered layout as preferred by user
         menu.getStyleClass().add("menu-panel-wide"); // Use wide panel with expanded height to host centered cards perfectly
         menu.setPadding(new Insets(20, 30, 20, 30)); // Original layout padding
@@ -176,7 +179,7 @@ public final class CharacterSelectionScreen implements GameScreen {
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(10)); // Original comfortable padding inside cards
         card.setPrefWidth(280);
-        card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
+        card.getStyleClass().add("character-card"); // Apply optimized CSS hover class to completely avoid lag
 
         javafx.scene.text.Text nameLbl = new javafx.scene.text.Text(pClass.name());
         nameLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 22)); // Original beautiful large title font size
@@ -234,13 +237,6 @@ public final class CharacterSelectionScreen implements GameScreen {
         card.setOnMouseClicked(e -> {
             GameplayScreen.selectedClass = pClass;
             screens.show(GameplayScreen.ID);
-        });
-
-        card.setOnMouseEntered(e -> {
-            card.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 17; -fx-background-insets: 3; -fx-border-color: #fbbf24; -fx-border-width: 3; -fx-border-insets: 1.5; -fx-border-radius: 20;");
-        });
-        card.setOnMouseExited(e -> {
-            card.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 18; -fx-background-insets: 2; -fx-border-color: white; -fx-border-width: 2; -fx-border-insets: 1; -fx-border-radius: 20;");
         });
 
         return card;

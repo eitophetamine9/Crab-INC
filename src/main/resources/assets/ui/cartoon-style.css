@@ -146,3 +146,24 @@
     -fx-border-radius: 12;
     -fx-text-fill: #f1c40f;
 }
+
+/* 8. Character Selection Card Styles */
+.character-card {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-radius: 18;
+    -fx-background-insets: 2;
+    -fx-border-color: white;
+    -fx-border-width: 2;
+    -fx-border-insets: 1;
+    -fx-border-radius: 20;
+}
+
+.character-card:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-background-radius: 17;
+    -fx-background-insets: 3;
+    -fx-border-color: #fbbf24;
+    -fx-border-width: 3;
+    -fx-border-insets: 1.5;
+    -fx-border-radius: 20;
+}
