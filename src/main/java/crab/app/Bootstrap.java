@@ -36,6 +36,8 @@ public final class Bootstrap {
         settings.setMainMenuEnabled(false);
         settings.setGameMenuEnabled(false);
         settings.setIntroEnabled(false);
+        settings.setFullScreenAllowed(true);
+        settings.setFullScreenFromStart(true);
         settings.setSceneFactory(new CrabSceneFactory());
     }
 
