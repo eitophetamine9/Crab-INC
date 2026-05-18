@@ -201,7 +201,7 @@ public final class MainMenuScreen implements GameScreen {
         profileBox.setStyle("-fx-background-color: rgba(13, 43, 62, 0.9); -fx-border-color: #fbbf24; -fx-border-width: 2; -fx-background-radius: 12; -fx-border-radius: 12;");
         profileBox.setMaxSize(240, 110);
         StackPane.setAlignment(profileBox, Pos.TOP_RIGHT);
-        StackPane.setMargin(profileBox, new Insets(25, 25, 0, 0));
+        StackPane.setMargin(profileBox, new Insets(25, 10, 0, 0));
 
         Label profileTitle = new Label("Shellfish Career Profile");
         profileTitle.setStyle("-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
