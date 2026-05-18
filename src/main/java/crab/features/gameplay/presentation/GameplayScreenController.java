@@ -41,7 +41,6 @@ public class GameplayScreenController {
     @FXML private VBox battlefieldArea;
     @FXML private Label phasePromptLabel;
     @FXML private HBox heroArea;
-    @FXML private Button genderBtn;
     @FXML private ImageView heroAvatarImage;
     @FXML private Label heroClassLabel;
     @FXML private Label heroNameLabel;
@@ -155,15 +154,6 @@ public class GameplayScreenController {
         backgroundImageView.fitHeightProperty().bind(mainLayout.heightProperty());
 
         this.isFemale = !GameplayScreen.isMale;
-        updateGenderButton();
-        genderBtn.setOnAction(e -> toggleGender());
-
-        // Right-click avatar to toggle gender
-        heroAvatarImage.setOnMouseClicked(e -> {
-            if (e.getButton() == MouseButton.SECONDARY) {
-                toggleGender();
-            }
-        });
 
         if (enemyScrollContainer != null && enemyScrollPane != null) {
             enemyScrollContainer.getChildren().clear();
@@ -190,20 +180,7 @@ public class GameplayScreenController {
         }
     }
 
-    private void toggleGender() {
-        isFemale = !isFemale;
-        updateGenderButton();
-        updateHeroAvatarImage();
-    }
 
-    private void updateGenderButton() {
-        if (genderBtn == null) return;
-        genderBtn.setText(isFemale ? "♀" : "♂");
-        String color = isFemale ? "#ec4899" : "#3b82f6";
-        genderBtn.setStyle("-fx-background-radius: 50em; -fx-min-width: 30px; -fx-min-height: 30px; -fx-max-width: 30px; -fx-max-height: 30px; " +
-                "-fx-background-color: " + color + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 16px; " +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);");
-    }
 
     private void createDevPanel() {
         VBox devBox = new VBox(5);
