@@ -135,7 +135,13 @@ public final class MainMenuScreen implements GameScreen {
         title.getStyleClass().add("title-text");
         title.setMouseTransparent(true);
 
-        Button logout = menuButton("Log Out", () -> screens.show(LoginScreen.ID), "btn-secondary", 0.0);
+        Button logout = menuButton("Log Out", () -> {
+            java.io.File sessionFile = new java.io.File("session.txt");
+            if (sessionFile.exists()) {
+                sessionFile.delete();
+            }
+            screens.show(LoginScreen.ID);
+        }, "btn-secondary", 0.0);
         logout.setPrefWidth(190);
         logout.setPrefHeight(60);
 

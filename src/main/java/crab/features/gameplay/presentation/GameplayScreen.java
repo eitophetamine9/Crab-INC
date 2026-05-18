@@ -30,6 +30,7 @@ public final class GameplayScreen implements GameScreen {
     public static String difficulty = "Medium";
     public static boolean isMale = true;
     public static GameSession loadedSession = null;
+    public static boolean returningFromEncyclopedia = false;
     private GameSession gameSession;
     private PlayerState humanPlayer;
     private List<PlayerState> aiPlayers;
@@ -52,7 +53,10 @@ public final class GameplayScreen implements GameScreen {
         visible = true;
         getGameScene().setBackgroundColor(javafx.scene.paint.Color.web("#0e58d4")); // Ocean blue background
 
-        if (loadedSession != null) {
+        if (returningFromEncyclopedia) {
+            returningFromEncyclopedia = false;
+            // Retain active gameSession, humanPlayer, and aiPlayers from mid-game state
+        } else if (loadedSession != null) {
             gameSession = loadedSession;
             humanPlayer = gameSession.players().stream().filter(p -> p.id().equals("human")).findFirst().orElse(null);
             aiPlayers = gameSession.players().stream().filter(p -> p.id().startsWith("ai_")).collect(java.util.stream.Collectors.toList());

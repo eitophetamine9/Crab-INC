@@ -5,6 +5,7 @@ import crab.appcore.context.GameModule;
 import crab.appcore.screen.ScreenManager;
 import crab.features.gameplay.presentation.GameplayScreen;
 import crab.features.gameplay.presentation.GameOverScreen;
+import crab.features.gameplay.presentation.EncyclopediaScreen;
 
 /**
  * Registers screens that belong to the gameplay loop.
@@ -15,6 +16,7 @@ public final class GameplayModule implements GameModule {
         ScreenManager screens = context.require(ScreenManager.class);
         screens.register(new GameplayScreen(screens));
         screens.register(new GameOverScreen(screens));
+        screens.register(new EncyclopediaScreen(screens));
     }
 
     @Override

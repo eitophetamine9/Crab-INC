@@ -130,8 +130,17 @@ public final class GameOverScreen implements GameScreen {
             bgView.setStyle("-fx-effect: dropshadow(three-pass-box, black, 10, 0.5, 0, 0);");
         }
 
+        String nameColor = "white";
+        if (result != null) {
+            if ("human".equals(result.playerId())) {
+                nameColor = "#22c55e"; // bright green if the player won
+            } else {
+                nameColor = "#ef4444"; // bright red if the enemy won
+            }
+        }
+
         Label nameLbl = new Label(winnerText);
-        nameLbl.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white; -fx-effect: dropshadow(three-pass-box, black, 5, 0.8, 0, 0);");
+        nameLbl.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + nameColor + "; -fx-effect: dropshadow(three-pass-box, black, 5, 0.8, 0, 0);");
         
         Button returnBtn = new Button("RETURN TO MAIN MENU");
         returnBtn.setStyle("-fx-font-family: 'Luckiest Guy'; -fx-font-size: 20px; -fx-padding: 10 30; -fx-background-color: " + accentColor + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");

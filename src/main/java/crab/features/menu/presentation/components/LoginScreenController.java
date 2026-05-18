@@ -54,8 +54,24 @@ public final class LoginScreenController {
     };
     private AuthService authService = createDefaultAuthService();
 
+    private void saveSession() {
+        if (currentUser != null) {
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter("session.txt"))) {
+                writer.println(currentUser.username());
+                writer.println(currentUser.displayName());
+                writer.println(currentUser.id());
+            } catch (Exception ex) {
+                System.err.println("Failed to save session: " + ex.getMessage());
+            }
+        }
+    }
+
     public void setLoginSuccessAction(Runnable action) {
-        loginSuccessAction = Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(action, "action");
+        loginSuccessAction = () -> {
+            saveSession();
+            action.run();
+        };
     }
 
     public void setCreateAccountAction(Runnable action) {
@@ -105,6 +121,15 @@ public final class LoginScreenController {
         if ("guest".equalsIgnoreCase(username) && "guest".equals(password)) {
             currentUser = new CrabUser(999, "guest", "Guest Crab");
             loggedInUser = "guest";
+            errorLabel.setText("");
+            loginSuccessAction.run();
+            return;
+        }
+
+        // Dev login bypass (immediate)
+        if ("dev".equalsIgnoreCase(username) && "dev".equals(password)) {
+            currentUser = new CrabUser(888, "dev", "Developer Crab");
+            loggedInUser = "dev";
             errorLabel.setText("");
             loginSuccessAction.run();
             return;

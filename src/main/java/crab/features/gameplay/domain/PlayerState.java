@@ -67,32 +67,32 @@ public final class PlayerState implements java.io.Serializable {
 
     public int income() {
         return switch (buildLevel) {
-            case 1 -> 10;
-            case 2 -> 25;
-            case 3 -> 50;
-            case 4 -> 90;
-            case 5 -> 150;
-            default -> 150;
+            case 1 -> 15;
+            case 2 -> 40;
+            case 3 -> 85;
+            case 4 -> 150;
+            case 5 -> 250;
+            default -> 250;
         };
     }
 
     public double statBonus() {
         return switch (buildLevel) {
             case 1 -> 0.0;
-            case 2 -> 0.05;
-            case 3 -> 0.10;
-            case 4 -> 0.15;
-            case 5 -> 0.25;
-            default -> 0.25;
+            case 2 -> 0.10;
+            case 3 -> 0.22;
+            case 4 -> 0.38;
+            case 5 -> 0.60;
+            default -> 0.60;
         };
     }
 
     public int upgradeCost() {
         return switch (buildLevel) {
-            case 1 -> 40;
-            case 2 -> 80;
-            case 3 -> 150;
-            case 4 -> 250;
+            case 1 -> 30;
+            case 2 -> 60;
+            case 3 -> 110;
+            case 4 -> 180;
             case 5 -> -1; // Max level reached
             default -> -1;
         };

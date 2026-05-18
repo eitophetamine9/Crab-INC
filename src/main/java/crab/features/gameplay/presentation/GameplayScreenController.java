@@ -208,7 +208,7 @@ public class GameplayScreenController {
     private void createDevPanel() {
         VBox devBox = new VBox(5);
         devBox.setAlignment(Pos.CENTER);
-        devBox.setStyle("-fx-padding: 8; -fx-background-color: rgba(255, 0, 0, 0.4); -fx-background-radius: 6; -fx-border-color: red; -fx-border-width: 1; -fx-border-radius: 6;");
+        devBox.setStyle("-fx-padding: 8; -fx-background-color: rgba(255, 0, 0, 0.45); -fx-background-radius: 6; -fx-border-color: red; -fx-border-width: 1; -fx-border-radius: 6;");
         
         Label title = new Label("DEV MODE");
         title.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-font-family: 'Luckiest Guy';");
@@ -237,13 +237,58 @@ public class GameplayScreenController {
             updateUI();
         });
 
+        Button skipEndingBtn = new Button("Skip to Ending");
+        skipEndingBtn.setOnAction(e -> {
+            switch (humanPlayer.playerClass()) {
+                case OPPORTUNIST -> humanPlayer.addWealth(1000);
+                case ALTRUIST -> humanPlayer.addReputation(1000);
+                case SABOTEUR -> humanPlayer.addInfamy(1000);
+            }
+            gameSession.forceGameOver();
+            updateUI();
+        });
+
+        Button addEnemyWealthBtn = new Button("+1000 Enemy Wealth");
+        addEnemyWealthBtn.setOnAction(e -> {
+            if (!aiPlayers.isEmpty()) {
+                aiPlayers.get(0).addWealth(1000);
+                updateUI();
+            }
+        });
+
+        Button forceEnemyWinBtn = new Button("Force Enemy Win");
+        forceEnemyWinBtn.setOnAction(e -> {
+            if (!aiPlayers.isEmpty()) {
+                PlayerState enemy = aiPlayers.get(0);
+                switch (enemy.playerClass()) {
+                    case OPPORTUNIST -> enemy.addWealth(1000);
+                    case ALTRUIST -> enemy.addReputation(1000);
+                    case SABOTEUR -> enemy.addInfamy(1000);
+                }
+                gameSession.forceGameOver();
+                updateUI();
+            }
+        });
+
         String btnStyle = "-fx-font-size: 10px; -fx-padding: 3 8; -fx-cursor: hand;";
         addClamsBtn.setStyle(btnStyle);
         addWealthBtn.setStyle(btnStyle);
         addRepBtn.setStyle(btnStyle);
         addInfamyBtn.setStyle(btnStyle);
+        addEnemyWealthBtn.setStyle(btnStyle);
+        skipEndingBtn.setStyle(btnStyle + " -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold;");
+        forceEnemyWinBtn.setStyle(btnStyle + " -fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;");
 
-        devBox.getChildren().addAll(title, addClamsBtn, addWealthBtn, addRepBtn, addInfamyBtn);
+        devBox.getChildren().addAll(
+            title, 
+            addClamsBtn, 
+            addWealthBtn, 
+            addRepBtn, 
+            addInfamyBtn, 
+            addEnemyWealthBtn,
+            skipEndingBtn,
+            forceEnemyWinBtn
+        );
 
         mainLayout.getChildren().add(devBox);
         AnchorPane.setTopAnchor(devBox, 60.0);
@@ -264,6 +309,16 @@ public class GameplayScreenController {
         continueBtn.setOnAction(e -> {
             mainLayout.getChildren().remove(pauseMenu);
             pauseMenu = null;
+        });
+
+        Button encyclopediaBtn = new Button("Card Encyclopedia");
+        encyclopediaBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20; -fx-text-fill: #fbbf24;");
+        encyclopediaBtn.setOnAction(e -> {
+            GameplayScreen.returningFromEncyclopedia = true;
+            crab.features.gameplay.presentation.EncyclopediaScreen.previousScreenId = GameplayScreen.ID;
+            mainLayout.getChildren().remove(pauseMenu);
+            pauseMenu = null;
+            screens.show("encyclopedia");
         });
 
         Button saveBtn = new Button("Save and Return to Menu");
@@ -324,7 +379,7 @@ public class GameplayScreenController {
             noBtn.setStyle("-fx-font-size: 16px; -fx-padding: 10 20;");
             noBtn.setOnAction(noEvent -> {
                 pauseMenu.getChildren().clear();
-                pauseMenu.getChildren().addAll(pauseLabel, continueBtn, saveBtn, withdrawBtn);
+                pauseMenu.getChildren().addAll(pauseLabel, continueBtn, encyclopediaBtn, saveBtn, withdrawBtn);
             });
 
             HBox buttonBox = new HBox(20, yesBtn, noBtn);
@@ -333,7 +388,7 @@ public class GameplayScreenController {
             pauseMenu.getChildren().addAll(confirmLabel, buttonBox);
         });
 
-        pauseMenu = new VBox(20, pauseLabel, continueBtn, saveBtn, withdrawBtn);
+        pauseMenu = new VBox(20, pauseLabel, continueBtn, encyclopediaBtn, saveBtn, withdrawBtn);
         pauseMenu.setAlignment(Pos.CENTER);
         pauseMenu.setStyle("-fx-border-color: white; -fx-border-width: 4; -fx-padding: 40; -fx-background-color: rgba(13, 43, 62, 0.95); -fx-background-radius: 20; -fx-border-radius: 20;");
         

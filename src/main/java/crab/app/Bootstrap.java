@@ -58,7 +58,30 @@ public final class Bootstrap {
         getGameScene().setCursor(Cursor.DEFAULT);
         getGameScene().setBackgroundColor(javafx.scene.paint.Color.web("#0e58d4"));
         if (screens.currentId().isEmpty()) {
-            screens.show(LoginScreen.ID);
+            java.io.File sessionFile = new java.io.File("session.txt");
+            boolean sessionLoaded = false;
+            if (sessionFile.exists()) {
+                try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(sessionFile))) {
+                    String username = reader.readLine();
+                    String displayName = reader.readLine();
+                    String idStr = reader.readLine();
+                    if (username != null && displayName != null && idStr != null) {
+                        long id = Long.parseLong(idStr.trim());
+                        crab.features.menu.presentation.components.LoginScreenController.currentUser = 
+                                new crab.features.menu.auth.CrabUser(id, username, displayName);
+                        crab.features.menu.presentation.components.LoginScreenController.loggedInUser = username;
+                        sessionLoaded = true;
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Could not restore persistent session: " + ex.getMessage());
+                }
+            }
+
+            if (sessionLoaded) {
+                screens.show("menu_main");
+            } else {
+                screens.show(LoginScreen.ID);
+            }
         }
     }
 

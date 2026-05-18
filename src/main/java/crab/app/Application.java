@@ -15,6 +15,7 @@ import com.almasb.fxgl.app.GameSettings;
  */
 public final class Application extends GameApplication {
     private final Bootstrap bootstrap = new Bootstrap();
+    private static java.net.ServerSocket lockSocket;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -37,6 +38,22 @@ public final class Application extends GameApplication {
     }
 
     public static void main(String[] args) {
+        try {
+            lockSocket = new java.net.ServerSocket(54321);
+        } catch (java.io.IOException e) {
+            try {
+                javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ex) {}
+            
+            javax.swing.JOptionPane.showMessageDialog(
+                null,
+                "Another instance of Crab Inc. is already running!",
+                "Crab Inc. - Already Running",
+                javax.swing.JOptionPane.WARNING_MESSAGE
+            );
+            System.exit(0);
+            return;
+        }
         launch(args);
     }
 }

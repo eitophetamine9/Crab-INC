@@ -381,7 +381,7 @@ public final class GameSession implements java.io.Serializable {
     }
 
     /**
-     * Steal card: +45 Wealth, -10 Rep (actor), -35 Clams (target).
+     * Steal card: +45 Wealth, -10 Rep (actor), -35 Wealth (target).
      * Signature Opportunist: in addition, actor gains +10 Wealth whenever an opponent gains Reputation
      * (already handled via opportunist passive trigger — here we apply the base steal as normal).
      */
@@ -394,16 +394,16 @@ public final class GameSession implements java.io.Serializable {
         actorWealthGain = reduceGain(actorWealthGain, rewardReductions.getOrDefault(actor.id(), 0.0));
 
         int actorReputationLoss = calculateNegativeEffect(10, action.card().rarity());
-        int targetClamsLoss      = calculateNegativeEffect(35, action.card().rarity());
+        int targetWealthLoss    = calculateNegativeEffect(35, action.card().rarity());
 
-        // Double-negative from Signature Saboteur: target loses twice as much Clams
+        // Double-negative from Signature Saboteur: target loses twice as much Wealth
         if (doubleNegativeTargets.contains(target.id())) {
-            targetClamsLoss *= 2;
+            targetWealthLoss *= 2;
         }
 
         actor.addWealth(actorWealthGain);
         actor.addReputation(-actorReputationLoss);
-        target.deductClams(targetClamsLoss);
+        target.addWealth(-targetWealthLoss);
     }
 
     /**
@@ -709,5 +709,11 @@ public final class GameSession implements java.io.Serializable {
             case SABOTEUR -> best.infamy();
         };
         return new WinnerResult(best.id(), best.playerClass(), finalScore);
+    }
+
+    /** Developer shortcut tool to immediately resolve the victory ending sequence. */
+    public void forceGameOver() {
+        this.phase = GamePhase.GAME_OVER;
+        this.winner = determineWinner();
     }
 }
