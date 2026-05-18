@@ -292,6 +292,10 @@ public class GameplayScreenController {
         devAddCardBtn.setStyle(btnStyle + " -fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold;");
         devAddCardBtn.setOnAction(e -> showDevAddCardPicker());
 
+        Button devForceEventBtn = new Button("Force Event...");
+        devForceEventBtn.setStyle(btnStyle + " -fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;");
+        devForceEventBtn.setOnAction(e -> showDevForceEventPicker());
+
         devBox.getChildren().addAll(
             title, 
             addClamsBtn, 
@@ -302,6 +306,7 @@ public class GameplayScreenController {
             toggleBotsBtn,
             toggleEventsBtn,
             devAddCardBtn,
+            devForceEventBtn,
             skipEndingBtn,
             forceEnemyWinBtn
         );
@@ -1377,6 +1382,53 @@ public class GameplayScreenController {
             mainLayout.getChildren().remove(popup);
             isDiscardPopupOpen = false;
         });
+    }
+
+    private void showDevForceEventPicker() {
+        VBox picker = new VBox(8);
+        picker.setAlignment(Pos.CENTER);
+        picker.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #3b82f6; " +
+                "-fx-border-width: 3; -fx-border-radius: 14; -fx-background-radius: 14; -fx-padding: 15;");
+
+        Label title = new Label("Select Event to Force Trigger");
+        title.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 16px; -fx-font-weight: bold;");
+        picker.getChildren().add(title);
+
+        List<String> events = List.of(
+            "Market Crash",
+            "Charity Wave",
+            "Crab Hunt",
+            "Travelling Shop",
+            "Calm Current"
+        );
+
+        for (String eventName : events) {
+            Button btn = new Button(eventName);
+            btn.setStyle("-fx-background-color: #1e3a52; -fx-text-fill: white; -fx-font-size: 11px; " +
+                    "-fx-padding: 6 15; -fx-background-radius: 6; -fx-cursor: hand; -fx-min-width: 200;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 11px; " +
+                    "-fx-padding: 6 15; -fx-background-radius: 6; -fx-cursor: hand; -fx-min-width: 200;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: #1e3a52; -fx-text-fill: white; -fx-font-size: 11px; " +
+                    "-fx-padding: 6 15; -fx-background-radius: 6; -fx-cursor: hand; -fx-min-width: 200;"));
+            
+            btn.setOnAction(e -> {
+                mainLayout.getChildren().remove(picker);
+                GameEvent forcedEvent = gameSession.devTriggerEvent(eventName);
+                appendLog("Dev: Force-triggered event \"" + eventName + "\"", "#3b82f6");
+                showEventUI(forcedEvent);
+            });
+            picker.getChildren().add(btn);
+        }
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("-fx-background-color: #374151; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-padding: 6 20; -fx-background-radius: 8; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> mainLayout.getChildren().remove(picker));
+        picker.getChildren().add(cancelBtn);
+
+        mainLayout.getChildren().add(picker);
+        AnchorPane.setTopAnchor(picker, 150.0);
+        AnchorPane.setLeftAnchor(picker, 430.0);
     }
 
     private void showDevAddCardPicker() {

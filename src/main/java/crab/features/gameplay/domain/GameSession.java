@@ -716,4 +716,33 @@ public final class GameSession implements java.io.Serializable {
         this.phase = GamePhase.GAME_OVER;
         this.winner = determineWinner();
     }
+
+    /** Developer utility to force-trigger any world event immediately from any phase. */
+    public GameEvent devTriggerEvent(String type) {
+        this.phase = GamePhase.EVENT;
+        switch (type) {
+            case "Market Crash" -> {
+                return GameEvent.marketCrash(30 + rng.nextInt(21));
+            }
+            case "Charity Wave" -> {
+                return GameEvent.charityWave();
+            }
+            case "Crab Hunt" -> {
+                String targetId = players.values().stream()
+                        .max(java.util.Comparator.comparingInt(PlayerState::wealth))
+                        .map(PlayerState::id)
+                        .orElse(players.keySet().iterator().next());
+                return GameEvent.crabHunt(targetId, 40 + rng.nextInt(21));
+            }
+            case "Travelling Shop" -> {
+                travellingShopActive = true;
+                merchantRareStock = 1 + rng.nextInt(2);
+                merchantSignatureStock = rng.nextInt(100) < 50;
+                return GameEvent.travellingShop();
+            }
+            default -> {
+                return GameEvent.none();
+            }
+        }
+    }
 }
