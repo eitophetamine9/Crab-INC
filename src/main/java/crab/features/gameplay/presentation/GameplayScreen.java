@@ -71,6 +71,14 @@ public final class GameplayScreen implements GameScreen {
             root = loader.load();
             GameplayScreenController controller = loader.getController();
             controller.initData(gameSession, screens, humanPlayer, aiPlayers);
+
+            // Add Event Filter to capture ESC key presses regardless of child focus
+            root.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                    controller.handleSettings(null);
+                    event.consume();
+                }
+            });
         } catch (IOException e) {
             throw new RuntimeException("Failed to load battle-screen.fxml", e);
         }

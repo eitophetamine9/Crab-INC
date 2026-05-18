@@ -311,7 +311,9 @@ public class GameplayScreenController {
     @FXML
     void handleSettings(ActionEvent event) {
         if (pauseMenu != null) {
-            return; // Already paused
+            mainLayout.getChildren().remove(pauseMenu);
+            pauseMenu = null;
+            return; // Resume game if pressed again
         }
 
         Label pauseLabel = new Label("PAUSED");
