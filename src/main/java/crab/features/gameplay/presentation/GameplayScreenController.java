@@ -46,7 +46,7 @@ public class GameplayScreenController {
     @FXML private Label heroNameLabel;
     @FXML private Label heroWealthLabel;
     @FXML private Label heroReputationLabel;
-    @FXML private Label heroInfamyLabel;
+    @FXML private Label heroBuildLabel;
     @FXML private HBox handArea;
     @FXML private Button endTurnBtn;
     @FXML private Label roundGemLabel;
@@ -100,7 +100,7 @@ public class GameplayScreenController {
         return switch (playerClass) {
             case OPPORTUNIST -> "Wealth";
             case ALTRUIST -> "Reputation";
-            case SABOTEUR -> "Infamy";
+            case SABOTEUR -> "Reputation";
         };
     }
 
@@ -210,18 +210,13 @@ public class GameplayScreenController {
             updateUI();
         });
 
-        Button addInfamyBtn = new Button("+50 Infamy");
-        addInfamyBtn.setOnAction(e -> {
-            humanPlayer.addInfamy(50);
-            updateUI();
-        });
+
 
         Button skipEndingBtn = new Button("Skip to Ending");
         skipEndingBtn.setOnAction(e -> {
             switch (humanPlayer.playerClass()) {
                 case OPPORTUNIST -> humanPlayer.addWealth(1000);
-                case ALTRUIST -> humanPlayer.addReputation(1000);
-                case SABOTEUR -> humanPlayer.addInfamy(1000);
+                case ALTRUIST, SABOTEUR -> humanPlayer.addReputation(1000);
             }
             gameSession.forceGameOver();
             updateUI();
@@ -241,8 +236,7 @@ public class GameplayScreenController {
                 PlayerState enemy = aiPlayers.get(0);
                 switch (enemy.playerClass()) {
                     case OPPORTUNIST -> enemy.addWealth(1000);
-                    case ALTRUIST -> enemy.addReputation(1000);
-                    case SABOTEUR -> enemy.addInfamy(1000);
+                    case ALTRUIST, SABOTEUR -> enemy.addReputation(1000);
                 }
                 gameSession.forceGameOver();
                 updateUI();
@@ -253,7 +247,6 @@ public class GameplayScreenController {
         addClamsBtn.setStyle(btnStyle);
         addWealthBtn.setStyle(btnStyle);
         addRepBtn.setStyle(btnStyle);
-        addInfamyBtn.setStyle(btnStyle);
         addEnemyWealthBtn.setStyle(btnStyle);
         skipEndingBtn.setStyle(btnStyle + " -fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold;");
         forceEnemyWinBtn.setStyle(btnStyle + " -fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;");
@@ -301,7 +294,6 @@ public class GameplayScreenController {
             addClamsBtn, 
             addWealthBtn, 
             addRepBtn, 
-            addInfamyBtn, 
             addEnemyWealthBtn,
             toggleBotsBtn,
             toggleEventsBtn,
@@ -465,13 +457,12 @@ public class GameplayScreenController {
         
         heroClassLabel.setText(humanPlayer.playerClass().name() + "\n(" + getGoalString(humanPlayer.playerClass()) + ")");
         heroNameLabel.setText(humanPlayer.displayName());
-        heroInfamyLabel.setWrapText(true);
-        // Build info below infamy — mirrors the bot stat-box layout
+        heroBuildLabel.setWrapText(true);
+        // Build info below reputation — mirrors the bot stat-box layout
         heroWealthLabel.setText("Wealth: " + humanPlayer.wealth());
         heroReputationLabel.setText("Reputation: " + humanPlayer.reputation());
-        heroInfamyLabel.setText(
-                "Infamy: " + humanPlayer.infamy() +
-                "\n\u25b2 Build Lv." + humanPlayer.buildLevel() +
+        heroBuildLabel.setText(
+                "\u25b2 Build Lv." + humanPlayer.buildLevel() +
                 "\n   Income: +" + humanPlayer.income() + "/rd" +
                 "\n   Stat Buff: +" + (int)(humanPlayer.statBonus() * 100) + "%");
 
@@ -603,8 +594,7 @@ public class GameplayScreenController {
         pWealth.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
         Label pRep = new Label("Reputation: " + player.reputation());
         pRep.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
-        Label pInfamy = new Label("Infamy: " + player.infamy());
-        pInfamy.setStyle("-fx-text-fill: white; -fx-font-size: 10px;");
+
 
         // Build level — bots show level only; only the player sees income/buff
         Label pBuildLv = new Label("\u25b2 Build Lv." + player.buildLevel());
@@ -615,10 +605,10 @@ public class GameplayScreenController {
             pIncome.setStyle("-fx-text-fill: #a3e635; -fx-font-size: 9px;");
             Label pStatBuff = new Label("  Stat Buff: +" + (int)(player.statBonus() * 100) + "%");
             pStatBuff.setStyle("-fx-text-fill: #f472b6; -fx-font-size: 9px;");
-            statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy, pBuildLv, pIncome, pStatBuff);
+            statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pBuildLv, pIncome, pStatBuff);
         } else {
             // Bot: only show build level, keep it clean
-            statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy, pBuildLv);
+            statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pBuildLv);
         }
         container.getChildren().addAll(avatarPane, statsBox);
 
@@ -769,8 +759,7 @@ public class GameplayScreenController {
                 enemies.stream()
                         .max(java.util.Comparator.comparingInt(p -> switch(p.playerClass()) {
                             case OPPORTUNIST -> p.wealth();
-                            case ALTRUIST -> p.reputation();
-                            case SABOTEUR -> p.infamy();
+                            case ALTRUIST, SABOTEUR -> p.reputation();
                         }))
                         .orElse(enemies.get(0));
         };
@@ -1063,7 +1052,7 @@ public class GameplayScreenController {
                 String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Wealth (target)",
                         Math.round(45 * mult), Math.round(10 * mult), Math.round(35 * mult));
             case SABOTAGE, SIGNATURE_SABOTEUR ->
-                String.format("Sabotage a target:\n+%d Infamy (you)\nReduces target's gains by 50%%",
+                String.format("Sabotage a target:\n+%d Reputation (you)\nReduces target's gains by 50%%",
                         Math.round(50 * mult));
         };
     }

@@ -14,7 +14,6 @@ public final class PlayerState implements java.io.Serializable {
     private int clams;
     private int wealth;
     private int reputation;
-    private int infamy;
     private int buildLevel = 1;
 
     private PlayerState(String id, String displayName, PlayerClass playerClass) {
@@ -55,10 +54,6 @@ public final class PlayerState implements java.io.Serializable {
 
     public int reputation() {
         return reputation;
-    }
-
-    public int infamy() {
-        return infamy;
     }
 
     public int buildLevel() {
@@ -133,10 +128,6 @@ public final class PlayerState implements java.io.Serializable {
 
     public void addReputation(int amount) {
         reputation += amount;
-    }
-
-    public void addInfamy(int amount) {
-        infamy = Math.max(0, infamy + amount);
     }
 
     public void addCard(ActionCard card) {

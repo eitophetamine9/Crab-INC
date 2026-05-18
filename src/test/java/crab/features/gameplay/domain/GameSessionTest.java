@@ -109,7 +109,7 @@ final class GameSessionTest {
      *   alice.wealth += 30  (alice is NOT sabotaged)
      *
      * SABOTAGE (COMMON 1.0x) by alice:
-     *   alice.infamy += 50
+     *   alice.reputation += 50
      */
     @Test
     void sabotageReducesTargetsPositiveRewardsDuringTheSameResolution() {
@@ -127,7 +127,7 @@ final class GameSessionTest {
         // Round 1: No event
         assertEquals(GamePhase.ROUND_COMPLETE, session.phase());
 
-        assertEquals(50, alice.infamy());
+        assertEquals(50, alice.reputation());
         assertEquals(30, alice.wealth());   // received from bob's HELP (not reduced)
         assertEquals(20, bob.reputation()); // 40 * 0.50 = 20 (50% reduction for common sabotage)
         assertEquals(23, bob.clams());      // income 15 + round(15 * 0.50)=8 = 23
@@ -184,7 +184,7 @@ final class GameSessionTest {
         PlayerState alice = PlayerState.create("alice", "Alice", PlayerClass.SABOTEUR);
         PlayerState bob   = PlayerState.create("bob",   "Bob",   PlayerClass.ALTRUIST);
         PlayerState cara  = PlayerState.create("cara",  "Cara",  PlayerClass.OPPORTUNIST);
-        alice.addInfamy(30);
+        alice.addReputation(30);
         bob.addReputation(60);
         cara.addWealth(40);
 

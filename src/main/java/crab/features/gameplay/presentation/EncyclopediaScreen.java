@@ -453,7 +453,7 @@ public final class EncyclopediaScreen implements GameScreen {
                 String.format("Steal from a target:\n+%d Wealth (you)  -%d Rep (you)\n-%d Wealth (target)",
                         Math.round(45 * mult), Math.round(10 * mult), Math.round(35 * mult));
             case SABOTAGE, SIGNATURE_SABOTEUR ->
-                String.format("Sabotage a target:\n+%d Infamy (you)\nReduces target's gains by 50%%",
+                String.format("Sabotage a target:\n+%d Reputation (you)\nReduces target's gains by 50%%",
                         Math.round(50 * mult));
         };
     }

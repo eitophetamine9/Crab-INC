@@ -269,7 +269,6 @@ public final class GameSession implements java.io.Serializable {
             target.addClams(event.clamsDelta());
             target.addWealth(event.wealthDelta());
             target.addReputation(event.reputationDelta());
-            target.addInfamy(event.infamyDelta());
         }
 
         phase = GamePhase.ROUND_COMPLETE;
@@ -286,7 +285,6 @@ public final class GameSession implements java.io.Serializable {
             p.addClams(event.clamsDelta());
             p.addWealth(event.wealthDelta());
             p.addReputation(event.reputationDelta());
-            p.addInfamy(event.infamyDelta());
         }
         phase = GamePhase.ROUND_COMPLETE;
     }
@@ -312,8 +310,7 @@ public final class GameSession implements java.io.Serializable {
             crabPeakTriggeredById = players.values().stream()
                     .max(java.util.Comparator.comparingInt(p -> switch (p.playerClass()) {
                         case OPPORTUNIST -> p.wealth();
-                        case ALTRUIST    -> p.reputation();
-                        case SABOTEUR    -> p.infamy();
+                        case ALTRUIST, SABOTEUR -> p.reputation();
                     }))
                     .map(PlayerState::id)
                     .orElse(null);
@@ -327,8 +324,7 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState p : players.values()) {
             int score = switch (p.playerClass()) {
                 case OPPORTUNIST -> p.wealth();
-                case ALTRUIST -> p.reputation();
-                case SABOTEUR -> p.infamy();
+                case ALTRUIST, SABOTEUR -> p.reputation();
             };
             if (score >= winThreshold) return true;
         }
@@ -408,15 +404,15 @@ public final class GameSession implements java.io.Serializable {
     }
 
     /**
-     * Sabotage card: +50 Infamy (actor), 50% reward reduction on target (Capped at 70%).
-     * Signature Saboteur: +100 Infamy, Double negative effects on target for 1 round.
+     * Sabotage card: +50 Reputation (actor), 50% reward reduction on target (Capped at 70%).
+     * Signature Saboteur: +100 Reputation, Double negative effects on target for 1 round.
      */
     private void resolveSabotage(PlayerState actor, PlayerAction action) {
         requireTarget(action);
         boolean isSignature = action.card().type() == CardType.SIGNATURE_SABOTEUR;
-        int baseInfamy = isSignature ? 100 : 50;
-        int actorInfamyGain = calculateNegativeEffect(baseInfamy, action.card().rarity());
-        actor.addInfamy(actorInfamyGain);
+        int baseRep = isSignature ? 100 : 50;
+        int actorReputationGain = calculateNegativeEffect(baseRep, action.card().rarity());
+        actor.addReputation(actorReputationGain);
     }
 
     /**
@@ -472,8 +468,7 @@ public final class GameSession implements java.io.Serializable {
     }
 
     /**
-     * Selects an event using hostility-weighted RNG.
-     * TargetWeight = (Infamy / TotalInfamy) * 100. Higher infamy = more likely to be targeted.
+     * Selects an event using RNG.
      */
     public GameEvent selectWeightedEvent() {
         requirePhase(GamePhase.EVENT);
@@ -501,26 +496,6 @@ public final class GameSession implements java.io.Serializable {
             merchantSignatureStock = rng.nextInt(100) < 50;
             return GameEvent.travellingShop();
         }
-    }
-
-    private String selectHostilityTarget(int totalInfamy) {
-        if (totalInfamy == 0) {
-            // No infamy: pick the wealthiest player as target
-            return players.values().stream()
-                    .max(java.util.Comparator.comparingInt(PlayerState::wealth))
-                    .map(PlayerState::id)
-                    .orElse(players.values().iterator().next().id());
-        }
-        // Weighted random by infamy
-        NavigableMap<Integer, String> weightMap = new TreeMap<>();
-        int cumulative = 0;
-        for (PlayerState p : players.values()) {
-            int weight = Math.max(1, (int) ((p.infamy() / (double) totalInfamy) * 100));
-            cumulative += weight;
-            weightMap.put(cumulative, p.id());
-        }
-        int pick = rng.nextInt(cumulative);
-        return weightMap.higherEntry(pick).getValue();
     }
 
     private int calculatePositiveEffect(int base, CardRarity rarity, PlayerState actor) {
@@ -668,8 +643,7 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState player : players.values()) {
             int score = switch (player.playerClass()) {
                 case OPPORTUNIST -> player.wealth();
-                case ALTRUIST -> player.reputation();
-                case SABOTEUR -> player.infamy();
+                case ALTRUIST, SABOTEUR -> player.reputation();
             };
             highest = Math.max(highest, score);
         }
@@ -680,8 +654,7 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState p : players.values()) {
             int score = switch (p.playerClass()) {
                 case OPPORTUNIST -> p.wealth();
-                case ALTRUIST -> p.reputation();
-                case SABOTEUR -> p.infamy();
+                case ALTRUIST, SABOTEUR -> p.reputation();
             };
             if (score >= winThreshold) {
                 return new WinnerResult(p.id(), p.playerClass(), score);
@@ -694,8 +667,7 @@ public final class GameSession implements java.io.Serializable {
         for (PlayerState p : players.values()) {
             int score = switch (p.playerClass()) {
                 case OPPORTUNIST -> p.wealth();
-                case ALTRUIST -> p.reputation();
-                case SABOTEUR -> p.infamy();
+                case ALTRUIST, SABOTEUR -> p.reputation();
             };
             double progress = (double) score / winThreshold;
             if (progress > bestProgress) {
@@ -706,8 +678,7 @@ public final class GameSession implements java.io.Serializable {
         
         int finalScore = switch (best.playerClass()) {
             case OPPORTUNIST -> best.wealth();
-            case ALTRUIST -> best.reputation();
-            case SABOTEUR -> best.infamy();
+            case ALTRUIST, SABOTEUR -> best.reputation();
         };
         return new WinnerResult(best.id(), best.playerClass(), finalScore);
     }

@@ -57,8 +57,7 @@ public final class GameOverScreen implements GameScreen {
             if (human != null) {
                 int finalScore = switch (human.playerClass()) {
                     case OPPORTUNIST -> human.wealth();
-                    case ALTRUIST -> human.reputation();
-                    case SABOTEUR -> human.infamy();
+                    case ALTRUIST, SABOTEUR -> human.reputation();
                 };
                 String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
                 if (username != null && !username.isBlank() && !"guest".equalsIgnoreCase(username)) {
