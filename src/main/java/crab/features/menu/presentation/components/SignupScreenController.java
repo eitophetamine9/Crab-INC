@@ -32,9 +32,9 @@ public final class SignupScreenController {
     @FXML
     private void initialize() {
         errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
-        // Allow pressing Enter in any field to trigger sign-up
-        usernameField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) handleSignup(); });
-        passwordField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) handleSignup(); });
+        // Focus flows logically: username -> password -> confirm password -> register
+        usernameField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) passwordField.requestFocus(); });
+        passwordField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) confirmPasswordField.requestFocus(); });
         confirmPasswordField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) handleSignup(); });
     }
 

@@ -43,8 +43,8 @@ public final class LoginScreenController {
     @FXML
     private void initialize() {
         errorLabel.setStyle("-fx-text-fill: #f87171; -fx-effect: dropshadow(three-pass-box, black, 2, 0, 0, 0); -fx-font-weight: bold;");
-        // Allow pressing Enter in any field to trigger login
-        usernameField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) handleLogin(); });
+        // Enter in username moves focus to password; Enter in password triggers login
+        usernameField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) passwordField.requestFocus(); });
         passwordField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) handleLogin(); });
     }
 
