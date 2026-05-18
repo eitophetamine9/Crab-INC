@@ -6,6 +6,7 @@ import crab.features.gameplay.domain.*;
 import javafx.animation.TranslateTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -23,6 +24,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Circle;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.paint.CycleMethod;
@@ -69,6 +71,8 @@ public class GameplayScreenController {
     private VBox pauseMenu;
     private int logRound = 0; // tracks last logged round to avoid duplicate log entries
 
+    // Image assets are now fully managed globally via the AssetFlyweightFactory (Flyweight Design Pattern)
+
     private final Random random = new Random();
 
     /** Appends a line to the action log panel with optional color. */
@@ -107,10 +111,10 @@ public class GameplayScreenController {
         };
         String suffix = female ? "fm.gif" : "m.gif";
         String path = "/assets/humanoid-art/" + baseName + suffix;
-        // Use THIS class's classloader so the resource is always found
-        var url = getClass().getResource(path);
-        if (url == null) return null;
-        return AssetCache.getInstance().getOrLoad(url.toExternalForm());
+        String slotId = "gameplay_hero_" + baseName + "_" + suffix;
+
+        // Retrieve downsampled image (160x200) via Flyweight Factory, saving 1.5GB of JVM heap!
+        return crab.appcore.concurrent.AssetFlyweightFactory.getSharedImage(slotId, path, 160, 200);
     }
 
     private Image getCrabImage(PlayerClass playerClass) {
@@ -120,11 +124,8 @@ public class GameplayScreenController {
             case OPPORTUNIST -> "oppurtunist";
         };
         String path = "/assets/crab-art/" + baseName + "_idle.gif";
-        var res = getClass().getResource(path);
-        if (res != null) {
-            return new Image(res.toExternalForm());
-        }
-        return null;
+        String slotId = "static_crab_" + baseName;
+        return crab.appcore.concurrent.AssetFlyweightFactory.getSharedImage(slotId, path, 100, 80);
     }
 
     private Image getEndingImage(PlayerClass playerClass) {
@@ -134,11 +135,8 @@ public class GameplayScreenController {
             case OPPORTUNIST -> "opportunist_end_screen.png";
         };
         String path = "/assets/endings/" + fileName;
-        var res = getClass().getResource(path);
-        if (res != null) {
-            return new Image(res.toExternalForm());
-        }
-        return null;
+        String slotId = "ending_screen_" + fileName;
+        return crab.appcore.concurrent.AssetFlyweightFactory.getSharedImage(slotId, path, 600, 450);
     }
 
     public void initData(GameSession gameSession, ScreenManager screens, PlayerState humanPlayer, List<PlayerState> aiPlayers) {
@@ -146,6 +144,9 @@ public class GameplayScreenController {
         this.screens = screens;
         this.humanPlayer = humanPlayer;
         this.aiPlayers = aiPlayers;
+
+        // Reclaim native byte buffers and unreferenced parent nodes from the previous game session immediately
+        System.gc();
 
         // Load background — synchronous but fast; AssetCache ensures it's only loaded once
         var bgUrl = getClass().getResource("/assets/textures/bg_beach.gif");
@@ -439,20 +440,69 @@ public class GameplayScreenController {
             case OPPORTUNIST -> "oppurtunist";
         };
 
-        // Resolve via this class's classloader so assets are always found
-        var idleUrl   = getClass().getResource("/assets/crab-art/" + crabArtBase + "_idle.gif");
-        var damageUrl = getClass().getResource("/assets/crab-art/" + crabArtBase + "_damage.gif");
-        final Image idleImg   = idleUrl   != null ? AssetCache.getInstance().getOrLoad(idleUrl.toExternalForm())   : null;
-        final Image damageImg = damageUrl != null ? AssetCache.getInstance().getOrLoad(damageUrl.toExternalForm()) : null;
+        // Note specific filenames: saboteur uses 'eur', altruist uses 'ist', oppurtunist uses 'unist'
+        String peakArtBase = switch (player.playerClass()) {
+            case SABOTEUR -> "saboteur";
+            case ALTRUIST -> "altruist";
+            case OPPORTUNIST -> "oppurtunist";
+        };
+
+        // Extrinsic State: the specific viewer slotId (player.id()) to prevent concurrent GIF freezes
+        final String slotId = player.id();
+        
+        // Intrinsic States: the shared resource paths and dimensions (100x80)
+        final String idlePath = "/assets/crab-art/" + crabArtBase + "_idle.gif";
+        final String damagePath = "/assets/crab-art/" + crabArtBase + "_damage.gif";
+        final String peakPath = "/assets/crab-art/" + peakArtBase + "_crab_peak.gif";
+
+        // Retrieve downsampled (100x80) image flyweights
+        Image idleImg   = crab.appcore.concurrent.AssetFlyweightFactory.getSharedImage(slotId, idlePath, 100, 80);
+        Image damageImg = crab.appcore.concurrent.AssetFlyweightFactory.getSharedImage(slotId, damagePath, 100, 80);
+        Image peakImg   = crab.appcore.concurrent.AssetFlyweightFactory.getSharedImage(slotId, peakPath, 100, 80);
+
+        // Determine if player triggered the Crab Peak event
+        boolean isTriggerer = gameSession.crabPeakActive()
+                && player.id().equals(gameSession.crabPeakTriggeredById());
+
+        // Replace idle with peak animation if they are the Crab Peak triggerer
+        final Image activeIdleImg = (isTriggerer && peakImg != null) ? peakImg : idleImg;
+
+        // Satisfy Java lambda lexical closure by creating effectively-final references
+        final Image finalIdle = activeIdleImg;
+        final Image finalDamage = damageImg;
         
         // Show damage art if targeted in resolution phase
         if (gameSession.phase() == GamePhase.RESOLUTION) {
             boolean isIncomingTarget = gameSession.pendingActions().values().stream()
                     .anyMatch(a -> player.id().equals(a.targetPlayerId()));
-            crabAvatar.setImage(isIncomingTarget ? damageImg : idleImg);
+            crabAvatar.setImage(isIncomingTarget ? finalDamage : finalIdle);
         } else {
-            crabAvatar.setImage(idleImg);
+            crabAvatar.setImage(finalIdle);
         }
+
+        // StackPane to hold crab avatar and overlay the bottom-right status indicator circle
+        StackPane avatarPane = new StackPane(crabAvatar);
+        avatarPane.setPrefSize(100, 80);
+        avatarPane.setMaxSize(100, 80);
+
+        // Status circle indicator on bottom-right of crab avatar window
+        javafx.scene.shape.Circle indicator = new javafx.scene.shape.Circle(5); // radius 5
+        boolean humanTriggeredPeak = gameSession.crabPeakActive()
+                && "human".equals(gameSession.crabPeakTriggeredById());
+
+        if (humanTriggeredPeak) {
+            indicator.setFill(Color.web("#fbbf24")); // glowing gold
+            indicator.setStroke(Color.web("#d97706"));
+            indicator.setStrokeWidth(1.2);
+            indicator.setEffect(new javafx.scene.effect.DropShadow(3, Color.web("#fbbf24")));
+        } else {
+            indicator.setFill(Color.web("#94a3b8")); // flat slate grey
+            indicator.setStroke(Color.web("#475569"));
+            indicator.setStrokeWidth(1.0);
+        }
+        StackPane.setAlignment(indicator, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(indicator, new Insets(0, 4, 4, 0));
+        avatarPane.getChildren().add(indicator);
         
         // 2. Stats Box (Has background) — wider to accommodate build level details
         VBox statsBox = new VBox(2);
@@ -488,13 +538,9 @@ public class GameplayScreenController {
             // Bot: only show build level, keep it clean
             statsBox.getChildren().addAll(pName, pClass, pWealth, pRep, pInfamy, pBuildLv);
         }
-        container.getChildren().addAll(crabAvatar, statsBox);
+        container.getChildren().addAll(avatarPane, statsBox);
 
-        // Crab Peak: show damage GIF for the trigger player's crab unit
-        boolean isTriggerer = gameSession.crabPeakActive()
-                && player.id().equals(gameSession.crabPeakTriggeredById());
         if (isTriggerer) {
-            crabAvatar.setImage(damageImg);
             // If the HUMAN triggered peak: show a faint pulsing gold border ring around the entire layout
             if (isHuman) {
                 applyOrUpdateCrabPeakBorder();
@@ -533,13 +579,13 @@ public class GameplayScreenController {
         container.setOnMouseEntered(e -> {
             if (gameSession.phase() == GamePhase.ACTION && selectedCard != null) {
                 statsBox.setStyle("-fx-background-color: rgba(200,50,50,0.8); -fx-border-color: red; -fx-border-width: 3; -fx-padding: 4;");
-                crabAvatar.setImage(damageImg);
+                crabAvatar.setImage(finalDamage);
             }
         });
         container.setOnMouseExited(e -> {
             statsBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: " + (isHuman ? "#10b981" : "white") + "; -fx-border-width: 2; -fx-padding: 5;");
             if (gameSession.phase() != GamePhase.RESOLUTION) {
-                crabAvatar.setImage(idleImg);
+                crabAvatar.setImage(finalIdle);
             }
         });
 

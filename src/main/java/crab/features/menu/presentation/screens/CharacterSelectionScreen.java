@@ -192,9 +192,12 @@ public final class CharacterSelectionScreen implements GameScreen {
         ImageView imgView = new ImageView();
         try {
             String suffix = currentIsMale ? "m" : "fm";
-            var res = getClass().getResource("/assets/humanoid-art/" + baseName + suffix + ".gif");
-            if (res != null) {
-                imgView.setImage(new Image(res.toExternalForm(), true));
+            String path = "/assets/humanoid-art/" + baseName + suffix + ".gif";
+            String slotId = "select_card_" + baseName + "_" + suffix;
+            // Retrieve via Flyweight Factory asynchronously, downsampled to 135x170
+            Image img = crab.appcore.concurrent.AssetFlyweightFactory.getSharedImageAsync(slotId, path, 135, 170);
+            if (img != null) {
+                imgView.setImage(img);
             }
         } catch (Exception e) {}
         imgView.setFitWidth(135);

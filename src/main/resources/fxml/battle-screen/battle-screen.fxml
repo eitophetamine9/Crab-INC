@@ -33,12 +33,12 @@
                text="Phase Prompt" />
     </VBox>
 
-    <!-- Top Right: Action Log panel -->
+    <!-- Top Right: Action Log panel in a dedicated right-hand column (no bot card overlap!) -->
     <VBox spacing="5.0"
-          AnchorPane.topAnchor="10.0" AnchorPane.rightAnchor="10.0"
+          AnchorPane.topAnchor="10.0" AnchorPane.rightAnchor="20.0"
           style="-fx-background-color: rgba(0,0,0,0.55); -fx-padding: 8; -fx-border-color: white; -fx-border-width: 2; -fx-border-radius: 6; -fx-background-radius: 6;">
         <Label text="Action Log" style="-fx-text-fill: white; -fx-font-weight: bold;" />
-        <ScrollPane fx:id="actionLogScroll" prefHeight="150.0" prefWidth="240.0"
+        <ScrollPane fx:id="actionLogScroll" prefHeight="380.0" prefWidth="240.0"
                     hbarPolicy="NEVER"
                     style="-fx-background: transparent; -fx-background-color: transparent;">
             <content>
@@ -47,10 +47,10 @@
         </ScrollPane>
     </VBox>
 
-    <!-- Center: Enemy battlefield wrapped in StackPane for fade-mask overlay effect -->
+    <!-- Center: Enemy battlefield wrapped in StackPane with left-shifted anchors to prevent Action Log collisions -->
     <StackPane fx:id="enemyScrollContainer"
                AnchorPane.topAnchor="100.0" AnchorPane.leftAnchor="20.0"
-               AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="220.0">
+               AnchorPane.rightAnchor="280.0" AnchorPane.bottomAnchor="220.0">
         <ScrollPane fx:id="enemyScrollPane"
                     hbarPolicy="NEVER" vbarPolicy="NEVER" fitToWidth="true"
                     style="-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;">

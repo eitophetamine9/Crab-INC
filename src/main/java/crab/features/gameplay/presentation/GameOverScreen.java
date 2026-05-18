@@ -48,6 +48,29 @@ public final class GameOverScreen implements GameScreen {
         WinnerResult result = loadedResult;
         GameSession gameSession = loadedSession;
 
+        // Asynchronously save human player's career statistics to player_stats
+        if (gameSession != null) {
+            PlayerState human = gameSession.players().stream()
+                    .filter(p -> p.id().equals("human"))
+                    .findFirst()
+                    .orElse(null);
+            if (human != null) {
+                int finalScore = switch (human.playerClass()) {
+                    case OPPORTUNIST -> human.wealth();
+                    case ALTRUIST -> human.reputation();
+                    case SABOTEUR -> human.infamy();
+                };
+                String username = crab.features.menu.presentation.components.LoginScreenController.loggedInUser;
+                if (username != null && !username.isBlank() && !"guest".equalsIgnoreCase(username)) {
+                    Thread t = new Thread(() -> {
+                        crab.appcore.db.DatabaseManager.recordPlayerStats(username, finalScore);
+                    });
+                    t.setDaemon(true);
+                    t.start();
+                }
+            }
+        }
+
         root = new StackPane();
         root.setPrefSize(1080, 720);
         root.setStyle("-fx-background-color: black;");

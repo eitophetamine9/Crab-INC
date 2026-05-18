@@ -231,4 +231,70 @@ public class DatabaseManager {
         }
         return null;
     }
+
+    public static record PlayerCareerStats(int highScore, int gamesPlayed) {}
+
+    public static void recordPlayerStats(String username, int score) {
+        if (username == null || username.isBlank() || "guest".equalsIgnoreCase(username)) {
+            return;
+        }
+        initDB();
+        String selectSql = "SELECT games_played, score FROM player_stats WHERE username = ?";
+        String insertSql = "INSERT INTO player_stats(username, score, games_played) VALUES(?, ?, 1)";
+        String updateSql = "UPDATE player_stats SET score = ?, games_played = ? WHERE username = ?";
+        
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS)) {
+            int currentGames = 0;
+            int maxScore = 0;
+            boolean exists = false;
+            
+            try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+                pstmt.setString(1, username);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        currentGames = rs.getInt("games_played");
+                        maxScore = rs.getInt("score");
+                        exists = true;
+                    }
+                }
+            }
+            
+            if (exists) {
+                try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+                    pstmt.setInt(1, Math.max(maxScore, score));
+                    pstmt.setInt(2, currentGames + 1);
+                    pstmt.setString(3, username);
+                    pstmt.executeUpdate();
+                }
+            } else {
+                try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
+                    pstmt.setString(1, username);
+                    pstmt.setInt(2, score);
+                    pstmt.executeUpdate();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static PlayerCareerStats getPlayerStats(String username) {
+        if (username == null || username.isBlank() || "guest".equalsIgnoreCase(username)) {
+            return new PlayerCareerStats(0, 0);
+        }
+        initDB();
+        String sql = "SELECT score, games_played FROM player_stats WHERE username = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new PlayerCareerStats(rs.getInt("score"), rs.getInt("games_played"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new PlayerCareerStats(0, 0);
+    }
 }

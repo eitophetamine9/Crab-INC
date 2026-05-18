@@ -188,8 +188,57 @@ public final class MainMenuScreen implements GameScreen {
         menu.setPrefHeight(620);
         menu.setMaxHeight(620);
 
+        // Asynchronous Career Stats Badge (Top-Right Profile Box)
+        VBox profileBox = new VBox(8);
+        profileBox.setAlignment(Pos.CENTER_LEFT);
+        profileBox.setPadding(new Insets(15));
+        profileBox.setStyle("-fx-background-color: rgba(13, 43, 62, 0.9); -fx-border-color: #fbbf24; -fx-border-width: 2; -fx-background-radius: 12; -fx-border-radius: 12;");
+        profileBox.setMaxSize(240, 110);
+        StackPane.setAlignment(profileBox, Pos.TOP_RIGHT);
+        StackPane.setMargin(profileBox, new Insets(25, 25, 0, 0));
+
+        Label profileTitle = new Label("Shellfish Career Profile");
+        profileTitle.setStyle("-fx-font-family: 'Arial Rounded MT Bold'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
+
+        Label usernameLbl = new Label("Player: " + (username != null ? username : "Guest"));
+        usernameLbl.setStyle("-fx-font-size: 12px; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        Label gamesLbl = new Label("Games Played: Loading...");
+        gamesLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #e2e8f0;");
+
+        Label scoreLbl = new Label("Career High Score: Loading...");
+        scoreLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #e2e8f0;");
+
+        profileBox.getChildren().addAll(profileTitle, usernameLbl, gamesLbl, scoreLbl);
+
+        // Fetch high score asynchronously
+        if (username != null && !username.isBlank() && !"guest".equalsIgnoreCase(username)) {
+            javafx.concurrent.Task<crab.appcore.db.DatabaseManager.PlayerCareerStats> statsTask = new javafx.concurrent.Task<>() {
+                @Override
+                protected crab.appcore.db.DatabaseManager.PlayerCareerStats call() throws Exception {
+                    return crab.appcore.db.DatabaseManager.getPlayerStats(username);
+                }
+            };
+            statsTask.setOnSucceeded(e -> {
+                crab.appcore.db.DatabaseManager.PlayerCareerStats stats = statsTask.getValue();
+                gamesLbl.setText("Games Played: " + stats.gamesPlayed());
+                scoreLbl.setText("Career High Score: " + stats.highScore());
+            });
+            statsTask.setOnFailed(e -> {
+                gamesLbl.setText("Games Played: N/A");
+                scoreLbl.setText("Career High Score: N/A");
+            });
+            Thread t = new Thread(statsTask);
+            t.setDaemon(true);
+            t.start();
+        } else {
+            // Guest mode
+            gamesLbl.setText("Games Played: N/A (Guest)");
+            scoreLbl.setText("Career High Score: N/A");
+        }
+
         // Use StackPane for centering to avoid translation issues
-        StackPane rootWrapper = new StackPane(menu);
+        StackPane rootWrapper = new StackPane(menu, profileBox);
         rootWrapper.setPrefSize(APP_WIDTH, APP_HEIGHT);
         rootWrapper.setAlignment(Pos.CENTER);
 
