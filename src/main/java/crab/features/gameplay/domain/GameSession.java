@@ -545,19 +545,51 @@ public final class GameSession implements java.io.Serializable {
         boolean ownClass = rng.nextInt(100) < 60;
 
         CardRarity rarity;
+        int level = player.buildLevel();
         if (ownClass) {
-            // Within own-class draws: Common 35%, Uncommon 30%, Rare 20%, Signature 15%
-            int roll = rng.nextInt(100);
-            if (roll < 35)      rarity = CardRarity.COMMON;
-            else if (roll < 65) rarity = CardRarity.UNCOMMON;
-            else if (roll < 85) rarity = CardRarity.RARE;
-            else                rarity = CardRarity.SIGNATURE;
+            // Within own-class draws (Normally C: 35%, UC: 30%, R: 20%, S: 15%)
+            // Scale rare and signature down at low build levels
+            double sigWeight = 15.0;
+            double rareWeight = 20.0;
+            if (level == 1) {
+                sigWeight = 1.5;
+                rareWeight = 4.0;
+            } else if (level == 2) {
+                sigWeight = 7.5;
+                rareWeight = 12.0;
+            }
+            double commonWeight = 35.0 + (15.0 - sigWeight + 20.0 - rareWeight) * 35.0 / 65.0;
+            double uncommonWeight = 30.0 + (15.0 - sigWeight + 20.0 - rareWeight) * 30.0 / 65.0;
+
+            double roll = rng.nextDouble() * 100.0;
+            if (roll < commonWeight) {
+                rarity = CardRarity.COMMON;
+            } else if (roll < commonWeight + uncommonWeight) {
+                rarity = CardRarity.UNCOMMON;
+            } else if (roll < commonWeight + uncommonWeight + rareWeight) {
+                rarity = CardRarity.RARE;
+            } else {
+                rarity = CardRarity.SIGNATURE;
+            }
         } else {
-            // Cross-class draws use original distribution; signatures stay class-locked so treat as RARE fallback
-            int roll = rng.nextInt(100);
-            if (roll < 60)      rarity = CardRarity.COMMON;
-            else if (roll < 85) rarity = CardRarity.UNCOMMON;
-            else                rarity = CardRarity.RARE; // no cross-class signatures
+            // Cross-class draws (Normally C: 60%, UC: 25%, R: 15% - no cross-class signatures)
+            double rareWeight = 15.0;
+            if (level == 1) {
+                rareWeight = 3.0;
+            } else if (level == 2) {
+                rareWeight = 8.0;
+            }
+            double commonWeight = 60.0 + (15.0 - rareWeight) * 60.0 / 85.0;
+            double uncommonWeight = 25.0 + (15.0 - rareWeight) * 25.0 / 85.0;
+
+            double roll = rng.nextDouble() * 100.0;
+            if (roll < commonWeight) {
+                rarity = CardRarity.COMMON;
+            } else if (roll < commonWeight + uncommonWeight) {
+                rarity = CardRarity.UNCOMMON;
+            } else {
+                rarity = CardRarity.RARE;
+            }
         }
 
         List<ActionCard> candidates;
