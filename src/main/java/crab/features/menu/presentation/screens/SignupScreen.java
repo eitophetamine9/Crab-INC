@@ -11,9 +11,6 @@ import javafx.scene.paint.Color;
 import java.io.IOException;
 import java.net.URL;
 
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.scene.media.MediaView;
 import static com.almasb.fxgl.dsl.FXGL.*;
 import com.almasb.fxgl.particle.ParticleEmitter;
 import com.almasb.fxgl.particle.ParticleEmitters;
