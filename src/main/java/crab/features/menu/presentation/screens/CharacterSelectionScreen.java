@@ -168,13 +168,13 @@ public final class CharacterSelectionScreen implements GameScreen {
         if (cardsContainer == null) return;
         cardsContainer.getChildren().clear();
         cardsContainer.getChildren().addAll(
-            createClassCard(PlayerClass.OPPORTUNIST, "Goal: 1000 Wealth", "Gain wealth from every interaction."),
-            createClassCard(PlayerClass.ALTRUIST, "Goal: 1000 Reputation", "Help others and grow your fame."),
-            createClassCard(PlayerClass.SABOTEUR, "Goal: -1000 Reputation", "Disrupt opponents to win.")
+            createClassCard(PlayerClass.OPPORTUNIST, "Gain wealth from every interaction."),
+            createClassCard(PlayerClass.ALTRUIST, "Help others and grow your fame."),
+            createClassCard(PlayerClass.SABOTEUR, "Disrupt opponents to win.")
         );
     }
 
-    private VBox createClassCard(PlayerClass pClass, String goal, String desc) {
+    private VBox createClassCard(PlayerClass pClass, String desc) {
         VBox card = new VBox(10); // Original comfortable spacing inside cards
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(10)); // Original comfortable padding inside cards
@@ -211,14 +211,35 @@ public final class CharacterSelectionScreen implements GameScreen {
             }
         } catch (Exception e) {}
 
-        javafx.scene.text.Text goalLbl = new javafx.scene.text.Text(goal);
-        goalLbl.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16)); // Original beautiful large goal font size
-        goalLbl.setWrappingWidth(260);
-        goalLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        goalLbl.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
-        goalLbl.setStyle("-fx-fill: #fbbf24; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
-        goalLbl.setCache(true);
-        goalLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
+        javafx.scene.text.TextFlow goalFlow = new javafx.scene.text.TextFlow();
+        goalFlow.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        goalFlow.setPrefWidth(260);
+        goalFlow.setCache(true);
+        goalFlow.setCacheHint(javafx.scene.CacheHint.SPEED);
+
+        javafx.scene.text.Text goalPrefix = new javafx.scene.text.Text("Goal: ");
+        goalPrefix.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16));
+        goalPrefix.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
+        goalPrefix.setStyle("-fx-fill: #fbbf24; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
+
+        String infoText = switch (pClass) {
+            case OPPORTUNIST -> "1000 Wealth";
+            case ALTRUIST -> "1000 Reputation";
+            case SABOTEUR -> "-1000 Reputation";
+        };
+
+        String infoColor = switch (pClass) {
+            case OPPORTUNIST -> "#10b981"; // green
+            case ALTRUIST -> "#60a5fa";    // blue
+            case SABOTEUR -> "#ef4444";    // red
+        };
+
+        javafx.scene.text.Text goalInfo = new javafx.scene.text.Text(infoText);
+        goalInfo.setFont(javafx.scene.text.Font.font("Luckiest Guy", 16));
+        goalInfo.setStrokeType(javafx.scene.shape.StrokeType.OUTSIDE);
+        goalInfo.setStyle("-fx-fill: " + infoColor + "; -fx-stroke: #0d2b3e; -fx-stroke-width: 1.0px;");
+
+        goalFlow.getChildren().addAll(goalPrefix, goalInfo);
 
         javafx.scene.text.Text descLbl = new javafx.scene.text.Text(desc);
         descLbl.setFont(javafx.scene.text.Font.font("Arial Rounded MT Bold", javafx.scene.text.FontWeight.BOLD, 14)); // Original beautiful large description font size
@@ -229,7 +250,7 @@ public final class CharacterSelectionScreen implements GameScreen {
         descLbl.setCache(true);
         descLbl.setCacheHint(javafx.scene.CacheHint.SPEED);
 
-        card.getChildren().addAll(nameLbl, imgView, goalLbl, descLbl);
+        card.getChildren().addAll(nameLbl, imgView, goalFlow, descLbl);
         card.setCursor(javafx.scene.Cursor.HAND);
         card.setCache(true);
         card.setCacheHint(javafx.scene.CacheHint.SPEED);

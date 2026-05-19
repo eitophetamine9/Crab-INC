@@ -54,6 +54,7 @@ public class GameplayScreenController {
     @FXML private ScrollPane enemyScrollPane;
     @FXML private ScrollPane actionLogScroll;
     @FXML private VBox actionLogContainer;
+    @FXML private Button toggleLogBtn;
 
     private ScreenManager screens;
     private GameSession gameSession;
@@ -413,6 +414,18 @@ public class GameplayScreenController {
         AnchorPane.setRightAnchor(pauseMenu, 300.0);
     }
 
+    @FXML
+    private void handleToggleLog(javafx.event.ActionEvent event) {
+        if (actionLogScroll != null) {
+            boolean currentlyVisible = actionLogScroll.isVisible();
+            actionLogScroll.setVisible(!currentlyVisible);
+            actionLogScroll.setManaged(!currentlyVisible);
+            if (toggleLogBtn != null) {
+                toggleLogBtn.setText(currentlyVisible ? "Show" : "Hide");
+            }
+        }
+    }
+
     private void updateUI() {
         if (gameSession == null) return;
 
@@ -458,6 +471,7 @@ public class GameplayScreenController {
         }
         
         heroClassLabel.setText(humanPlayer.playerClass().name() + "\n(" + getGoalString(humanPlayer.playerClass()) + ")");
+        heroClassLabel.setWrapText(true);
         heroNameLabel.setText(humanPlayer.displayName());
         heroBuildLabel.setWrapText(true);
         // Build info below reputation — mirrors the bot stat-box layout
@@ -593,11 +607,11 @@ public class GameplayScreenController {
         statsBox.setPrefWidth(185);
         statsBox.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-border-color: " + (isHuman ? "#10b981" : "white") + "; -fx-border-width: 2; -fx-padding: 5;");
         
-        // Bot class label shows only class name; player also sees their goal
         Label pClass = new Label(isHuman
                 ? player.playerClass().name() + " (" + getGoalString(player.playerClass()) + ")"
                 : player.playerClass().name());
         pClass.setStyle("-fx-text-fill: #fbbf24; -fx-font-size: 11px; -fx-font-weight: bold;");
+        pClass.setWrapText(true);
         Label pName = new Label(player.displayName());
         pName.setStyle("-fx-text-fill: " + (isHuman ? "#10b981" : "gold") + "; -fx-font-weight: bold;");
         Label pWealth = new Label("Wealth: " + player.wealth());
@@ -614,7 +628,7 @@ public class GameplayScreenController {
 
         // Build level — bots show level only; only the player sees income/buff
         Label pBuildLv = new Label("\u25b2 Build Lv." + player.buildLevel());
-        pBuildLv.setStyle("-fx-text-fill: #60a5fa; -fx-font-size: 9px; -fx-font-weight: bold;");
+        pBuildLv.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 9px; -fx-font-weight: bold;");
 
         if (isHuman) {
             Label pIncome   = new Label("  Income: +" + player.income() + " /rd");
@@ -1268,8 +1282,6 @@ public class GameplayScreenController {
         if (isDiscardPopupOpen) return; // block stacking
         isDiscardPopupOpen = true;
 
-        int clamsReward = getDiscardClamsReward(card.rarity());
-
         VBox popup = new VBox(15);
         popup.setAlignment(Pos.CENTER);
         popup.setStyle("-fx-background-color: rgba(13,43,62,0.97); -fx-border-color: #ef4444; " +
@@ -1281,16 +1293,13 @@ public class GameplayScreenController {
         Label cardName = new Label("\"" + card.name() + "\" (" + card.rarity().name() + ")");
         cardName.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
 
-        Label rewardLbl = new Label("You will receive " + clamsReward + " Clams");
-        rewardLbl.setStyle("-fx-text-fill: #34d399; -fx-font-size: 12px; -fx-font-weight: bold;");
-
         Label warn = new Label("This card will be permanently removed from your hand.");
         warn.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 12px;");
         warn.setWrapText(true);
         warn.setMaxWidth(320);
         warn.setAlignment(Pos.CENTER);
 
-        Button yesBtn = new Button("Yes, Discard (+" + clamsReward + " Clams)");
+        Button yesBtn = new Button("Yes, Discard");
         yesBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; " +
                 "-fx-padding: 8 22; -fx-background-radius: 8; -fx-cursor: hand;");
 
@@ -1301,7 +1310,7 @@ public class GameplayScreenController {
         HBox btnRow = new HBox(15, yesBtn, noBtn);
         btnRow.setAlignment(Pos.CENTER);
 
-        popup.getChildren().addAll(title, cardName, rewardLbl, warn, btnRow);
+        popup.getChildren().addAll(title, cardName, warn, btnRow);
         mainLayout.getChildren().add(popup);
         AnchorPane.setTopAnchor(popup, 220.0);
         AnchorPane.setLeftAnchor(popup, 350.0);
@@ -1311,9 +1320,8 @@ public class GameplayScreenController {
             mainLayout.getChildren().remove(popup);
             isDiscardPopupOpen = false;
             gameSession.discardCard(humanPlayer.id(), card);
-            humanPlayer.addClams(clamsReward);
             if (selectedCard == card) selectedCard = null;
-            appendLog("Discarded: " + card.name() + " (" + card.rarity().name() + ") — +" + clamsReward + " Clams", "#ef4444");
+            appendLog("Discarded: " + card.name() + " (" + card.rarity().name() + ")", "#ef4444");
             topClamsLabel.setText("Clams: " + humanPlayer.clams());
             // Refresh hand display only
             handArea.getChildren().clear();
