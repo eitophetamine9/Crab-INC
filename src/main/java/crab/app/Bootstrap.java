@@ -26,6 +26,7 @@ public final class Bootstrap {
     private final ModuleRegistry modules = new ModuleRegistry();
     private final ScreenManager screens = new ScreenManager();
     private boolean modulesInitialized;
+    private boolean fullScreenToggleInstalled;
 
     public void configure(GameSettings settings) {
         settings.setWidth(1080);
@@ -37,7 +38,10 @@ public final class Bootstrap {
         settings.setGameMenuEnabled(false);
         settings.setIntroEnabled(false);
         settings.setFullScreenAllowed(true);
-        settings.setFullScreenFromStart(true);
+        settings.setFullScreenFromStart(false);
+        settings.setManualResizeEnabled(true);
+        settings.setPreserveResizeRatio(false);
+        settings.setScaleAffectedOnResize(true);
         settings.setSceneFactory(new CrabSceneFactory());
     }
 
@@ -57,19 +61,8 @@ public final class Bootstrap {
     public void initializeUi() {
         AppTypography.applyTo(getGameScene().getRoot());
         
-        // Prevent stretching/scaling: force all layers (Content, UI, etc.) in GameScene to remain exactly 1.0 scale
-        for (javafx.scene.Node child : getGameScene().getRoot().getChildren()) {
-            child.scaleXProperty().addListener((obs, old, val) -> {
-                if (val.doubleValue() != 1.0) child.setScaleX(1.0);
-            });
-            child.scaleYProperty().addListener((obs, old, val) -> {
-                if (val.doubleValue() != 1.0) child.setScaleY(1.0);
-            });
-            child.setScaleX(1.0);
-            child.setScaleY(1.0);
-        }
-
         modules.initializeUi();
+        installFullScreenToggle();
         getGameScene().setCursor(Cursor.DEFAULT);
         getGameScene().setBackgroundColor(javafx.scene.paint.Color.web("#0e58d4"));
         if (screens.currentId().isEmpty()) {
@@ -108,5 +101,27 @@ public final class Bootstrap {
     public void shutdown() {
         screens.clear();
         modules.stop();
+    }
+
+    private void installFullScreenToggle() {
+        if (fullScreenToggleInstalled) {
+            return;
+        }
+
+        javafx.stage.Stage stage = com.almasb.fxgl.dsl.FXGL.getPrimaryStage();
+        javafx.scene.Scene scene = stage.getScene();
+        if (scene == null) {
+            return;
+        }
+
+        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            boolean f11 = event.getCode() == javafx.scene.input.KeyCode.F11;
+            boolean altEnter = event.getCode() == javafx.scene.input.KeyCode.ENTER && event.isAltDown();
+            if (f11 || altEnter) {
+                stage.setFullScreen(!stage.isFullScreen());
+                event.consume();
+            }
+        });
+        fullScreenToggleInstalled = true;
     }
 }

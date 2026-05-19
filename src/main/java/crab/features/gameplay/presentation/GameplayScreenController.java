@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Circle;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.paint.CycleMethod;
@@ -577,29 +576,9 @@ public class GameplayScreenController {
             crabAvatar.setImage(finalIdle);
         }
 
-        // StackPane to hold crab avatar and overlay the bottom-right status indicator circle
         StackPane avatarPane = new StackPane(crabAvatar);
         avatarPane.setPrefSize(100, 80);
         avatarPane.setMaxSize(100, 80);
-
-        // Status circle indicator on bottom-right of crab avatar window
-        javafx.scene.shape.Circle indicator = new javafx.scene.shape.Circle(5); // radius 5
-        boolean humanTriggeredPeak = gameSession.crabPeakActive()
-                && "human".equals(gameSession.crabPeakTriggeredById());
-
-        if (humanTriggeredPeak) {
-            indicator.setFill(Color.web("#fbbf24")); // glowing gold
-            indicator.setStroke(Color.web("#d97706"));
-            indicator.setStrokeWidth(1.2);
-            indicator.setEffect(new javafx.scene.effect.DropShadow(3, Color.web("#fbbf24")));
-        } else {
-            indicator.setFill(Color.web("#94a3b8")); // flat slate grey
-            indicator.setStroke(Color.web("#475569"));
-            indicator.setStrokeWidth(1.0);
-        }
-        StackPane.setAlignment(indicator, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(indicator, new Insets(0, 4, 4, 0));
-        avatarPane.getChildren().add(indicator);
         
         // 2. Stats Box (Has background) — wider to accommodate build level details
         VBox statsBox = new VBox(2);
