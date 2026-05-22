@@ -1,0 +1,518 @@
+classDiagram
+    direction TB
+
+    %% --- MAIN ENTRY ---
+    class Main {
+        -Main()
+        +main(args: String[]) void$
+    }
+
+    %% --- APP PACKAGE ---
+    namespace app {
+        class Application {
+            -Bootstrap bootstrap
+            -ServerSocket lockSocket$
+            #initSettings(settings: GameSettings) void
+            #initGame() void
+            #initUI() void
+            #onUpdate(tpf: double) void
+            +main(args: String[]) void$
+        }
+
+        class Bootstrap {
+            -GameContext context
+            -ModuleRegistry modules
+            -ScreenManager screens
+            -boolean modulesInitialized
+            +configure(settings: GameSettings) void
+            +initializeGame() void
+            +initializeUi() void
+            +update(tpf: double) void
+            +shutdown() void
+        }
+
+        class CrabSceneFactory {
+            +newIntro() IntroScene
+            +newLoadingScene() LoadingScene
+            +newMainMenu() MainMenuScene
+            +newGameMenu() GameMenuScene
+        }
+
+        class AppTypography {
+            +applyTo(node: Node) void$
+        }
+
+        class BlankStartupScene {
+            +onCreate() void
+        }
+    }
+
+    Main ..> Application : starts
+    Application *--> Bootstrap : delegates lifecycle
+    Bootstrap --> CrabSceneFactory : configures
+    Bootstrap ..> AppTypography : applies typography
+    CrabSceneFactory ..> BlankStartupScene : creates
+
+    %% --- APPCORE CONTEXT PACKAGE ---
+    namespace appcore_context {
+        class GameContext {
+            -Map~Class, Object~ services
+            +register(type: Class~T~, service: T) void
+            +find(type: Class~T~) Optional~T~
+            +require(type: Class~T~) T
+        }
+
+        class GameModule {
+            <<interface>>
+            +initialize(context: GameContext) void
+            +start() void
+            +initializeUi() void
+            +update(tpf: double) void
+            +stop() void
+        }
+
+        class ModuleRegistry {
+            -List~GameModule~ modules
+            +register(module: GameModule) void
+            +initialize(context: GameContext) void
+            +start() void
+            +initializeUi() void
+            +update(tpf: double) void
+            +stop() void
+        }
+    }
+
+    Bootstrap *--> GameContext : owns
+    Bootstrap *--> ModuleRegistry : owns
+    ModuleRegistry "1" *--> "*" GameModule : coordinates
+
+    %% --- APPCORE SCREEN PACKAGE ---
+    namespace appcore_screen {
+        class GameScreen {
+            <<interface>>
+            +id() String
+            +show() void
+            +hide() void
+            +update(tpf: double) void
+        }
+
+        class ScreenManager {
+            -Map~String, GameScreen~ screens
+            -GameScreen current
+            +register(screen: GameScreen) void
+            +show(id: String) void
+            +currentId() Optional~String~
+            +update(tpf: double) void
+            +clear() void
+        }
+    }
+
+    Bootstrap *--> ScreenManager : owns
+    ScreenManager "1" *--> "*" GameScreen : manages
+    GameContext ..> ScreenManager : registered as service
+
+    %% --- APPCORE DB PACKAGE ---
+    namespace appcore_db {
+        class DatabaseManager {
+            -String URL$
+            -String USER$
+            -String PASS$
+            -boolean initialized$
+            +initDB() void$
+            +findCredentials(username: String) Optional~UserCredentials~$
+            +findPasswordHash(username: String) Optional~String~$
+            +findCrabUser(username: String) Optional~CrabUser~$
+            +createUser(username: String, passwordHash: String) boolean$
+            +registerSave(username: String, filepath: String) void$
+            +getSaveForUser(username: String) String$
+            +recordPlayerStats(username: String, score: int) void$
+            +getPlayerStats(username: String) PlayerCareerStats$
+        }
+
+        class DatabaseUserCredentialsRepository {
+            +findCredentials(username: String) Optional~UserCredentials~
+            +createUser(username: String, passwordHash: String) boolean
+        }
+    }
+
+    DatabaseUserCredentialsRepository ..> DatabaseManager : delegates queries
+
+    %% --- APPCORE CONCURRENT PACKAGE ---
+    namespace appcore_concurrent {
+        class AssetCache {
+            -AssetCache INSTANCE$
+            -ConcurrentHashMap~String, Image~ cache
+            -AssetCache()
+            +getInstance() AssetCache$
+            +getOrLoad(resolvedUrl: String) Image
+            +allGameplayPaths(sKey, aKey, oKey) List~String~$
+        }
+
+        class AssetFlyweightFactory {
+            -Map~String, Image~ flyweightCache$
+            -AssetFlyweightFactory()
+            +getSharedImage(slotId, resourcePath, w, h) Image$
+            +getSharedImageAsync(slotId, resourcePath, w, h) Image$
+            +clear() void$
+        }
+    }
+
+    %% --- PLATFORM JAVAFX3D PACKAGE ---
+    namespace platform_javafx3d {
+        class GlbSkyboxLoader {
+            -ObjectMapper JSON$
+            +load(glbUrl: URL, targetSize: float) Node$
+        }
+
+        class GltfMeshLoader {
+            -ObjectMapper JSON$
+            +load(gltfUrl: URL) TriangleMesh$
+        }
+    }
+
+    %% --- FEATURES MENU AUTH PACKAGE ---
+    namespace features_menu_auth {
+        class UserCredentialsRepository {
+            <<interface>>
+            +findCredentials(username: String) Optional~UserCredentials~
+            +findPasswordHash(username: String) Optional~String~
+            +createUser(username: String, passwordHash: String) boolean
+        }
+
+        class DevFallbackUserCredentialsRepository {
+            -UserCredentialsRepository primary
+            -String devPasswordHash
+            +findCredentials(username: String) Optional~UserCredentials~
+            +createUser(username: String, passwordHash: String) boolean
+        }
+
+        class PasswordHasher {
+            +hash(password: char[]) String
+            +verify(password: char[], hash: String) boolean
+        }
+
+        class CrabUser {
+            <<record>>
+            +long id
+            +String username
+            +String displayName
+            +create(id, username, displayName) CrabUser$
+            +demo() CrabUser$
+        }
+
+        class UserCredentials {
+            <<record>>
+            +CrabUser user
+            +String passwordHash
+        }
+
+        class AuthService {
+            -UserCredentialsRepository users
+            -PasswordHasher passwordHasher
+            +signIn(username, password) boolean
+            +signInUser(username, password) Optional~CrabUser~
+            +signUp(username, pw, confirmPw) SignUpResult
+        }
+
+        class SignUpResult {
+            <<enum>>
+            CREATED
+            BLANK_INPUT
+            PASSWORD_MISMATCH
+            USERNAME_TAKEN
+            DATABASE_ERROR
+        }
+    }
+
+    DatabaseUserCredentialsRepository ..|> UserCredentialsRepository
+    DevFallbackUserCredentialsRepository ..|> UserCredentialsRepository
+    DevFallbackUserCredentialsRepository "1" *--> "1" UserCredentialsRepository : decorates
+    AuthService "1" *--> "1" UserCredentialsRepository : uses
+    AuthService "1" *--> "1" PasswordHasher : uses
+    UserCredentials "1" *--> "1" CrabUser : contains
+    DevFallbackUserCredentialsRepository ..> CrabUser : resolves demo user
+    DatabaseManager ..> CrabUser : resolves
+    DatabaseManager ..> UserCredentials : maps to
+
+    %% --- FEATURES MENU PRESENTATION PACKAGE ---
+    namespace features_menu_presentation {
+        class MenuModule {
+            +initialize(context: GameContext) void
+            +start() void
+            +stop() void
+        }
+
+        class LoginScreen {
+            +String ID$
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class SignupScreen {
+            +String ID$
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class MainMenuScreen {
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class SetupScreen {
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class CharacterSelectionScreen {
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class LoginScreenController {
+            +String loggedInUser$
+            +CrabUser currentUser$
+            -AuthService authService
+            +onLogin() void
+            +onGuestLogin() void
+            +onNavigateToSignup() void
+        }
+
+        class SignupScreenController {
+            -AuthService authService
+            +onSignUp() void
+            +onNavigateToLogin() void
+        }
+    }
+
+    MenuModule ..|> GameModule
+    MenuModule ..> LoginScreen : registers
+    MenuModule ..> SignupScreen : registers
+    MenuModule ..> MainMenuScreen : registers
+    MenuModule ..> SetupScreen : registers
+    MenuModule ..> CharacterSelectionScreen : registers
+
+    LoginScreen ..|> GameScreen
+    SignupScreen ..|> GameScreen
+    MainMenuScreen ..|> GameScreen
+    SetupScreen ..|> GameScreen
+    CharacterSelectionScreen ..|> GameScreen
+
+    LoginScreenController ..> AuthService : invokes
+    SignupScreenController ..> AuthService : invokes
+    LoginScreenController ..> CrabUser : stores session
+
+    %% --- FEATURES GAMEPLAY DOMAIN PACKAGE ---
+    namespace features_gameplay_domain {
+        class GameSession {
+            -Map~String, PlayerState~ players
+            -List~ActionCard~ deckTemplate
+            -Map~String, PlayerAction~ pendingActions
+            -int maxRounds
+            -int winThreshold
+            -int currentRound
+            -boolean crabPeakActive
+            -String crabPeakTriggeredById
+            -GamePhase phase
+            -WinnerResult winner
+            -Random rng
+            +newLocal(players, maxRounds, deck) GameSession$
+            +phase() GamePhase
+            +currentRound() int
+            +players() List~PlayerState~
+            +resolveDevelopment(selected, upgrades) void
+            +resolveDrawing() void
+            +submitAction(action: PlayerAction) void
+            +resolveActions() void
+            +applyEvent(event: GameEvent) void
+            +applyEventToAll(event: GameEvent) void
+            +completeRound() void
+            +selectWeightedEvent() GameEvent
+            +winner() Optional~WinnerResult~
+        }
+
+        class PlayerState {
+            +int MAX_HAND_SIZE$
+            -String id
+            -String displayName
+            -PlayerClass playerClass
+            -List~ActionCard~ hand
+            -int clams
+            -int wealth
+            -int reputation
+            -int infamy
+            -int buildLevel
+            +create(id, name, class) PlayerState$
+            +income() int
+            +statBonus() double
+            +upgradeCost() int
+            +canUpgradeBuild() boolean
+            +upgradeBuild() void
+            +addCard(card: ActionCard) void
+            +removeCard(card: ActionCard) void
+            +discardCard(card: ActionCard) boolean
+        }
+
+        class ActionCard {
+            <<record>>
+            +String id
+            +String name
+            +CardType type
+            +CardRarity rarity
+        }
+
+        class PlayerAction {
+            <<record>>
+            +String playerId
+            +ActionCard card
+            +String targetPlayerId
+            +ActionCard keptCard
+        }
+
+        class GameEvent {
+            <<record>>
+            +String name
+            +String description
+            +String targetPlayerId
+            +int clamsDelta
+            +int wealthDelta
+            +int reputationDelta
+            +int infamyDelta
+            +none() GameEvent$
+            +marketCrash(loss) GameEvent$
+            +charityWave() GameEvent$
+            +crabHunt(target, loss) GameEvent$
+            +travellingShop() GameEvent$
+        }
+
+        class WinnerResult {
+            <<record>>
+            +String playerId
+            +PlayerClass winningClass
+            +int winningValue
+        }
+
+        class PlayerClass {
+            <<enum>>
+            SABOTEUR
+            ALTRUIST
+            OPPORTUNIST
+        }
+
+        class CardType {
+            <<enum>>
+            HELP
+            STEAL
+            SABOTAGE
+            SIGNATURE_SABOTEUR
+            SIGNATURE_ALTRUIST
+            SIGNATURE_OPPORTUNIST
+        }
+
+        class CardRarity {
+            <<enum>>
+            COMMON
+            UNCOMMON
+            RARE
+            SIGNATURE
+            -double multiplier
+            +multiplier() double
+        }
+
+        class GamePhase {
+            <<enum>>
+            DEVELOPMENT
+            DRAWING
+            ACTION
+            RESOLUTION
+            EVENT
+            ROUND_COMPLETE
+            GAME_OVER
+        }
+    }
+
+    GameSession "1" *--> "*" PlayerState : contains
+    GameSession "1" *--> "*" ActionCard : deck template
+    GameSession "1" *--> "*" PlayerAction : pending actions
+    GameSession --> GamePhase : tracks
+    GameSession --> GameEvent : processes
+    GameSession --> WinnerResult : determines
+    PlayerState "1" *--> "*" ActionCard : hand
+    PlayerState --> PlayerClass : belongs to
+    ActionCard --> CardType : categorized by
+    ActionCard --> CardRarity : scaled by
+    PlayerAction "1" *--> "1..2" ActionCard : plays/keeps
+    WinnerResult --> PlayerClass : winning class
+
+    %% --- FEATURES GAMEPLAY PRESENTATION PACKAGE ---
+    namespace features_gameplay_presentation {
+        class GameplayModule {
+            +initialize(context: GameContext) void
+            +start() void
+            +stop() void
+        }
+
+        class GameplayScreen {
+            +String ID$
+            -ScreenManager screens
+            -GameSession gameSession
+            -PlayerState humanPlayer
+            -List~PlayerState~ aiPlayers
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class GameOverScreen {
+            +String ID$
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class EncyclopediaScreen {
+            +String ID$
+            -ScreenManager screens
+            +id() String
+            +show() void
+            +hide() void
+        }
+
+        class GameplayScreenController {
+            -GameSession session
+            -ScreenManager screens
+            -PlayerState humanPlayer
+            -List~PlayerState~ aiPlayers
+            +initData(s, sm, p, ai) void
+            +onSubmitTurn() void
+            +onUpgradeBuild() void
+            +onOpenEncyclopedia() void
+        }
+    }
+
+    GameplayModule ..|> GameModule
+    GameplayModule ..> GameplayScreen : registers
+    GameplayModule ..> GameOverScreen : registers
+    GameplayModule ..> EncyclopediaScreen : registers
+
+    GameplayScreen ..|> GameScreen
+    GameOverScreen ..|> GameScreen
+    EncyclopediaScreen ..|> GameScreen
+
+    GameplayScreen "1" *--> "1" GameSession : hosts
+    GameplayScreen "1" *--> "*" PlayerState : holds players
+    GameplayScreen ..> GameplayScreenController : initializes
+    GameplayScreenController "1" *--> "1" GameSession : drives
+    GameplayScreenController "1" *--> "1" PlayerState : binds
+    GameOverScreen ..> DatabaseManager : records stats asynchronously

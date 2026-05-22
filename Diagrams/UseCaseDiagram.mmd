@@ -1,0 +1,111 @@
+flowchart TB
+    %% --- ACTORS ---
+    Player["👤 Player (Primary Actor)"]
+    DB["🗄️ Database / System (Supporting Actor)"]
+
+    %% --- SUBGRAPHS / BOUNDARIES ---
+    subgraph AUTH ["System Authentication & Accounts"]
+        UC_Login(["Sign In / Log In"])
+        UC_Signup(["Register / Sign Up"])
+        UC_Guest(["Play as Guest"])
+        UC_SessionStart["Initialize Session Settings"]
+    end
+
+    subgraph MGMT ["Game & Session Management"]
+        UC_Config["Configure Settings\n(Difficulty, Character Class, Enemy Count)"]
+        UC_StartSession(["Start Game Session"])
+        UC_LoadSession(["Load Previous Session"])
+        UC_AutoSave(["Auto-Save Game State"])
+        UC_ViewStats(["View Career Statistics"])
+        UC_GameOver(["View Game Over Result"])
+    end
+
+    subgraph GAMEPLAY ["Core Gameplay Loop"]
+        UC_DrawCard(["Draw Cards (FIFO Hand Management)"])
+        UC_UpgradeBuild(["Upgrade Beach Shelter\n(Build Level 1 - 5)"])
+        UC_PlayAction(["Submit Secret Player Action"])
+        UC_ResolveTurn(["Resolve Turn Concurrently"])
+        UC_TriggerEvent(["Trigger Hostility-Weighted Event"])
+    end
+
+    subgraph ROLE_SPECIFIC ["Role-Specific Actions & Specialties"]
+        UC_AltruistSig(["Altruist Signature Action\n(Grand Gesture Card)"])
+        UC_OppSig(["Opportunist Signature Passive\n(+10 Wealth Trigger)"])
+        UC_SaboteurSig(["Saboteur Signature Action\n(Master Sabotage / Double-Neg)"])
+        UC_ShopInteract(["Purchase from Travelling Shop"])
+    end
+
+    %% --- PLAYER INTERACTIONS ---
+    Player --> UC_Login
+    Player --> UC_Signup
+    Player --> UC_Guest
+    Player --> UC_StartSession
+    Player --> UC_LoadSession
+    Player --> UC_ViewStats
+    Player --> UC_UpgradeBuild
+    Player --> UC_DrawCard
+    Player --> UC_PlayAction
+    Player --> UC_ShopInteract
+
+    %% --- DATABASE SYSTEM INTERACTIONS ---
+    UC_Login --> DB
+    UC_Signup --> DB
+    UC_LoadSession --> DB
+    UC_AutoSave --> DB
+    UC_ViewStats --> DB
+    UC_GameOver --> DB
+
+    %% --- RELATIONSHIPS: INCLUDE / EXTEND ---
+    %% Session Start Includes Configuration
+    UC_StartSession -.->|"<<include>>"| UC_Config
+    UC_StartSession -.->|"<<include>>"| UC_SessionStart
+    UC_SessionStart -.->|"<<extend>>"| UC_LoadSession
+
+    %% Drawing cards incorporates FIFO rules
+    UC_DrawCard -.->|"<<include>>"| UC_DrawRules["Enforce Own-Class Bias (60/40)"]
+
+    %% Play Action Extends to Role-Specific Actions
+    UC_PlayAction -.->|"<<extend>>"| UC_AltruistSig
+    UC_PlayAction -.->|"<<extend>>"| UC_OppSig
+    UC_PlayAction -.->|"<<extend>>"| UC_SaboteurSig
+
+    %% Turn Resolution includes Action Submissions & Inflicts Distortions
+    UC_ResolveTurn -.->|"<<include>>"| UC_PlayAction
+    UC_ResolveTurn -.->|"<<include>>"| UC_Distortion["Apply Sabotage Reductions (Max 70%)"]
+
+    %% Events & Shop Interaction
+    UC_TriggerEvent -.->|"<<include>>"| UC_WeightedRoll["Hostility-Weighted Event Selection"]
+    UC_TriggerEvent -.->|"<<extend>>"| UC_ShopInteract
+    UC_TriggerEvent -.->|"<<extend>>"| UC_MarketCrash["Apply Global Market Crash"]
+    UC_TriggerEvent -.->|"<<extend>>"| UC_CrabHunt["Resolve Crab Hunt Bounty"]
+
+    %% Auto Save & Stats
+    UC_ResolveTurn -.->|"<<include>>"| UC_AutoSave
+    UC_GameOver -.->|"<<include>>"| UC_CareerLog["Asynchronously Log Stats in DB"]
+
+    %% --- GRAPHICS & VISUAL STYLING ---
+    style Player fill:#f43f5e,stroke:#be123c,stroke-width:2px,color:#fff,rx:10px,ry:10px
+    style DB fill:#0ea5e9,stroke:#0369a1,stroke-width:2px,color:#fff,rx:10px,ry:10px
+    
+    %% Style Auth Use Cases
+    style UC_Login fill:#fcf0f2,stroke:#f43f5e,stroke-width:1px
+    style UC_Signup fill:#fcf0f2,stroke:#f43f5e,stroke-width:1px
+    style UC_Guest fill:#fcf0f2,stroke:#f43f5e,stroke-width:1px
+
+    %% Style Mgmt Use Cases
+    style UC_StartSession fill:#ecfdf5,stroke:#10b981,stroke-width:1px
+    style UC_LoadSession fill:#ecfdf5,stroke:#10b981,stroke-width:1px
+    style UC_ViewStats fill:#ecfdf5,stroke:#10b981,stroke-width:1px
+    style UC_GameOver fill:#ecfdf5,stroke:#10b981,stroke-width:1px
+
+    %% Style Gameplay Use Cases
+    style UC_DrawCard fill:#eff6ff,stroke:#3b82f6,stroke-width:1px
+    style UC_UpgradeBuild fill:#eff6ff,stroke:#3b82f6,stroke-width:1px
+    style UC_PlayAction fill:#eff6ff,stroke:#3b82f6,stroke-width:1px
+    style UC_ResolveTurn fill:#eff6ff,stroke:#3b82f6,stroke-width:1px
+
+    %% Style Specialized Actions
+    style UC_AltruistSig fill:#faf5ff,stroke:#a855f7,stroke-width:1.5px
+    style UC_OppSig fill:#faf5ff,stroke:#a855f7,stroke-width:1.5px
+    style UC_SaboteurSig fill:#faf5ff,stroke:#a855f7,stroke-width:1.5px
+    style UC_ShopInteract fill:#faf5ff,stroke:#a855f7,stroke-width:1.5px
